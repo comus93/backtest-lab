@@ -30,14 +30,13 @@ Runtime
 - 특이 전략 하나를 위해 Core 데이터 모델을 확장하지 않는다.
 - Strategy는 엔진이 제공하는 최소 실행 기능 위에서 일반 Python/pandas/numpy 코드를 자유롭게 사용할 수 있어야 한다.
 - `bt`는 dependency가 아니라 design reference다. 특히 portfolio accounting, external flow, performance series, `ffn` 연계에 관한 선택을 참고한다.
-- `ffn`은 성과 분석을 담당한다. 백테스트 실행/회계 엔진을 다시 만들지 않는다.
+- `ffn`은 성과 분석을 담당한다.
 
 ## Non-goals for the core
 
 - Strategy DSL / Algo stack
 - Technical indicator framework
 - Broker/order lifecycle simulation
-- Core-level acquisition lot/tranche 관리
 - 특이 전략별 상태 모델
 - Live trading
 
