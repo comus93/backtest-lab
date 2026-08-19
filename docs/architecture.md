@@ -61,7 +61,7 @@ Strategy를 특정 DSL, Signal, Indicator 객체 모델에 맞추도록 강제�
 - flow-adjusted performance series 생성
 - 발생한 fills를 실행 결과 데이터로 보존
 
-Runtime step은 daily로 고정하지 않는다. 일봉 입력이면 일별, intraday 입력이면 해당 입력 step을 따른다.
+Runtime step은 daily로 고정하지 않는다. 입력 데이터의 step을 따른다.
 
 초기 구현에서는 실제 브로커 수준의 pending/accepted/partial/cancelled order lifecycle을 만들지 않는다. 매매 요청은 백테스트 규칙에 따라 즉시 Fill로 변환한다.
 
@@ -75,10 +75,6 @@ Runtime step은 daily로 고정하지 않는다. 일봉 입력이면 일별, int
 - Fill 반영에 따른 cash/position 변경
 
 Portfolio는 현재 회계 상태를 담당하며 시간축 실행이나 전략 판단을 알지 않는다.
-
-Core에는 acquisition lot/tranche를 두지 않는다. 차수별 진입/청산처럼 특수한 전략이 필요하면 Strategy가 별도 상태를 관리하고, Runtime에는 최종 매매 수량만 요청한다.
-
-평균단가 및 realized/unrealized PnL의 Core 포함 여부는 아직 확정하지 않았다. 초기 구현에서 임의로 확장하지 않는다.
 
 ### fills
 
@@ -96,9 +92,7 @@ fill_price
 fee
 ```
 
-fills는 독립적인 실행 결과 데이터지만 별도 복잡한 Ledger/Repository/Service 계층을 만들 필요는 없다. append-only collection/DataFrame 수준으로 시작한다.
-
-Fill의 주요 목적은 거래 결과 보존과 디버깅 가능성이다.
+fills는 Runtime 실행 중 생성되는 append-only 실행 결과 데이터다.
 
 ### performance series
 
@@ -137,13 +131,13 @@ fee와 거래비용은 external flow가 아니며 투자성과에 영향을 준�
 - 첫 runtime step의 거래비용/손익이 performance series 시작값에 묻혀 사라지는 것을 방지
 - 첫 실행 전 performance index = 100인 깨끗한 기준점을 확보
 
-개념적으로는 `t0-1`이지만 반드시 "하루 전"을 뜻하지 않는다. intraday까지 고려해 첫 valuation step 이전의 synthetic reference point로 구현한다.
+개념적으로는 `t0-1`이지만 반드시 하루 전을 뜻하지 않는다. 첫 valuation step 이전의 synthetic reference point로 구현한다.
 
 ## 4. Fee / slippage
 
 fee와 slippage는 Strategy가 아니라 Runtime 책임이다.
 
-초기에는 전역/Run 설정으로 단순하게 시작한다.
+초기에는 Run 설정으로 단순하게 시작한다.
 
 예:
 
@@ -173,16 +167,9 @@ slippage_bps
 - performance series를 `ffn`에 직접 연결
 - pre-start reference point (`t0-1` 개념)
 
-현재 의도적으로 채택하지 않은 것:
-
-- Strategy/Algo stack
-- Strategy tree
-- Core acquisition lot 관리
-- Strategy 객체 안에서 portfolio accounting/history까지 함께 소유하는 구조
-
 ## 6. Initial implementation boundary
 
-첫 구현에서는 다음을 우선한다.
+첫 구현 범위:
 
 - aggregate positions
 - cash
@@ -196,12 +183,4 @@ slippage_bps
 - `ffn` 연결
 - 핵심 회계/성과 회귀 테스트
 
-다음 항목은 아직 Core로 확정하지 않았으므로 임의로 확장하지 않는다.
-
-- acquisition lot
-- 평균단가
-- realized/unrealized PnL 모델
-- order lifecycle
-- broker abstraction
-- indicator/signal framework
-- 데이터 소스 고정
+Core는 이 범위를 넘어 불필요한 추상화나 하위 시스템을 만들지 않는다.
