@@ -6,16 +6,51 @@ v1은 자유로운 Python Strategy를 실행하고, Portfolio 회계 상태와 �
 
 ## 2. Inputs
 
-Runtime은 최소한 다음 입력을 받을 수 있어야 한다.
+### Market data
 
-- timestamp index를 가진 market data
-- initial cash
-- Strategy
-- fee 설정
-- slippage 설정
-- 필요 시 external cash flow
+v1의 market data는 **Local DB**에서 조회한다.
 
-특정 DB나 데이터 공급자에 종속되지 않는다.
+- 현재 DBMS: MySQL
+- 접속 정보는 repository에 저장하지 않고 별도 `.env`로 제공한다.
+- Runtime core가 MySQL 자체에 종속되지 않도록 DB 조회 영역과 실행 코어를 분리한다.
+- DB에서 조회한 market data는 timestamp index와 symbol별 가격 정보를 Runtime에 전달할 수 있어야 한다.
+
+### Global execution settings
+
+fee와 slippage는 v1에서 복잡한 model/object hierarchy를 만들지 않고 **전역 설정값**으로 둔다.
+
+예:
+
+```text
+FEE_RATE
+SLIPPAGE_BPS
+```
+
+실제 값은 코드 한 곳의 공통 설정에서 변경할 수 있어야 하며 Strategy별로 별도 구현하지 않는다.
+
+### Strategy
+
+Strategy는 일반 Python 코드로 작성한다. v1 구현과 검증을 위한 Sample Strategy를 함께 제공한다.
+
+#### Sample Strategy
+
+```text
+Portfolio
+- KODEX 미국S&P500: 70%
+- ACE KRX 금현물: 30%
+
+Initial Deposit: 10,000,000 KRW
+Rebalancing: Monthly
+Period: 2021-01-01 ~ 2026-08-01
+```
+
+- Sample Strategy는 위 목표 비중으로 최초 투자하고 월 단위로 70/30 목표 비중에 맞춰 리밸런싱한다.
+- 실제 DB 조회에 사용하는 symbol/ticker 값은 Local DB의 저장값에 맞춰 연결한다.
+- 이 Sample Strategy는 엔진의 고정 Strategy 형식이 아니라 v1 동작 검증을 위한 예제다.
+
+### Optional external cash flow
+
+Runtime은 필요 시 입금/출금 같은 external cash flow를 입력받을 수 있어야 한다.
 
 ## 3. Strategy requirements
 
@@ -43,6 +78,8 @@ positions[symbol] = quantity
 - 현재 market price를 이용한 total portfolio valuation
 
 같은 symbol을 여러 번 거래해도 position은 aggregate quantity로 정확히 유지되어야 한다.
+
+Lot은 core에서 관리하지 않는다. 차수별 진입 등 특수 전략에 필요한 별도 상태는 해당 Strategy에서 필요에 따라 관리한다.
 
 ## 5. Fill requirements
 
@@ -76,7 +113,7 @@ Runtime은 각 입력 step에서 백테스트를 진행한다.
 - Strategy 실행
 - 매매 요청 처리
 - execution price 결정
-- fee/slippage 계산
+- 전역 fee/slippage 설정 적용
 - Fill 생성 및 Portfolio 반영
 - external cash flow 반영
 - Portfolio valuation
@@ -86,13 +123,13 @@ Runtime은 각 입력 step에서 백테스트를 진행한다.
 
 ## 7. Fee and slippage
 
-v1은 간단한 run-level 설정을 지원한다.
+v1은 간단한 global 설정을 지원한다.
 
 예:
 
 ```text
-fee_rate
-slippage_bps
+FEE_RATE
+SLIPPAGE_BPS
 ```
 
 요구사항:
@@ -100,6 +137,7 @@ slippage_bps
 - fee는 Portfolio cash와 performance에 반영되어야 한다.
 - slippage는 reference price와 실제 fill price의 차이로 반영되어야 한다.
 - buy/sell 방향에 맞게 불리한 execution price를 적용할 수 있어야 한다.
+- v1에서는 별도의 FeeModel/SlippageModel 객체 계층을 만들지 않는다.
 
 ## 8. External cash flow
 
@@ -151,18 +189,20 @@ performance_index = previous_index * (1 + period_return)
 
 v1 구현은 최소한 다음을 검증해야 한다.
 
-1. 외부 현금 입금만으로 performance index가 상승하지 않는다.
-2. 보유 자산 가격 상승은 performance index에 반영된다.
-3. fee는 성과를 낮춘다.
-4. slippage는 Fill price와 Portfolio cash에 반영된다.
-5. 동일 symbol 반복 매매 후 aggregate quantity가 정확하다.
-6. 첫 step에서 발생한 거래비용/손익이 performance에 포함된다.
-7. fills 기록과 Portfolio 상태가 일치한다.
-8. 입력 index가 intraday여도 동일한 구조로 실행 가능하다.
+1. Sample Strategy가 Local DB market data를 사용해 지정 기간에 실행된다.
+2. Sample Strategy가 최초 70/30 목표 비중을 구성하고 monthly rebalancing을 수행한다.
+3. 외부 현금 입금만으로 performance index가 상승하지 않는다.
+4. 보유 자산 가격 상승은 performance index에 반영된다.
+5. fee는 성과를 낮춘다.
+6. slippage는 Fill price와 Portfolio cash에 반영된다.
+7. 동일 symbol 반복 매매 후 aggregate quantity가 정확하다.
+8. 첫 step에서 발생한 거래비용/손익이 performance에 포함된다.
+9. fills 기록과 Portfolio 상태가 일치한다.
+10. 입력 index가 intraday여도 동일한 core 구조로 실행 가능하다.
 
 ## 13. Quality requirements
 
 - deterministic: 동일 입력과 설정은 동일 결과를 만들어야 한다.
 - debuggable: Strategy 판단, Fill, Portfolio 결과의 경계를 추적할 수 있어야 한다.
 - minimal: 실제 반복 요구가 없는 추상화 계층을 선제적으로 추가하지 않는다.
-- data-source independent: market data 저장 방식과 실행 코어를 분리한다.
+- data-source boundary: v1은 Local MySQL을 사용하지만 market data 조회와 실행 코어의 책임은 분리한다.
