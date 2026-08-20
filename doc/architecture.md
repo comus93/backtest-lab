@@ -71,6 +71,8 @@ Runtime은 입력 데이터 주기를 그대로 따른다. daily로 고정하지
 
 Portfolio는 전략 판단이나 시간 진행을 알지 않는다.
 
+Lot은 core에 포함하지 않는다. 차수별 진입 등 특수 전략의 상태는 해당 Strategy가 필요에 따라 별도로 관리한다.
+
 ## 4. Runtime outputs
 
 ### fills
@@ -123,16 +125,24 @@ performance_index = previous_index * (1 + period_return)
 
 fee와 slippage는 Runtime 책임이다.
 
-초기에는 run-level 설정으로 단순하게 시작한다.
+v1에서는 별도 모델 객체를 만들지 않고 전역 설정으로 단순하게 시작한다.
 
 예:
 
 ```text
-fee_rate
-slippage_bps
+FEE_RATE
+SLIPPAGE_BPS
 ```
 
-## 7. FFN boundary
+Strategy는 이 값을 직접 처리하지 않는다.
+
+## 7. Market data boundary
+
+v1은 Local MySQL에서 market data를 읽고 접속 정보는 `.env`로 제공한다.
+
+단, DB 접근 코드는 Runtime core와 분리한다. 이후 데이터 공급원이 바뀌더라도 Strategy / Runtime / Portfolio 구조를 바꾸지 않는 것을 목표로 한다.
+
+## 8. FFN boundary
 
 FFN은 성과 분석을 담당한다.
 
@@ -144,10 +154,11 @@ FFN은 성과 분석을 담당한다.
 
 백테스트 실행이나 Portfolio accounting은 FFN의 책임이 아니다.
 
-## 8. Design principle
+## 9. Design principle
 
 - Strategy 표현을 고정 DSL이나 과도한 객체 모델로 제한하지 않는다.
 - Runtime과 Portfolio는 작고 결정론적으로 유지한다.
 - 흔한 포트폴리오 백테스트를 가장 단순하게 처리한다.
 - 특수 전략 요건은 Strategy의 자유로운 Python 코드와 필요한 추가 상태로 구현한다.
+- 특수 전략 하나를 편하게 만들기 위해 core 데이터 모델을 확장하지 않는다.
 - `bt`는 dependency가 아니라 accounting/performance 설계의 reference로 활용한다.
