@@ -32,12 +32,7 @@ Runtime
 - `bt`는 dependency가 아니라 design reference다. 특히 portfolio accounting, external flow, performance series, `ffn` 연계에 관한 선택을 참고한다.
 - `ffn`은 성과 분석을 담당한다.
 
-## Non-goals for the core
+## Documents
 
-- Strategy DSL / Algo stack
-- Technical indicator framework
-- Broker/order lifecycle simulation
-- 특이 전략별 상태 모델
-- Live trading
-
-상세 R&R과 현재 설계 결정은 [`docs/architecture.md`](docs/architecture.md)를 따른다.
+- [`doc/architecture.md`](doc/architecture.md): 구조와 R&R
+- [`doc/specifications.md`](doc/specifications.md): v1 기능 및 검증 요구사항
