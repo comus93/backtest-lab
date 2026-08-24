@@ -20,8 +20,8 @@ reply_to: 20260824T104649+0900-agent
    - 기대 결과를 명시적으로 assert하고 전략 correctness 테스트는 network에 의존하지 않는다.
 
 2. 전략 구현은 `src/backtest_lab/strategies/market_momentum/r01.py`에 둔다.
-   - `STRATEGY_ID = "market_momentum"`
    - `REVISION = "r01"`
+   - 별도 Strategy ID는 두지 않는다.
    - revision module을 명시적으로 import하는 운영 규칙을 따른다.
    - `market_momentum/__init__.py`에서 r01을 latest/default처럼 re-export하지 않는다.
 
