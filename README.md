@@ -35,4 +35,7 @@ Runtime
 ## Documents
 
 - [`doc/architecture.md`](doc/architecture.md): 구조와 R&R
-- [`doc/specifications.md`](doc/specifications.md): v1 기능 및 검증 요구사항
+- [`doc/specifications.md`](doc/specifications.md): core 기능 및 검증 요구사항
+- [`doc/strategies/`](doc/strategies/): revision별 전략 명세
+- [`doc/open-issues.md`](doc/open-issues.md): 보류 중인 설계 이슈
+- [`AGENTS.md`](AGENTS.md): 개발 및 전략 관리 운영 규칙
