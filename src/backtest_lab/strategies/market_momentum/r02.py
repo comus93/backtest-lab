@@ -21,7 +21,7 @@ REVISION = "r02"
 
 UNIVERSE = ("SPY", "QQQ", "DIA", "EWJ", "EWY", "MCHI", "DAX", "EWW", "EIDO", "INDY", "EPHE")
 HORIZONS = (3, 6, 12)
-COMPARISON_ASSETS = ("QQQ", "SLV", "GDX", "AIA", "XLF", "XLE", "EWW")
+COMPARISON_ASSETS = ("SPY", "QQQ", "SLV", "GDX", "AIA", "XLF", "XLE")
 
 
 @dataclass
@@ -85,6 +85,7 @@ class PilotOutputs:
     monthly_decisions: pd.DataFrame
     yearly_asset_correlation: pd.DataFrame
     overall_asset_correlation: pd.DataFrame
+    downside_asset_correlation: pd.DataFrame
     yearly_constituent_correlation: pd.DataFrame
     yearly_constituents: pd.DataFrame
 
@@ -97,6 +98,7 @@ class PilotOutputs:
             "monthly_decisions": self.monthly_decisions,
             "yearly_asset_correlation": self.yearly_asset_correlation,
             "overall_asset_correlation": self.overall_asset_correlation,
+            "downside_asset_correlation": self.downside_asset_correlation,
             "yearly_constituent_correlation": self.yearly_constituent_correlation,
             "yearly_constituents": self.yearly_constituents,
         }
@@ -163,6 +165,37 @@ def _asset_correlation_rows(
     return pd.DataFrame(rows)
 
 
+def _downside_asset_correlation_rows(
+    strategy_returns: Mapping[int, pd.Series],
+    asset_prices: pd.DataFrame,
+    reference_assets: Iterable[str] = COMPARISON_ASSETS,
+) -> pd.DataFrame:
+    """Correlate strategy returns with each reference asset's down weeks."""
+    rows: list[dict[str, object]] = []
+    asset_returns = {asset: _resampled_returns(asset_prices[asset], "weekly") for asset in reference_assets}
+    for reference_asset, reference_returns in asset_returns.items():
+        for horizon, strategy in strategy_returns.items():
+            aligned = pd.concat(
+                [reference_returns.rename("reference"), strategy.rename("strategy")], axis=1, join="inner"
+            ).dropna()
+            down = aligned.loc[aligned["reference"] < 0.0]
+            correlation = float(down["reference"].corr(down["strategy"])) if len(down) >= 2 else float("nan")
+            rows.append(
+                {
+                    "reference_asset": reference_asset,
+                    "horizon": horizon,
+                    "correlation": correlation,
+                    "n_obs": len(down),
+                    "reference_avg_return": float(down["reference"].mean()) if not down.empty else float("nan"),
+                    "strategy_avg_return": float(down["strategy"].mean()) if not down.empty else float("nan"),
+                }
+            )
+    return pd.DataFrame(
+        rows,
+        columns=["reference_asset", "horizon", "correlation", "n_obs", "reference_avg_return", "strategy_avg_return"],
+    )
+
+
 def _constituent_outputs(prices: pd.DataFrame, decisions: pd.DataFrame, start: pd.Timestamp) -> tuple[pd.DataFrame, pd.DataFrame]:
     constituent_columns = ["year", "symbol", "selected_months"]
     matrix_columns = ["year", "symbol_a", "symbol_b", "correlation", "n_obs"]
@@ -223,5 +256,8 @@ def run_pilot(
             yearly=False,
         ),
     ], ignore_index=True)
+    downside_asset = _downside_asset_correlation_rows(strategy_returns, active_assets)
     matrix, constituents = _constituent_outputs(prices, decisions, start_timestamp)
-    return PilotOutputs(_performance_summary(results), curves, decisions, yearly_asset, overall_asset, matrix, constituents)
+    return PilotOutputs(
+        _performance_summary(results), curves, decisions, yearly_asset, overall_asset, downside_asset, matrix, constituents
+    )

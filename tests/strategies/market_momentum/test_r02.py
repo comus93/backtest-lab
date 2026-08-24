@@ -10,6 +10,7 @@ from backtest_lab.strategies.market_momentum.r02 import (
     MarketMomentumStrategy,
     _constituent_outputs,
     _correlation,
+    _downside_asset_correlation_rows,
     _resampled_returns,
     run_pilot,
 )
@@ -52,8 +53,19 @@ def test_weekly_correlation_uses_returns_not_levels() -> None:
 
 
 def test_comparison_assets_are_exact_and_not_signal_universe() -> None:
-    assert COMPARISON_ASSETS == ("QQQ", "SLV", "GDX", "AIA", "XLF", "XLE", "EWW")
+    assert COMPARISON_ASSETS == ("SPY", "QQQ", "SLV", "GDX", "AIA", "XLF", "XLE")
     assert set(COMPARISON_ASSETS) - set(UNIVERSE) == {"SLV", "GDX", "AIA", "XLF", "XLE"}
+
+
+def test_downside_correlation_filters_reference_down_weeks_and_keeps_averages() -> None:
+    index = pd.date_range("2024-01-05", periods=4, freq="W-FRI")
+    strategy = pd.Series([0.10, 0.20, -0.10, -0.20], index=index)
+    reference = pd.DataFrame({"REF": [100.0, 90.0, 99.0, 89.1]}, index=index)
+    rows = _downside_asset_correlation_rows({3: strategy}, reference, reference_assets=("REF",))
+    row = rows.iloc[0]
+    assert row["n_obs"] == 2
+    assert row["reference_avg_return"] == pytest.approx((-0.1 + -0.1) / 2)
+    assert row["strategy_avg_return"] == pytest.approx((0.2 + -0.2) / 2)
 
 
 def test_pairwise_alignment_retains_shared_observation_count() -> None:
@@ -94,6 +106,12 @@ def test_r02_outputs_include_independent_horizons_and_correlation_files(tmp_path
     assert set(outputs.yearly_asset_correlation["horizon"]) == set(HORIZONS)
     assert set(outputs.overall_asset_correlation["frequency"]) == {"weekly", "monthly"}
     assert set(outputs.overall_asset_correlation["horizon"]) == set(HORIZONS)
+    assert set(outputs.yearly_asset_correlation["asset"]) == set(COMPARISON_ASSETS)
+    assert set(outputs.overall_asset_correlation["asset"]) == set(COMPARISON_ASSETS)
+    assert len(outputs.downside_asset_correlation) == len(COMPARISON_ASSETS) * len(HORIZONS)
+    assert set(outputs.downside_asset_correlation.columns) == {
+        "reference_asset", "horizon", "correlation", "n_obs", "reference_avg_return", "strategy_avg_return"
+    }
     assert set(outputs.yearly_asset_correlation.columns) == {"year", "horizon", "asset", "correlation", "n_obs"}
     assert set(outputs.yearly_constituent_correlation.columns) == {"year", "symbol_a", "symbol_b", "correlation", "n_obs"}
     assert set(outputs.monthly_decisions.columns) >= {"horizon", "signal_date", "execution_date", "symbol", "momentum", "rank", "selected", "target_weight"}
@@ -102,5 +120,6 @@ def test_r02_outputs_include_independent_horizons_and_correlation_files(tmp_path
     assert set(paths) == {
         "performance_summary", "equity_curves", "monthly_decisions", "yearly_asset_correlation",
         "overall_asset_correlation", "yearly_constituent_correlation", "yearly_constituents",
+        "downside_asset_correlation",
     }
     assert pd.read_csv(paths["equity_curves"]).columns[0] == "timestamp"

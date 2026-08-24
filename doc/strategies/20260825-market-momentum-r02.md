@@ -22,7 +22,7 @@ Signal Universe: `SPY, QQQ, DIA, EWJ, EWY, MCHI, DAX, EWW, EIDO, INDY, EPHE`.
 
 ## Correlation assets and conventions
 
-Compare against `QQQ, SLV, GDX, AIA, XLF, XLE, EWW`; these assets do not alter the signal Universe.
+Compare against `SPY, QQQ, SLV, GDX, AIA, XLF, XLE`; these assets do not alter the signal Universe. `EWW` remains a signal asset but is not a comparison asset.
 
 All correlations are Pearson correlations of returns, never price or performance levels. Weekly and monthly observations use the last available observation in each calendar period. Pairwise calculations use only mutually available observations and retain `n_obs`; missing or insufficient observations are not imputed.
 
@@ -33,6 +33,7 @@ All correlations are Pearson correlations of returns, never price or performance
 - `monthly_decisions.csv` for 3M/6M/12M
 - `yearly_asset_correlation.csv`: `year,horizon,asset,correlation,n_obs` using weekly returns
 - `overall_asset_correlation.csv`: `frequency,horizon,asset,correlation,n_obs` using weekly and monthly returns
+- `downside_asset_correlation.csv`: `reference_asset,horizon,correlation,n_obs,reference_avg_return,strategy_avg_return` for weeks where the reference return is negative
 - `yearly_constituent_correlation.csv`: `year,symbol_a,symbol_b,correlation,n_obs` using 12M constituents' weekly returns
 - `yearly_constituents.csv`: `year,symbol,selected_months`
 
