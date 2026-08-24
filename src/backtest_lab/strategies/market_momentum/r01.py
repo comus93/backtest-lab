@@ -7,6 +7,7 @@ from typing import Iterable, Mapping
 import numpy as np
 import pandas as pd
 
+from backtest_lab.analysis import average_monthly_turnover
 from backtest_lab.core import Order, Runtime, RuntimeConfig, StrategyContext
 
 STRATEGY_ID = "market_momentum"
@@ -203,7 +204,7 @@ def _performance_summary(results: Mapping[str, object]) -> pd.DataFrame:
         volatility = float(returns.std(ddof=0) * np.sqrt(252)) if not returns.empty else 0.0
         sharpe = float(returns.mean() / returns.std(ddof=0) * np.sqrt(252)) if returns.std(ddof=0) else 0.0
         drawdown = performance / performance.cummax() - 1.0
-        monthly_turnover = _average_monthly_turnover(result)
+        monthly_turnover = average_monthly_turnover(result)
         rows.append(
             {
                 "strategy": name,
@@ -218,17 +219,6 @@ def _performance_summary(results: Mapping[str, object]) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
-
-
-def _average_monthly_turnover(result: object) -> float:
-    fills = result.fills
-    if not fills:
-        return 0.0
-    monthly = {}
-    for fill in fills:
-        month = fill.timestamp.to_period("M")
-        monthly[month] = monthly.get(month, 0.0) + abs(fill.fill_price * fill.quantity)
-    return float(np.mean(list(monthly.values())) / 1_000_000.0)
 
 
 def _momentum_signal_analysis(prices: pd.DataFrame, decisions: pd.DataFrame) -> pd.DataFrame:

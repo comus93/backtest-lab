@@ -191,7 +191,22 @@ performance_index = previous_index * (1 + period_return)
 - 여러 백테스트의 performance series를 FFN을 통해 비교할 수 있어야 한다.
 - FFN은 Runtime이나 Portfolio 회계를 수행하지 않는다.
 
-## 12. Acceptance checks
+## 12. Monthly turnover
+
+성과 분석의 `avg_monthly_turnover`는 다음 canonical 정의를 사용한다.
+
+```text
+monthly_turnover = 0.5 * sum(abs(fill_price * quantity)) / monthly_reference_nav
+avg_monthly_turnover = active 기간 모든 calendar month의 monthly_turnover 평균
+```
+
+- `monthly_reference_nav`는 해당 calendar month의 active `equity` 관측값 평균 NAV다.
+- 거래가 없는 active month도 `0`으로 평균에 포함한다.
+- 최초 active timestamp의 초기 포트폴리오 구축 fills는 ongoing turnover에서 제외한다. 같은 달의 이후 거래는 포함한다.
+- external cash flow 자체는 turnover numerator에 포함하지 않는다.
+- buy/sell notional 합계에 `0.5`를 곱하는 one-way 기준을 사용한다.
+
+## 13. Acceptance checks
 
 v1 구현은 최소한 다음을 검증해야 한다.
 
@@ -208,7 +223,7 @@ v1 구현은 최소한 다음을 검증해야 한다.
 11. Strategy history에는 현재 step 이후의 미래 market data가 노출되지 않는다.
 12. warm-up row는 history에 포함되지만 첫 active step 이전의 주문, valuation, performance에는 포함되지 않는다.
 
-## 13. Quality requirements
+## 14. Quality requirements
 
 - deterministic: 동일 입력과 설정은 동일 결과를 만들어야 한다.
 - debuggable: Strategy 판단, Fill, Portfolio 결과의 경계를 추적할 수 있어야 한다.
