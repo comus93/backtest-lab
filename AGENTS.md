@@ -30,7 +30,8 @@
 전략 명세는 `doc/strategies/YYYYMMDD-<strategy-name>-rNN.md`로 관리한다.
 
 - 날짜는 해당 revision을 만든 날짜다.
-- 명세에는 `Strategy ID`와 `Revision`을 명시한다.
+- 명세에는 `Revision`을 명시한다.
+- 별도 Strategy ID 개념은 두지 않는다. 전략명과 경로가 식별자 역할을 한다.
 - revision을 올릴지는 사용자가 결정한다. Agent/LLM이 임의로 revision을 증가시키지 않는다.
 - 새 revision이 생겨도 이전 명세와 구현은 유지한다.
 - 구현 수정 이력은 Git이 담당한다.
@@ -38,7 +39,7 @@
 실제 전략 소스는 다음 경로를 사용한다.
 
 ```text
-src/backtest_lab/strategies/<strategy_id>/<revision>.py
+src/backtest_lab/strategies/<strategy_name>/<revision>.py
 ```
 
 예:
@@ -47,10 +48,9 @@ src/backtest_lab/strategies/<strategy_id>/<revision>.py
 src/backtest_lab/strategies/market_momentum/r01.py
 ```
 
-각 revision module에는 최소한 다음 식별값을 둔다.
+각 revision module에는 `REVISION`을 둔다.
 
 ```python
-STRATEGY_ID = "market_momentum"
 REVISION = "r01"
 ```
 
@@ -60,17 +60,37 @@ revision 전략은 명시적으로 import한다.
 from backtest_lab.strategies.market_momentum.r01 import MarketMomentumStrategy
 ```
 
-`strategies/<strategy_id>/__init__.py`에서 특정 revision을 latest/default처럼 재-export하지 않는다.
+`strategies/<strategy_name>/__init__.py`에서 특정 revision을 latest/default처럼 재-export하지 않는다.
 
 공통 재사용 전략은 기능 이름의 module로 분리한다. 예: `strategies/target_weight.py`. 기존 public import가 있으면 `strategies/__init__.py`에서 re-export해 호환성을 유지한다.
 
 전략 revision 테스트는 다음 경로를 사용한다.
 
 ```text
-tests/strategies/<strategy_id>/test_<revision>.py
+tests/strategies/<strategy_name>/test_<revision>.py
 ```
 
 별도 Strategy registry/manager는 실제 필요가 생기기 전까지 두지 않는다.
+
+### Run results
+
+전략 실행 결과는 다음 경로에 저장한다.
+
+```text
+runs/<strategy_name>/<revision>/<run_id>/
+```
+
+- `strategy_name`은 소스 package 경로와 같은 snake_case 이름을 사용한다.
+- `run_id` 형식은 `YYYYMMDD-NNNN`이다.
+- 4자리 serial은 같은 전략 revision의 같은 날짜 안에서 `0001`부터 순차 증가한다.
+- 날짜가 바뀌면 serial은 다시 `0001`부터 시작한다.
+- 결과 CSV 파일명에는 전략명/revision/run id를 반복하지 않고 산출물 이름만 사용한다. 예: `performance_summary.csv`, `equity_curves.csv`.
+
+예:
+
+```text
+runs/market_momentum/r01/20260824-0001/
+```
 
 ## Implementation discipline
 
