@@ -49,7 +49,7 @@ Strategy는 다음을 직접 수행하지 않는다.
 백테스트 실행을 담당한다.
 
 - 입력 데이터의 timestamp/step 순서대로 실행
-- Strategy 호출
+- Strategy에 현재 timestamp까지의 normalized price history와 현재 price 전달
 - Strategy의 매매 요청 처리
 - reference price에 fee/slippage 적용
 - Fill 생성
@@ -59,6 +59,8 @@ Strategy는 다음을 직접 수행하지 않는다.
 - performance series 생성
 
 Runtime은 입력 데이터 주기를 그대로 따른다. daily로 고정하지 않는다.
+
+입력 data에는 warm-up 기간을 포함할 수 있다. `start` 이전 row는 Strategy history에만 포함하고 주문, Portfolio valuation, fills, performance series 생성에는 사용하지 않는다. pre-start reference point는 첫 active step 직전에 둔다.
 
 ### Portfolio
 

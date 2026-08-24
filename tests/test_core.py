@@ -36,6 +36,15 @@ class RoundTripStrategy:
         return []
 
 
+class HistoryRecordingStrategy:
+    def __init__(self) -> None:
+        self.contexts = []
+
+    def on_step(self, context):
+        self.contexts.append(context)
+        return []
+
+
 def test_external_cash_flow_does_not_raise_performance() -> None:
     prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=pd.to_datetime(["2024-01-01", "2024-01-02"]))
     result = Runtime(FlowOnlyStrategy(), initial_cash=1_000).run(
@@ -119,3 +128,35 @@ def test_runtime_can_only_run_once() -> None:
 
     with pytest.raises(BacktestError, match="only be run once"):
         runtime.run(prices)
+
+
+def test_strategy_history_excludes_future_prices() -> None:
+    prices = pd.DataFrame(
+        {"AAA": [100.0, 101.0, 102.0]},
+        index=pd.date_range("2024-01-01", periods=3),
+    )
+    strategy = HistoryRecordingStrategy()
+
+    Runtime(strategy, initial_cash=1_000).run(prices)
+
+    assert [len(context.history) for context in strategy.contexts] == [1, 2, 3]
+    assert all(context.history.index.max() <= context.timestamp for context in strategy.contexts)
+
+
+def test_warmup_rows_are_history_only_and_performance_starts_at_active_step() -> None:
+    prices = pd.DataFrame(
+        {"AAA": [100.0, 101.0, 102.0, 103.0]},
+        index=pd.date_range("2024-01-01", periods=4),
+    )
+    strategy = HistoryRecordingStrategy()
+
+    result = Runtime(strategy, initial_cash=1_000).run(prices, start="2024-01-03")
+
+    assert [context.timestamp for context in strategy.contexts] == [
+        pd.Timestamp("2024-01-03"),
+        pd.Timestamp("2024-01-04"),
+    ]
+    assert [len(context.history) for context in strategy.contexts] == [3, 4]
+    assert result.equity.index.tolist() == [pd.Timestamp("2024-01-03"), pd.Timestamp("2024-01-04")]
+    assert result.performance.index[0] == pd.Timestamp("2024-01-02")
+    assert result.performance.iloc[0] == pytest.approx(100)

@@ -59,7 +59,8 @@ Runtime은 필요 시 입금/출금 같은 external cash flow를 입력받을 �
 - Strategy는 일반 Python 코드로 작성 가능해야 한다.
 - 고정 Strategy DSL을 요구하지 않는다.
 - Runtime에서 호출 가능한 최소 인터페이스만 요구한다.
-- Strategy는 현재 market data와 필요한 Portfolio 상태를 읽을 수 있어야 한다.
+- Strategy는 현재 market data, 현재 timestamp까지의 normalized `history` DataFrame, 필요한 Portfolio 상태를 읽을 수 있어야 한다.
+- `history`에는 미래 row가 포함되어서는 안 되며 별도 history DSL을 만들지 않는다.
 - Strategy는 매매 의사결정을 Runtime에 전달한다.
 - Strategy가 Portfolio 내부 상태를 직접 변경해서는 안 된다.
 
@@ -123,6 +124,8 @@ Runtime은 각 입력 step에서 백테스트를 진행한다.
 - Runtime instance의 `run()`은 한 번만 허용하며, 재호출은 `BacktestError`를 발생시킨다.
 
 입력 데이터 주기를 daily로 가정하지 않는다.
+
+`run(..., start=...)`는 warm-up data를 허용한다. `start` 이전 row는 Strategy history에만 제공하며 주문, Portfolio, fills, equity, performance에는 반영하지 않는다. `start=None`이면 모든 row를 기존처럼 실행한다.
 
 ## 7. Fee and slippage
 
@@ -202,6 +205,8 @@ v1 구현은 최소한 다음을 검증해야 한다.
 8. 첫 step에서 발생한 거래비용/손익이 performance에 포함된다.
 9. fills 기록과 Portfolio 상태가 일치한다.
 10. 입력 index가 intraday여도 동일한 core 구조로 실행 가능하다.
+11. Strategy history에는 현재 step 이후의 미래 market data가 노출되지 않는다.
+12. warm-up row는 history에 포함되지만 첫 active step 이전의 주문, valuation, performance에는 포함되지 않는다.
 
 ## 13. Quality requirements
 

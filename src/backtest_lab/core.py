@@ -101,6 +101,7 @@ class PortfolioSnapshot:
 class StrategyContext:
     timestamp: pd.Timestamp
     prices: Mapping[str, float]
+    history: pd.DataFrame
     portfolio: PortfolioSnapshot
 
 
@@ -157,26 +158,29 @@ class Runtime:
         self,
         prices: pd.DataFrame,
         external_cash_flows: Mapping[pd.Timestamp, float] | None = None,
+        start: pd.Timestamp | str | None = None,
     ) -> BacktestResult:
         if self._has_run:
             raise BacktestError("A Runtime instance can only be run once.")
         self._has_run = True
         prices = self._normalize_prices(prices)
+        active_prices = self._active_prices(prices, start)
         cash_flows = self._normalize_cash_flows(external_cash_flows)
         fills: list[Fill] = []
         equity_values: list[float] = []
         equity_index: list[pd.Timestamp] = []
         performance_values: list[float] = [self.config.initial_performance]
-        performance_index: list[pd.Timestamp] = [self._pre_start_timestamp(prices.index)]
+        performance_index: list[pd.Timestamp] = [self._pre_start_timestamp(active_prices.index)]
 
         previous_value = self._initial_cash
         previous_performance = self.config.initial_performance
 
-        for timestamp, row in prices.iterrows():
+        for timestamp, row in active_prices.iterrows():
             price_map = {str(symbol): float(price) for symbol, price in row.items()}
             context = StrategyContext(
                 timestamp=pd.Timestamp(timestamp),
                 prices=price_map,
+                history=prices.loc[:timestamp].copy(),
                 portfolio=self.portfolio.snapshot(),
             )
             orders = self.strategy.on_step(context)
@@ -271,6 +275,15 @@ class Runtime:
         if normalized.isna().any().any():
             raise ValueError("prices must not contain missing values.")
         return normalized
+
+    @staticmethod
+    def _active_prices(prices: pd.DataFrame, start: pd.Timestamp | str | None) -> pd.DataFrame:
+        if start is None:
+            return prices
+        active_prices = prices.loc[prices.index >= pd.Timestamp(start)]
+        if active_prices.empty:
+            raise ValueError("start must be on or before the last price timestamp.")
+        return active_prices
 
     @staticmethod
     def _normalize_cash_flows(

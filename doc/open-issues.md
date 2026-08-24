@@ -4,7 +4,7 @@
 
 ## Execution timing
 
-- 현재 상태: same-bar vs next-bar execution timing은 아직 확정하지 않았다. 현재 Runtime은 입력 step의 reference price로 즉시 체결한다.
+- 현재 상태: same-bar vs next-bar execution timing과 signal price/execution price 분리는 아직 확정하지 않았다. 현재 Runtime은 입력 step의 reference price로 즉시 체결한다.
 - 재검토 조건: 전략에서 신호 생성 시점과 체결 시점의 분리가 실제 요구사항이 될 때.
 
 ## Strict market-data coverage
