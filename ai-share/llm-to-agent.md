@@ -1,47 +1,37 @@
 # AI Share
 
 state: active
-id: 20260824T111400+0900-llm
-created_at: 2026-08-24T11:14:00+09:00
+id: 20260824T130200+0900-llm
+created_at: 2026-08-24T13:02:00+09:00
 type: request
-reply_to: 20260824T104649+0900-agent
+reply_to: 20260824T122604+0900-agent
 
 ## Context
 
-전략 관리 구조와 운영 규칙이 main에 반영되었다. 이번 작업은 `market_momentum` 전략의 `r01` 구현이다. revision은 사용자가 결정하며 이번 작업에서 올리지 않는다.
+`market_momentum` r01의 장기 검증을 위한 추가 validation run이다. 전략 revision은 변경하지 않는다.
 
 ## Message
 
-`AGENTS.md`와 `doc/strategies/20260824-market-momentum-r01.md`를 source of truth로 읽고 Market Momentum `r01`을 구현해줘.
+`AGENTS.md`와 `doc/strategies/20260824-market-momentum-r01.md`를 기준으로 아래 조건의 추가 검증을 수행해줘.
 
-1. 전략 테스트를 `tests/strategies/market_momentum/test_r01.py`에 작성한다.
-   - 명세의 9개 pytest 시나리오를 구현한다.
-   - synthetic 가격/날짜 값은 직접 정하되 사람이 쉽게 검산 가능하게 구성한다.
-   - 기대 결과를 명시적으로 assert하고 전략 correctness 테스트는 network에 의존하지 않는다.
-
-2. 전략 구현은 `src/backtest_lab/strategies/market_momentum/r01.py`에 둔다.
-   - `STRATEGY_ID = "market_momentum"`
-   - `REVISION = "r01"`
-   - 현재는 Strategy ID와 strategy name을 동일하게 사용한다.
-   - revision module을 명시적으로 import하는 운영 규칙을 따른다.
-   - `market_momentum/__init__.py`에서 r01을 latest/default처럼 re-export하지 않는다.
-
-3. 명세에 정의된 Static Equal Weight, Momentum 3M/6M/9M/12M, SPY benchmark 실행과 분석 output 생성을 구현한다.
-   - 기존 Runtime history/warm-up과 Yahoo Finance data boundary를 사용한다.
-   - core abstraction이나 Strategy registry/manager를 추가하지 않는다.
-
-4. 전체 pytest를 실행해 통과시킨 뒤 Yahoo Finance 실제 데이터로 14종 Universe Pilot을 실행한다.
-
-5. 이번 실제 run 결과는 `runs/market_momentum/r01/20260824-0001/`에 저장한다.
-   - 기존 run 결과는 덮어쓰지 않는다.
-   - CSV 파일명은 명세의 산출물 이름을 그대로 사용한다.
-
-6. 결과를 `ai-share/agent-to-llm.md`에 간결하게 남기고 GitHub remote에 push한다.
-   - 구현/수정 파일
-   - pytest 결과
-   - 실제 데이터 coverage와 active 기간
-   - 결과 산출물 경로
-   - 실행된 전략 목록
+1. 검증 Universe에서 `VNAM`은 제외한다.
+2. 기존 ETF 대신 아래 Yahoo index series를 사용한다.
+   - `KTEC` exposure -> `HSTECH.HK` (Hang Seng TECH Index)
+   - `KSTR` exposure -> `000688.SS` (SSE STAR Market 50 Index)
+   - 나머지 종목은 기존 r01 정의를 유지한다.
+3. 목표 검증 기간은 `2016-07-01` ~ `2026-07-31`이다.
+4. 실행 전에 Yahoo에서 `HSTECH.HK`, `000688.SS`의 실제 최대 history 최초 날짜를 확인한다.
+   - 요청 기간 전체를 지원하지 않는 series가 있으면 데이터를 임의 생성/backfill/splice하지 않는다.
+   - 임의로 시작일을 줄여 실행하지 말고 실제 coverage와 어떤 series가 병목인지 먼저 `agent-to-llm.md`에 보고한다.
+5. 두 series 모두 요청 기간을 충족한다면 r01의 Static Equal Weight, Momentum 3M/6M/9M/12M, SPY Buy & Hold 및 동일 분석 output을 실행한다.
+6. 이번 실행은 기존 `20260824-0001`을 덮어쓰지 말고 운영 규칙에 따라 새 run id를 사용한다. 같은 날짜의 다음 run이면 `runs/market_momentum/r01/20260824-0002/`를 사용한다.
+7. 결과에는 최소한 다음을 남긴다.
+   - 실제 사용 symbol mapping
+   - Yahoo coverage 최초/최종 날짜
+   - 실제 active 검증 기간
+   - pytest 결과(코드 변경이 있었다면)
+   - run output 경로
+   - 기존 0001과 비교 가능한 성과 요약
    - blocker 또는 데이터 제약
 
-현재 core로 명세의 전략 의미를 구현할 수 없다면 core를 임의 수정하지 말고 blocker로 보고한다.
+이번 작업은 검증 목적이다. 사용자의 결정 없이 revision을 올리거나 r01 명세의 canonical Universe를 변경하지 않는다. core 변경이 필요하면 임의 수정하지 말고 blocker로 보고한다.
