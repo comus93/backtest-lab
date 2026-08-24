@@ -40,6 +40,17 @@ def test_yahoo_loader_uses_adjusted_close_from_stub() -> None:
     assert prices.iloc[0, 0] == pytest.approx(123.0)
 
 
+def test_yahoo_loader_normalizes_single_ticker_multiindex_response() -> None:
+    columns = pd.MultiIndex.from_tuples([("Adj Close", "SPY")])
+    frame = pd.DataFrame([[123.0]], columns=columns, index=pd.to_datetime(["2024-01-01"]))
+
+    prices = YahooFinanceMarketDataLoader(lambda ticker, start, end: frame).load_prices(
+        ["SPY"], "2024-01-01", "2024-01-02"
+    )
+
+    assert prices.loc[pd.Timestamp("2024-01-01"), "SPY"] == pytest.approx(123.0)
+
+
 def test_on_demand_loader_rejects_missing_price_column() -> None:
     loader = YahooFinanceMarketDataLoader(
         lambda ticker, start, end: pd.DataFrame({"Close": [1.0]}, index=pd.to_datetime(["2024-01-01"]))

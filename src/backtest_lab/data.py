@@ -233,7 +233,12 @@ def _load_on_demand_prices(
         frame = loader(ticker, start, end)
         if source_column not in frame.columns:
             raise DataCoverageError(f"{ticker}: missing price column {source_column}")
-        value = frame[source_column].rename(ticker)
+        value = frame[source_column]
+        if isinstance(value, pd.DataFrame):
+            if value.shape[1] != 1:
+                raise DataCoverageError(f"{ticker}: expected one price column, found {value.shape[1]}")
+            value = value.iloc[:, 0]
+        value = value.rename(ticker)
         value.index = pd.to_datetime(value.index)
         series.append(value)
     prices = pd.concat(series, axis=1).sort_index().dropna()
