@@ -113,6 +113,7 @@ runs/market_momentum/r01/20260824-0001/
 - Strategy 판단, Runtime execution, Fill, Portfolio 변경의 경계가 코드에서 명확해야 한다.
 - 동일 입력과 설정은 동일 결과를 만들어야 한다.
 - core 테스트는 `doc/specifications.md`, 전략 테스트는 해당 revision 명세의 acceptance/test scenarios를 기준으로 한다.
+- 신규 구현의 초기 검증에서는 전체 테스트를 실행한다. 이후 수정에서는 변경 영향 범위의 테스트만 실행하며, 영향 범위가 불명확하거나 공통/core 변경이 있는 경우에만 필요한 범위로 확대한다.
 - 설계 결정을 바꿔야 할 필요가 생기면 임의로 확대 구현하지 말고 blocker/question으로 공유한다.
 
 ## AI Share
