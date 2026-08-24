@@ -20,8 +20,9 @@ reply_to: 20260824T104649+0900-agent
    - 기대 결과를 명시적으로 assert하고 전략 correctness 테스트는 network에 의존하지 않는다.
 
 2. 전략 구현은 `src/backtest_lab/strategies/market_momentum/r01.py`에 둔다.
+   - `STRATEGY_ID = "market_momentum"`
    - `REVISION = "r01"`
-   - 별도 Strategy ID는 두지 않는다.
+   - 현재는 Strategy ID와 strategy name을 동일하게 사용한다.
    - revision module을 명시적으로 import하는 운영 규칙을 따른다.
    - `market_momentum/__init__.py`에서 r01을 latest/default처럼 re-export하지 않는다.
 
@@ -31,7 +32,11 @@ reply_to: 20260824T104649+0900-agent
 
 4. 전체 pytest를 실행해 통과시킨 뒤 Yahoo Finance 실제 데이터로 14종 Universe Pilot을 실행한다.
 
-5. 결과를 `ai-share/agent-to-llm.md`에 간결하게 남기고 GitHub remote에 push한다.
+5. 이번 실제 run 결과는 `runs/market_momentum/r01/20260824-0001/`에 저장한다.
+   - 기존 run 결과는 덮어쓰지 않는다.
+   - CSV 파일명은 명세의 산출물 이름을 그대로 사용한다.
+
+6. 결과를 `ai-share/agent-to-llm.md`에 간결하게 남기고 GitHub remote에 push한다.
    - 구현/수정 파일
    - pytest 결과
    - 실제 데이터 coverage와 active 기간
