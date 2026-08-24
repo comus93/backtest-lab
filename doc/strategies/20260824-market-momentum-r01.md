@@ -1,5 +1,6 @@
 # Market Momentum Pilot
 
+Strategy ID: `market_momentum`  
 Revision: `r01`  
 Revision date: `2026-08-24`
 
@@ -180,7 +181,7 @@ horizon별로 다음을 집계한다.
 
 - Strategy source: `src/backtest_lab/strategies/market_momentum/r01.py`
 - Strategy tests: `tests/strategies/market_momentum/test_r01.py`
-- Module revision: `REVISION = "r01"`
+- Module identifiers: `STRATEGY_ID = "market_momentum"`, `REVISION = "r01"`
 
 기존 자유로운 Python Strategy와 Runtime history를 사용한다. Pilot 구현을 위해 core abstraction을 선제적으로 확대하지 않는다.
 
