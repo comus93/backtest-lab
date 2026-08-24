@@ -9,7 +9,6 @@ import pandas as pd
 
 from backtest_lab.core import Order, Runtime, RuntimeConfig, StrategyContext
 
-STRATEGY_ID = "market_momentum"
 REVISION = "r01"
 
 UNIVERSE = (
