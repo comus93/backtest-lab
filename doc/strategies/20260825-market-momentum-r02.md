@@ -35,7 +35,8 @@ All correlations are Pearson correlations of returns, never price or performance
 - `overall_asset_correlation.csv`: `frequency,horizon,asset,correlation,n_obs` using weekly and monthly returns
 - `downside_asset_correlation.csv`: `reference_asset,horizon,correlation,n_obs,reference_avg_return,strategy_avg_return` for weeks where the reference return is negative
 - `yearly_constituent_correlation.csv`: `year,symbol_a,symbol_b,correlation,n_obs` using 12M constituents' weekly returns
-- `yearly_constituents.csv`: `year,symbol,selected_months`
+- `yearly_constituents.csv`: `year,horizon,symbol,selected_months` for 3M/6M/12M
+- `yearly_strategy_context.csv`: yearly 3M/6M/12M strategy versus SPY/QQQ correlation, returns, internal MDD, and selected-symbol summary
 
 For each year, the 12M constituent set is the union of symbols selected in at least one monthly decision in that year.
 

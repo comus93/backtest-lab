@@ -88,6 +88,7 @@ class PilotOutputs:
     downside_asset_correlation: pd.DataFrame
     yearly_constituent_correlation: pd.DataFrame
     yearly_constituents: pd.DataFrame
+    yearly_strategy_context: pd.DataFrame
 
     def write_csv(self, output_dir: str | Path) -> dict[str, Path]:
         path = Path(output_dir)
@@ -101,6 +102,7 @@ class PilotOutputs:
             "downside_asset_correlation": self.downside_asset_correlation,
             "yearly_constituent_correlation": self.yearly_constituent_correlation,
             "yearly_constituents": self.yearly_constituents,
+            "yearly_strategy_context": self.yearly_strategy_context,
         }
         paths: dict[str, Path] = {}
         for name, table in tables.items():
@@ -196,26 +198,98 @@ def _downside_asset_correlation_rows(
     )
 
 
+def _yearly_selection_counts(decisions: pd.DataFrame) -> pd.DataFrame:
+    columns = ["year", "horizon", "symbol", "selected_months"]
+    if decisions.empty:
+        return pd.DataFrame(columns=columns)
+    selected = decisions.loc[decisions["selected"]].copy()
+    selected["year"] = pd.to_datetime(selected["signal_date"]).dt.year
+    counts = (
+        selected.groupby(["year", "horizon", "symbol"])["signal_date"]
+        .nunique()
+        .rename("selected_months")
+        .reset_index()
+    )
+    return counts.loc[:, columns].sort_values(["year", "horizon", "selected_months", "symbol"], ascending=[True, True, False, True], ignore_index=True)
+
+
 def _constituent_outputs(prices: pd.DataFrame, decisions: pd.DataFrame, start: pd.Timestamp) -> tuple[pd.DataFrame, pd.DataFrame]:
-    constituent_columns = ["year", "symbol", "selected_months"]
+    constituent_columns = ["year", "horizon", "symbol", "selected_months"]
     matrix_columns = ["year", "symbol_a", "symbol_b", "correlation", "n_obs"]
+    all_constituents = _yearly_selection_counts(decisions)
     selected = decisions[(decisions["horizon"] == 12) & decisions["selected"]].copy()
     if selected.empty:
-        return pd.DataFrame(columns=matrix_columns), pd.DataFrame(columns=constituent_columns)
+        return pd.DataFrame(columns=matrix_columns), all_constituents.reindex(columns=constituent_columns)
     selected["year"] = pd.to_datetime(selected["signal_date"]).dt.year
-    constituent_rows: list[dict[str, object]] = []
     matrix_rows: list[dict[str, object]] = []
     active_prices = prices.loc[prices.index >= start]
     for year, group in selected.groupby("year"):
         counts = group.groupby("symbol")["signal_date"].nunique().sort_index()
         symbols = list(counts.index)
-        constituent_rows.extend({"year": int(year), "symbol": symbol, "selected_months": int(count)} for symbol, count in counts.items())
         returns = {symbol: _resampled_returns(active_prices[symbol][active_prices.index.year == year], "weekly") for symbol in symbols}
         for symbol_a in symbols:
             for symbol_b in symbols:
                 correlation, n_obs = _correlation(returns[symbol_a], returns[symbol_b])
                 matrix_rows.append({"year": int(year), "symbol_a": symbol_a, "symbol_b": symbol_b, "correlation": correlation, "n_obs": n_obs})
-    return pd.DataFrame(matrix_rows, columns=matrix_columns), pd.DataFrame(constituent_rows, columns=constituent_columns)
+    return pd.DataFrame(matrix_rows, columns=matrix_columns), all_constituents.reindex(columns=constituent_columns)
+
+
+def _max_drawdown(levels: pd.Series) -> float:
+    if levels.empty:
+        return float("nan")
+    normalized = levels / levels.iloc[0]
+    return float((normalized / normalized.cummax() - 1.0).min())
+
+
+def _yearly_strategy_context(
+    results: Mapping[str, BacktestResult],
+    comparison_prices: pd.DataFrame,
+    decisions: pd.DataFrame,
+    start: pd.Timestamp,
+) -> pd.DataFrame:
+    columns = [
+        "year", "horizon", "benchmark", "correlation", "n_obs", "benchmark_return", "strategy_return",
+        "excess_return", "benchmark_mdd", "strategy_mdd", "selected_symbols",
+    ]
+    selection_counts = _yearly_selection_counts(decisions)
+    rows: list[dict[str, object]] = []
+    for horizon in HORIZONS:
+        strategy_levels = results[f"Momentum {horizon}M"].performance
+        strategy_levels = strategy_levels.loc[strategy_levels.index >= start]
+        strategy_weekly = _resampled_returns(strategy_levels, "weekly")
+        for benchmark in ("SPY", "QQQ"):
+            benchmark_levels = comparison_prices[benchmark].loc[lambda series: series.index >= start]
+            benchmark_weekly = _resampled_returns(benchmark_levels, "weekly")
+            years = sorted(set(strategy_levels.index.year) & set(benchmark_levels.index.year))
+            for year in years:
+                strategy_year = strategy_levels[strategy_levels.index.year == year]
+                benchmark_year = benchmark_levels[benchmark_levels.index.year == year]
+                correlation, n_obs = _correlation(
+                    strategy_weekly[strategy_weekly.index.year == year],
+                    benchmark_weekly[benchmark_weekly.index.year == year],
+                )
+                selected = selection_counts[(selection_counts["year"] == year) & (selection_counts["horizon"] == horizon)]
+                selected_symbols = ";".join(
+                    f"{row.symbol}({row.selected_months})" for row in selected.itertuples(index=False)
+                )
+                benchmark_return = float(benchmark_year.iloc[-1] / benchmark_year.iloc[0] - 1.0)
+                strategy_return = float(strategy_year.iloc[-1] / strategy_year.iloc[0] - 1.0)
+                rows.append(
+                    {
+                        "year": int(year),
+                        "horizon": horizon,
+                        "benchmark": benchmark,
+                        "correlation": correlation,
+                        "n_obs": n_obs,
+                        "benchmark_return": benchmark_return,
+                        "strategy_return": strategy_return,
+                        "excess_return": strategy_return - benchmark_return,
+                        "benchmark_mdd": _max_drawdown(benchmark_year),
+                        "strategy_mdd": _max_drawdown(strategy_year),
+                        "selected_symbols": selected_symbols,
+                    }
+                )
+    return pd.DataFrame(rows, columns=columns)
 
 
 def run_pilot(
@@ -258,6 +332,7 @@ def run_pilot(
     ], ignore_index=True)
     downside_asset = _downside_asset_correlation_rows(strategy_returns, active_assets)
     matrix, constituents = _constituent_outputs(prices, decisions, start_timestamp)
+    context = _yearly_strategy_context(results, active_assets, decisions, start_timestamp)
     return PilotOutputs(
-        _performance_summary(results), curves, decisions, yearly_asset, overall_asset, downside_asset, matrix, constituents
+        _performance_summary(results), curves, decisions, yearly_asset, overall_asset, downside_asset, matrix, constituents, context
     )

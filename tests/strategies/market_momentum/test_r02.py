@@ -91,8 +91,8 @@ def test_yearly_constituents_use_selected_union_and_weekly_returns() -> None:
     ])
     matrix, constituents = _constituent_outputs(prices, decisions, pd.Timestamp("2024-01-01"))
     assert constituents.to_dict("records") == [
-        {"year": 2024, "symbol": "AAA", "selected_months": 2},
-        {"year": 2024, "symbol": "BBB", "selected_months": 1},
+        {"year": 2024, "horizon": 12, "symbol": "AAA", "selected_months": 2},
+        {"year": 2024, "horizon": 12, "symbol": "BBB", "selected_months": 1},
     ]
     assert set(matrix["symbol_a"]) | set(matrix["symbol_b"]) == {"AAA", "BBB"}
     assert matrix["n_obs"].min() > 1
@@ -115,11 +115,19 @@ def test_r02_outputs_include_independent_horizons_and_correlation_files(tmp_path
     assert set(outputs.yearly_asset_correlation.columns) == {"year", "horizon", "asset", "correlation", "n_obs"}
     assert set(outputs.yearly_constituent_correlation.columns) == {"year", "symbol_a", "symbol_b", "correlation", "n_obs"}
     assert set(outputs.monthly_decisions.columns) >= {"horizon", "signal_date", "execution_date", "symbol", "momentum", "rank", "selected", "target_weight"}
-    assert set(outputs.yearly_constituents.columns) == {"year", "symbol", "selected_months"}
+    assert set(outputs.yearly_constituents.columns) == {"year", "horizon", "symbol", "selected_months"}
+    assert set(outputs.yearly_constituents["horizon"]) == set(HORIZONS)
+    assert set(outputs.yearly_strategy_context["benchmark"]) == {"SPY", "QQQ"}
+    assert set(outputs.yearly_strategy_context["horizon"]) == set(HORIZONS)
+    assert set(outputs.yearly_strategy_context.columns) == {
+        "year", "horizon", "benchmark", "correlation", "n_obs", "benchmark_return", "strategy_return",
+        "excess_return", "benchmark_mdd", "strategy_mdd", "selected_symbols",
+    }
     paths = outputs.write_csv(tmp_path)
     assert set(paths) == {
         "performance_summary", "equity_curves", "monthly_decisions", "yearly_asset_correlation",
         "overall_asset_correlation", "yearly_constituent_correlation", "yearly_constituents",
         "downside_asset_correlation",
+        "yearly_strategy_context",
     }
     assert pd.read_csv(paths["equity_curves"]).columns[0] == "timestamp"
