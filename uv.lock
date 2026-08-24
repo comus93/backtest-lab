@@ -19,9 +19,11 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "ffn" },
+    { name = "finance-datareader" },
     { name = "pandas" },
     { name = "pymysql" },
     { name = "python-dotenv" },
+    { name = "yfinance" },
 ]
 
 [package.optional-dependencies]
@@ -32,10 +34,12 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ffn", specifier = ">=1.1.2" },
+    { name = "finance-datareader", specifier = ">=0.9.100" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pymysql", specifier = ">=1.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "yfinance", specifier = ">=0.2.0" },
 ]
 provides-extras = ["dev"]
 
@@ -467,6 +471,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cd/93/8ad3b5f048359423820a54404869bcb465e1a05c68b48aea4855463c5c73/ffn-1.1.5.tar.gz", hash = "sha256:ec55ac1edd7ecc2efc9136cb69be39b422dacc8087a470cf1ee8f8d175dabc9b", size = 27677, upload-time = "2026-03-24T21:30:28.894Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/74/9d/efee2bb7fe80f0be1ecb4aa1ece075e08685e8cc06d48b729f6ce4a43e00/ffn-1.1.5-py3-none-any.whl", hash = "sha256:c922a6a3990f2579c12e23cf5f8d9c5d8d6a47b0870bb8b6895a4ffa6049f606", size = 26926, upload-time = "2026-03-24T21:30:27.961Z" },
+]
+
+[[package]]
+name = "finance-datareader"
+version = "0.9.202"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "lxml" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "requests" },
+    { name = "requests-file" },
+    { name = "tabulate" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/8b/8f516b366f5aa465bfdcb0456b0f7ae38f4496fde882b85798998f706f1b/finance_datareader-0.9.202.tar.gz", hash = "sha256:16e734dc3f3f51962d92c2cdc9b707b27650115f0990b25f6ffdad3318197070", size = 39406, upload-time = "2026-05-13T20:10:05.883Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3a/e8/57ac4d122c5e2b3c2b54bcd7069ee0ce735a174695f0b45407319d7728e5/finance_datareader-0.9.202-py3-none-any.whl", hash = "sha256:8d166865c1537c2b9fe0243ab67aea7eb057d7e25ff0366f8eeabda6dccdfbac", size = 53934, upload-time = "2026-05-13T20:10:07.073Z" },
 ]
 
 [[package]]
@@ -1199,6 +1222,19 @@ wheels = [
 ]
 
 [[package]]
+name = "plotly"
+version = "6.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "narwhals" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/96/07/795c79dbce40c39bece88e69d049babbd23ffa95b5d117f248db8ea03abb/plotly-6.9.0.tar.gz", hash = "sha256:967ad33e8c704fed051800d11d985eb206a9c795c14206b30a6f463ed9c67d0d", size = 6919903, upload-time = "2026-07-09T14:55:59.982Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/18/d8544811ab076f876c4892b3714f5b0dad335e1dc33aef826df431b8325d/plotly-6.9.0-py3-none-any.whl", hash = "sha256:36bebe2f1bb13884774fe61689c329071446f6ce4a8927fb1f0d6fb24f581236", size = 9909646, upload-time = "2026-07-09T14:55:55.421Z" },
+]
+
+[[package]]
 name = "pluggy"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1317,6 +1353,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
+]
+
+[[package]]
+name = "requests-file"
+version = "3.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/f8/5dc70102e4d337063452c82e1f0d95e39abfe67aa222ed8a5ddeb9df8de8/requests_file-3.0.1.tar.gz", hash = "sha256:f14243d7796c588f3521bd423c5dea2ee4cc730e54a3cac9574d78aca1272576", size = 6967, upload-time = "2025-10-20T18:56:42.279Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/d5/de8f089119205a09da657ed4784c584ede8381a0ce6821212a6d4ca47054/requests_file-3.0.1-py2.py3-none-any.whl", hash = "sha256:d0f5eb94353986d998f80ac63c7f146a307728be051d4d1cd390dbdb59c10fa2", size = 4514, upload-time = "2025-10-20T18:56:41.184Z" },
 ]
 
 [[package]]
@@ -1535,6 +1583,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b7/4d/08c89e34946fce2aec4fbb45c9016efd5f4d7f24af8e5d93296e935631d8/threadpoolctl-3.6.0.tar.gz", hash = "sha256:8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e", size = 21274, upload-time = "2025-03-13T13:49:23.031Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/d5/f9a850d79b0851d1d4ef6456097579a9005b31fea68726a4ae5f2d82ddd9/threadpoolctl-3.6.0-py3-none-any.whl", hash = "sha256:43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb", size = 18638, upload-time = "2025-03-13T13:49:21.846Z" },
+]
+
+[[package]]
+name = "tqdm"
+version = "4.70.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/21/3b/6c24bec5be5e743ffd99576daa5cc077722fc7d5bbc00bd133fa0c698dc6/tqdm-4.70.0.tar.gz", hash = "sha256:55b0b0dbd97462d06ebee91e4dac24ed4d4702be82b24f07e6c1d27e08cea220", size = 795438, upload-time = "2026-07-27T11:33:15.271Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/1c/01bfd571a64e7f270e6bab5e33777debe0edc56759233ce84f27dec92d14/tqdm-4.70.0-py3-none-any.whl", hash = "sha256:7f585706bfddbdebf89daac705b2dfcc16890130727d3197ca62c732b4310953", size = 80184, upload-time = "2026-07-27T11:33:13.167Z" },
 ]
 
 [[package]]

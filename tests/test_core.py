@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from backtest_lab.core import Order, Runtime, RuntimeConfig
+from backtest_lab.core import BacktestError, Order, Runtime, RuntimeConfig
 from backtest_lab.strategies import MonthlyTargetWeightStrategy
 
 
@@ -110,3 +110,12 @@ def test_intraday_index_uses_same_runtime_structure() -> None:
     result = Runtime(BuyOnceStrategy("AAA", 1), initial_cash=1_000).run(prices)
     assert result.performance.index[0] == pd.Timestamp("2024-01-01 08:55")
     assert result.performance.iloc[-1] > 100
+
+
+def test_runtime_can_only_run_once() -> None:
+    prices = pd.DataFrame({"AAA": [100.0]}, index=pd.to_datetime(["2024-01-01"]))
+    runtime = Runtime(FlowOnlyStrategy(), initial_cash=1_000)
+    runtime.run(prices)
+
+    with pytest.raises(BacktestError, match="only be run once"):
+        runtime.run(prices)

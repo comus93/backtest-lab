@@ -4,7 +4,7 @@ import argparse
 from dataclasses import dataclass
 
 from backtest_lab.core import Runtime, RuntimeConfig
-from backtest_lab.data import DataCoverageError, MySqlConfig, MySqlMarketDataLoader
+from backtest_lab.data import DataCoverageError, MarketDataConfig, MySqlConfig, load_market_data
 from backtest_lab.settings import ExecutionSettings
 from backtest_lab.strategies import MonthlyTargetWeightStrategy
 
@@ -31,12 +31,12 @@ class SampleRunSummary:
 def run_sample(require_full_coverage: bool = True) -> SampleRunSummary:
     db = MySqlConfig.from_env()
     settings = ExecutionSettings.from_env()
-    loader = MySqlMarketDataLoader(db)
-    prices = loader.load_prices(
+    prices = load_market_data(
         SAMPLE_TICKERS.values(),
         SAMPLE_START,
         SAMPLE_END,
-        require_full_coverage=require_full_coverage,
+        config=MarketDataConfig(require_full_coverage=require_full_coverage),
+        mysql_config=db,
     )
     strategy = MonthlyTargetWeightStrategy(
         target_weights={

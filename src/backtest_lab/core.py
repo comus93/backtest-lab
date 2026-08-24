@@ -151,12 +151,16 @@ class Runtime:
         self.portfolio = Portfolio(cash=float(initial_cash))
         self.config = config or RuntimeConfig()
         self._initial_cash = float(initial_cash)
+        self._has_run = False
 
     def run(
         self,
         prices: pd.DataFrame,
         external_cash_flows: Mapping[pd.Timestamp, float] | None = None,
     ) -> BacktestResult:
+        if self._has_run:
+            raise BacktestError("A Runtime instance can only be run once.")
+        self._has_run = True
         prices = self._normalize_prices(prices)
         cash_flows = self._normalize_cash_flows(external_cash_flows)
         fills: list[Fill] = []

@@ -8,12 +8,14 @@ v1은 자유로운 Python Strategy를 실행하고, Portfolio 회계 상태와 �
 
 ### Market data
 
-v1의 market data는 **Local DB**에서 조회한다.
+기본 market data source는 **Local DB**이며, on-demand FinanceDataReader와 Yahoo Finance(yfinance)도 data boundary에서 선택할 수 있다.
 
 - 현재 DBMS: MySQL
 - 접속 정보는 repository에 저장하지 않고 별도 `.env`로 제공한다.
-- Runtime core가 MySQL 자체에 종속되지 않도록 DB 조회 영역과 실행 코어를 분리한다.
-- DB에서 조회한 market data는 timestamp index와 symbol별 가격 정보를 Runtime에 전달할 수 있어야 한다.
+- `MarketDataConfig`는 source, 명시적 symbol mapping, price column, coverage 설정을 관리한다.
+- source별 ticker 차이는 명시적 mapping만 허용하며 자동 추측하지 않는다.
+- 모든 loader는 timestamp index와 symbol별 가격 정보를 가진 normalized DataFrame을 Runtime에 전달한다.
+- Runtime core와 Strategy는 MySQL 및 on-demand source에 종속되지 않는다.
 
 ### Global execution settings
 
@@ -118,6 +120,7 @@ Runtime은 각 입력 step에서 백테스트를 진행한다.
 - external cash flow 반영
 - Portfolio valuation
 - performance series 갱신
+- Runtime instance의 `run()`은 한 번만 허용하며, 재호출은 `BacktestError`를 발생시킨다.
 
 입력 데이터 주기를 daily로 가정하지 않는다.
 

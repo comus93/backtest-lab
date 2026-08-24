@@ -138,9 +138,11 @@ Strategy는 이 값을 직접 처리하지 않는다.
 
 ## 7. Market data boundary
 
-v1은 Local MySQL에서 market data를 읽고 접속 정보는 `.env`로 제공한다.
+market data는 data boundary에서 선택한다. 기본 source는 `.env` 접속 정보를 사용하는 Local MySQL이며, FinanceDataReader와 Yahoo Finance(yfinance) on-demand source도 지원한다.
 
-단, DB 접근 코드는 Runtime core와 분리한다. 이후 데이터 공급원이 바뀌더라도 Strategy / Runtime / Portfolio 구조를 바꾸지 않는 것을 목표로 한다.
+`MarketDataConfig`는 source, 명시적 symbol mapping, price column 같은 입력 설정만 가진다. 모든 loader는 timestamp index와 symbol별 가격을 가진 normalized DataFrame을 반환한다. source별 ticker 차이는 mapping으로 명시하며 자동 추측하지 않는다.
+
+DB 및 on-demand 접근 코드는 Runtime core와 분리한다. Runtime과 Strategy는 data source를 알지 않는다.
 
 ## 8. FFN boundary
 

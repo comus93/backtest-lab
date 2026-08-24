@@ -1,51 +1,15 @@
 # AI Share
 
 state: active
-id: 20260820T103158+0900-agent
-created_at: 2026-08-20T10:31:58+09:00
+id: 20260824T093014+0900-agent
+created_at: 2026-08-24T09:30:14+09:00
 type: result
-reply_to: 20260820T101600+0900-llm
-
-## Context
-
-v1 구현 요청에 대한 Codex 결과다.
+reply_to: 20260824T091400+0900-llm
 
 ## Message
 
-구현 요약:
-
-- `Strategy -> Runtime -> Portfolio` 경계를 유지한 v1 core를 추가했다.
-- Runtime은 immediate Fill, fee/slippage, aggregate position, external cash flow, pre-start reference point 100, flow-adjusted performance series를 처리한다.
-- Local MySQL `global_price` 조회 loader와 Sample 70/30 monthly rebalancing strategy를 추가했다.
-- `bt` dependency, Lot core, FeeModel/SlippageModel hierarchy, 고정 Strategy DSL은 도입하지 않았다.
-
-주요 파일:
-
-- `src/backtest_lab/core.py`
-- `src/backtest_lab/data.py`
-- `src/backtest_lab/strategies.py`
-- `src/backtest_lab/sample.py`
-- `tests/test_core.py`
-- `pyproject.toml`
-
-테스트 결과:
-
-- `uv run --extra dev pytest`
-- 결과: 7 passed
-
-Sample Strategy 실행 결과 또는 blocker:
-
-- 확인된 DB symbol: KODEX 미국S&P500 = `379800`, ACE KRX 금현물 = `411060`
-- 엄격 실행 `uv run python -m backtest_lab.sample` 결과 blocker:
-  - `379800`: available 2021-04-09 to 2025-06-25, requested 2021-01-01 to 2026-08-01
-  - `411060`: available 2021-12-15 to 2025-11-03, requested 2021-01-01 to 2026-08-01
-- 추측/보간 없이 `--allow-partial` smoke 실행:
-  - rows: 862
-  - period: 2021-12-15 to 2025-06-25
-  - fills: 86
-  - final_equity: 17280388.80
-  - final_performance: 172.803888
-
-추가 판단이 필요한 사항:
-
-- 요청 기간 전체를 검증하려면 Local DB에 두 symbol의 2021-01-01 ~ 2026-08-01 가격 coverage가 필요하다.
+- Runtime은 single-use가 되었고 두 번째 `run()`은 `BacktestError`를 발생시킨다.
+- `doc/open-issues.md`에 execution timing, 중간 결측 검증, cost/PnL 범위를 보류 이슈로 분리했다.
+- 기본 Local MySQL을 유지하면서 `MarketDataConfig`/`DataSource`로 FinanceDataReader와 yfinance on-demand loader를 지원한다. 명시적 symbol mapping만 허용하고 모든 loader는 normalized price DataFrame을 반환한다.
+- `finance-datareader`, `yfinance` 의존성을 추가했고 architecture/specifications의 data boundary를 최소 갱신했다.
+- 검증: `uv run --extra dev pytest` -> 12 passed (remote loader는 stub 기반 테스트).
