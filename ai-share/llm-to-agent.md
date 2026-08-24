@@ -1,41 +1,72 @@
 # AI Share
 
 state: active
-id: 20260824T133200+0900-llm
-created_at: 2026-08-24T13:32:00+09:00
+id: 20260824T141100+0900-llm
+created_at: 2026-08-24T14:11:00+09:00
 type: request
 reply_to: 20260824T135000+0900-agent
 
 ## Context
 
-이번 작업은 `market_momentum` r01의 E2E 결과 유용성 검증을 위한 재실행이다. 전략 revision은 변경하지 않는다.
+전략 검증방의 `ai-share/llm-to-llm.md` handover에서 `avg_monthly_turnover` 정의/구현 오류가 확인되었다. 이 문제는 `market_momentum` 전략 튜닝이 아니라 framework 공통 성과지표 문제로 처리한다. 전략 revision은 변경하지 않는다.
+
+현재 `market_momentum/r01.py`의 turnover helper는 거래가 있었던 달만 평균하고 fixed initial cash를 분모로 사용하며 최초 구축 거래까지 포함해 Buy & Hold가 약 1.0 turnover로 나오는 문제가 있다.
 
 ## Message
 
-`AGENTS.md`와 `doc/strategies/20260824-market-momentum-r01.md`를 기준으로 아래 조건으로 다시 실행해줘.
+framework 차원에서 monthly turnover의 canonical 정의를 아래와 같이 확정하고 최소 범위로 구현해줘.
 
-1. Universe에서 다음 3종을 제외한다.
-   - `VNAM`
-   - `KTEC`
-   - `KSTR`
-2. 나머지 11종만 사용한다.
-   - `SPY`, `QQQ`, `DIA`, `EWJ`, `EWY`, `MCHI`, `DAX`, `EWW`, `EIDO`, `INDY`, `EPHE`
-3. 목표 검증 기간은 `2016-07-01` ~ `2026-07-31`이다.
-   - 12M momentum 계산에 필요한 warm-up 데이터는 그 이전부터 로드한다.
-   - active 성과 구간은 위 기간을 기준으로 한다.
-4. r01의 전략 규칙은 그대로 유지한다.
-   - Static Equal Weight
-   - Momentum 3M / 6M / 9M / 12M Top3
-   - SPY Buy & Hold
-   - 기존 4개 analysis output
-5. Yahoo Finance의 실제 데이터 coverage를 확인하고, 11종 중 요청 기간을 충족하지 못하는 종목이 있으면 임의 backfill/splice하지 말고 blocker로 보고한다.
-6. 실행 가능하면 운영 규칙에 따라 새 run `runs/market_momentum/r01/20260824-0002/`에 저장한다. 기존 `20260824-0001`은 변경하지 않는다.
-7. 결과를 `ai-share/agent-to-llm.md`에 남기고 GitHub remote에 push한다.
-   - 실제 사용 Universe
-   - 각 종목 coverage와 실제 active 기간
-   - run output 경로
-   - Performance Summary
-   - 생성된 4개 output 파일
-   - blocker 또는 데이터 제약
+### Canonical definition
 
-이번 작업은 E2E output 검증용이다. 사용자의 결정 없이 revision을 올리거나 r01 canonical 명세를 변경하지 않는다.
+```text
+monthly_turnover = 0.5 * sum(abs(fill_price * quantity)) / monthly_reference_nav
+avg_monthly_turnover = active 기간 모든 calendar month의 monthly_turnover 평균
+```
+
+- `monthly_reference_nav`는 해당 calendar month의 active `result.equity` 관측값 평균 NAV를 사용한다.
+- active 기간의 거래 없는 달도 turnover `0`으로 포함한다.
+- 최초 active timestamp에서 발생한 초기 포트폴리오 구축 fills는 ongoing turnover 계산에서 제외한다.
+  - 같은 최초 월의 이후 거래가 있다면 그 거래는 정상 포함한다.
+- external cash flow 자체는 turnover numerator에 포함하지 않는다.
+- buy/sell notional을 합산한 뒤 0.5를 곱하는 one-way 기준을 사용한다.
+- 따라서 동일 NAV에서 A 10% 매도 + B 10% 매수는 약 10% turnover다.
+- Buy & Hold가 최초 구축 후 거래가 없다면 `avg_monthly_turnover = 0`이어야 한다.
+
+### Framework placement
+
+- 이 계산을 `market_momentum` 전용 helper에 두지 말고 공통 성과 분석 책임으로 이동한다.
+- 새로운 큰 analytics abstraction이나 class hierarchy는 만들지 않는다.
+- 작은 공통 module/function 수준으로 두고 `market_momentum/r01.py`는 이를 사용하도록 수정한다.
+- 적절한 위치는 현재 구조를 보고 결정하되, 예를 들면 `src/backtest_lab/analysis.py` 수준이면 충분하다.
+
+### Documentation
+
+- canonical 정의를 `doc/specifications.md`에 명시한다.
+- architecture 변경이 실제로 필요한 경우에만 최소 수정한다.
+- `market_momentum` r01 전략 명세의 전략 논리는 변경하지 않는다.
+- Strategy ID / revision / run 운영 규칙도 변경하지 않는다.
+
+### Regression tests
+
+최소 다음을 검증한다.
+
+1. Buy & Hold: 최초 매수 후 무거래이면 avg monthly turnover = 0.
+2. active 기간 중 무거래 월이 0으로 평균에 포함된다.
+3. 동일 NAV에서 10%를 A에서 B로 이동하면 해당 월 turnover가 약 10%다.
+4. NAV가 달라진 월에는 fixed initial cash가 아니라 해당 월 평균 NAV를 분모로 사용한다.
+5. external cash flow 자체는 turnover를 발생시키지 않는다.
+6. 기존 core/data/strategy tests가 모두 통과한다.
+
+가능하면 monthly turnover series 자체도 테스트 가능하도록 작은 함수로 분리하되, 별도 framework를 만들지는 않는다.
+
+## Completion
+
+- 전체 `uv run --extra dev pytest` 실행
+- 기존 `runs/market_momentum/r01/20260824-0002/` 결과는 덮어쓰지 않는다.
+- 이번 요청은 framework 수정과 regression 검증까지만 수행한다. 전략 E2E 재실행은 별도 요청 전에는 하지 않는다.
+- 결과를 `ai-share/agent-to-llm.md`에 간결하게 남기고 GitHub remote에 push한다.
+  - 수정 파일
+  - canonical turnover 구현 위치
+  - pytest 결과
+  - 기존 전략 코드에서 공통 계산으로 이동한 내용
+  - blocker가 있으면 그 내용
