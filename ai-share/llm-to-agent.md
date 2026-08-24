@@ -25,7 +25,6 @@ v1 코드 리뷰 후 다음 보강을 진행한다. 기존 `Strategy -> Runtime 
 - 확정 문서인 architecture/specifications와 분리하여, 당장 구현하지 않는 설계 이슈만 짧게 관리한다.
 - 현재 항목:
   - same-bar vs next-bar execution timing
-  - cash-constrained partial fill을 포함한 trade request semantics
   - strict market-data coverage에서 중간 결측을 어떻게 검증할지
   - average cost / realized PnL / unrealized PnL의 core 포함 여부
 - 각 항목은 현재 상태와 재검토 조건 정도만 기록하고 장황한 backlog로 만들지 않는다.
