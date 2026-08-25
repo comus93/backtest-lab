@@ -37,6 +37,14 @@
 - 새 revision이 생겨도 이전 명세와 구현은 유지한다.
 - 구현 수정 이력은 Git이 담당한다.
 
+전략 전역 연구 리포트는 다음 경로를 사용한다.
+
+```text
+doc/strategies/reports/<strategy_id>.md
+```
+
+전략 리포트는 여러 revision/run을 관통하여 전략의 배경, 핵심 개념, 누적 evidence, hypotheses, 현재 판단, risk/open issue, 다음 전략적 질문과 User-LLM 합의 insight를 기록하는 living document다.
+
 실제 전략 소스는 다음 경로를 사용한다.
 
 ```text
@@ -96,6 +104,11 @@ YYYYMMDD-NNNN
 - 같은 실행에서 생성된 CSV 산출물은 모두 같은 run directory에 둔다.
 - CSV 파일명에는 strategy/revision/run id를 반복하지 않고 산출물 이름만 사용한다.
 - 결과 산출물의 종류와 컬럼은 해당 전략 revision 명세를 따른다.
+- LLM이 run 결과를 분석한 경우 같은 run directory에 `llm-analysis.md`를 둔다.
+- Agent는 계산/실행 산출물을 생성하며 `llm-analysis.md`를 생성하거나 덮어쓰지 않는다.
+- `llm-analysis.md`는 해당 run의 결과, interpretation, implications, hypotheses/provisional conclusions, risks/limitations, next questions/steps를 기록한다.
+- `Agreed Insights`는 자동 생성하지 않고 User와의 후속 논의를 통해 합의된 내용을 기록하며 `llm-analysis.md`의 마지막 섹션에 둔다.
+- Run Analysis와 전략 전역 report는 상호 배타적일 필요가 없으며 필요한 evidence와 insight는 중복 기록할 수 있다.
 
 예:
 
@@ -104,7 +117,8 @@ runs/market_momentum/r01/20260824-0001/
 ├─ performance_summary.csv
 ├─ equity_curves.csv
 ├─ monthly_decisions.csv
-└─ momentum_signal_analysis.csv
+├─ momentum_signal_analysis.csv
+└─ llm-analysis.md
 ```
 
 ## Implementation discipline
