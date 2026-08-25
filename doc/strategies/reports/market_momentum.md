@@ -16,6 +16,39 @@ Updated: `2026-08-25`
 - 미국 중심 정적 포트폴리오에 장기적인 regional rotation 기능을 추가할 수 있는지 검증한다.
 - standalone 성과와 함께 기존 자산 대비 correlation, 하락기 특성, 실제 holdings를 함께 평가한다.
 
+## Experiment Universe / Benchmarks
+
+### Signal Universe
+
+Momentum ranking과 Top3 선택에 사용한 ETF universe는 다음 11개이다.
+
+| Ticker | ETF | Market / Exposure |
+| --- | --- | --- |
+| `SPY` | SPDR S&P 500 ETF Trust | 미국 대형주 |
+| `QQQ` | Invesco QQQ Trust | 미국 Nasdaq-100 / 대형 성장주 |
+| `DIA` | SPDR Dow Jones Industrial Average ETF Trust | 미국 Dow 30 |
+| `EWJ` | iShares MSCI Japan ETF | 일본 |
+| `EWY` | iShares MSCI South Korea ETF | 한국 |
+| `MCHI` | iShares MSCI China ETF | 중국 |
+| `DAX` | Global X DAX Germany ETF | 독일 |
+| `EWW` | iShares MSCI Mexico ETF | 멕시코 |
+| `EIDO` | iShares MSCI Indonesia ETF | 인도네시아 |
+| `INDY` | iShares India 50 ETF | 인도 |
+| `EPHE` | iShares MSCI Philippines ETF | 필리핀 |
+
+`SPY`와 `QQQ`는 signal universe에도 포함되므로 미국 자체가 relative-momentum winner일 때 Top3에 선택될 수 있다.
+
+### Primary Comparison Benchmarks
+
+전략의 핵심 portfolio-complement 검증 대상은 다음 두 자산이다.
+
+| Ticker | ETF | 비교 목적 |
+| --- | --- | --- |
+| `SPY` | SPDR S&P 500 ETF Trust | 미국 주식시장 전체 대비 성과·상관·방어 특성 비교 |
+| `QQQ` | Invesco QQQ Trust | 미국 기술주/성장주 약세기에 방어수 또는 대체 공격수 역할을 하는지 검증 |
+
+r02에서는 `SLV`, `GDX`, `AIA`, `XLF`, `XLE`도 correlation reference로 사용했지만, 전략의 핵심 채택 여부를 판단하는 primary comparison benchmark는 `SPY`와 `QQQ`이다. 특히 3M의 portfolio-complement 역할은 QQQ weakness episode에서 실제 손실 완화 또는 양(+)의 대체수익을 만들었는지를 중심으로 판단한다.
+
 ## Strategy Evolution
 
 ### r01
