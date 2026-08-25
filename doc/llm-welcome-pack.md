@@ -55,7 +55,7 @@ Runtime
 - **Portfolio**: cash, symbol별 aggregate position, valuation
 - **Data boundary**: Local MySQL / FinanceDataReader / Yahoo Finance를 normalized DataFrame으로 제공
 - **Analysis**: 공통 성과 분석. 예: canonical monthly turnover
-- **FFN**: performance 통계 분석
+- **FFN**: 기본 성과 측정 및 리포팅. Runtime이 만든 performance series를 입력으로 사용한다.
 
 Strategy는 Portfolio를 직접 수정하거나 fee/slippage를 계산하지 않는다.
 
@@ -112,10 +112,12 @@ Strategy는 `StrategyContext`를 통해 현재 step의 정보와 **현재 timest
 ### Validation
 
 - benchmark
-- 핵심 performance metric
+- FFN 기본 성과 리포트
 - 전략 논리를 검증할 추가 분석
 - synthetic pytest 시나리오
 - 실제 데이터 E2E run
+
+기본 성과 측정은 Runtime이 생성한 performance series를 **FFN으로 분석**한다. 별도 이유가 없는 한 FFN이 기본 제공하는 성과 척도를 표준 성과 리포트로 사용한다. 전략 고유의 signal quality, turnover, correlation, constituent 분석 등은 이 기본 성과 리포트 위에 필요한 만큼 추가한다.
 
 전략의 경제적 의미를 먼저 명확히 한 뒤 Python Strategy로 옮긴다.
 
@@ -179,7 +181,7 @@ revision 증가는 **사용자가 결정한다**. LLM이나 Agent가 전략 변�
 - Portfolio construction / rebalance
 - Execution settings
 - Benchmark
-- Required outputs
+- FFN 기본 성과 리포트와 전략별 추가 outputs
 - Pytest scenarios
 - Implementation boundary
 - Completion / acceptance criteria
@@ -251,6 +253,7 @@ runs/market_momentum/r02/20260825-0003/
 - 기존 run 결과 덮어쓰기 금지
 - 같은 실행의 CSV는 한 run directory에 보관
 - CSV 이름에는 strategy/revision/run id를 반복하지 않고 산출물 이름만 사용
+- 기본 성과 결과는 FFN이 제공하는 성과 척도를 기준으로 리포팅하고, 전략별 추가 분석 output은 revision 명세에서 정의한다.
 
 ## 10. Run 해석과 전략 연구 기록
 
@@ -299,6 +302,7 @@ doc/strategies/reports/<strategy_id>.md
 - 전략방에서 합의 없이 core abstraction을 확대하는 것
 - User 승인 없이 revision을 증가시키는 것
 - 기존 run 결과를 덮어쓰는 것
+- FFN이 이미 제공하는 기본 성과 지표를 특별한 이유 없이 전략마다 다시 구현하는 것
 - 성과가 좋아지도록 규칙을 사후적으로 몰래 조정하는 것
 
 ## 13. 새 대화창에서의 첫 행동
