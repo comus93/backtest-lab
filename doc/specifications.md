@@ -229,3 +229,49 @@ v1 구현은 최소한 다음을 검증해야 한다.
 - debuggable: Strategy 판단, Fill, Portfolio 결과의 경계를 추적할 수 있어야 한다.
 - minimal: 실제 반복 요구가 없는 추상화 계층을 선제적으로 추가하지 않는다.
 - data-source boundary: v1은 Local MySQL을 사용하지만 market data 조회와 실행 코어의 책임은 분리한다.
+
+## 15. Strategy and run research reporting
+
+백테스트의 계산 산출물뿐 아니라 그 결과에 대한 해석과 전략의 누적 연구 상태도 repository에 보존한다.
+
+### Run Analysis
+
+LLM이 특정 run을 분석한 경우 다음 위치에 기록한다.
+
+```text
+runs/<strategy_id>/<revision>/<run_id>/llm-analysis.md
+```
+
+Run Analysis는 해당 실행을 중심으로 다음 내용을 기록할 수 있다.
+
+- Key Results
+- Interpretation
+- Implications
+- Hypotheses / Provisional Conclusions
+- Risks / Limitations
+- Next Questions / Steps
+- Agreed Insights
+
+`Agreed Insights`는 자동 생성하지 않고 User와의 후속 논의를 통해 합의된 내용을 기록하며 마지막 섹션에 둔다.
+
+계산/실행 산출물은 Agent가 생성하고 `llm-analysis.md`는 LLM이 작성한다. Agent는 `llm-analysis.md`를 생성하거나 덮어쓰지 않는다.
+
+### Strategy Report
+
+전략 전역 연구 상태는 다음 위치의 living document로 관리한다.
+
+```text
+doc/strategies/reports/<strategy_id>.md
+```
+
+Strategy Report는 여러 revision과 run을 관통하여 다음 내용을 누적한다.
+
+- 전략의 시작 배경과 목적
+- 핵심 컨셉
+- revision/run을 통해 축적된 evidence
+- 현재 hypotheses와 provisional view
+- risks / open issues
+- 다음 전략적 질문
+- User와 LLM이 합의한 핵심 insights
+
+Run Analysis와 Strategy Report는 상호 배타적일 필요가 없으며 같은 evidence나 insight를 목적에 맞게 중복 기록할 수 있다.
