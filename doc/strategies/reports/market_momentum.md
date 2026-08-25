@@ -30,13 +30,13 @@ Updated: `2026-08-25`
 - SPY, QQQ, SLV, GDX, AIA, XLF, XLE와의 weekly/monthly correlation을 추가했다.
 - reference asset 하락주 conditional correlation을 추가했다.
 - 연도별 constituent와 correlation을 통해 portfolio identity가 시간에 따라 어떻게 변하는지 검토했다.
-- 다음 단계로 연도별 correlation, benchmark/strategy 성과, annual MDD, 실제 holdings를 한 표에서 연결하는 분석을 추가한다.
+- `20260825-0003`에서 연도별 correlation, benchmark/strategy 성과, annual MDD, holdings를 연결하고 QQQ weakness episode별 3M의 실제 역할을 검토했다.
 
 ## Current Evidence
 
 ### Standalone performance
 
-`r02 / 20260825-0002` 기준:
+`r02 / 20260825-0003` 기준:
 
 | Strategy | CAGR | Sharpe | MDD | Avg monthly turnover |
 | --- | ---: | ---: | ---: | ---: |
@@ -55,13 +55,30 @@ Updated: `2026-08-25`
 
 이는 Country Momentum이 고정된 저상관 자산이 아니라, 보유 국가와 시장 regime에 따라 correlation 구조가 변하는 rotation strategy임을 보여준다.
 
-### Down-period behavior
+### QQQ weakness episode review
 
-QQQ 하락주에서 Momentum 12M correlation은 0.71이었다. 같은 주의 평균 수익률은 QQQ -2.17%, Momentum 12M -1.57%였다.
+미국 기술주 약세기에 3M이 실제 방어수 또는 새로운 공격수가 되었는지를 검토한 핵심 표이다.
 
-SPY 하락주에서 Momentum 12M correlation은 0.75였고 평균 수익률은 SPY -1.67%, Momentum 12M -1.55%였다.
+| QQQ 약세 episode | QQQ 상태 | 3M 전략 | 판정 |
+| --- | --- | ---: | --- |
+| 2018 Q4 | 3M momentum 약 -16.7% | 약 -11.6% | 부분 방어 |
+| 2020 Q1 | 3M momentum 약 -10.3% | 약 -24.7% | 실패 |
+| 2022 Q1 | 3M momentum 약 -8.8% | 약 -5.2% | 약한 방어 |
+| 2022 Q2 | 3M momentum 약 -22.5% | 약 -12.0% | 강한 방어 |
+| 2026 Q1 | 3M momentum 약 -5.9% | 약 +2.4% | 대체 공격 성공 |
 
-따라서 12M은 crash hedge가 아니며 미국 equity 하락을 완전히 분리하지 못한다. 다만 일부 하락 충격을 줄이는 성격은 관찰된다.
+QQQ 상태는 월말 기준 3M momentum, 전략 수익률은 해당 episode의 equity curve 구간을 이용한 근사 비교다. 완전히 동일한 날짜 구간은 아니므로 정밀 attribution 수치가 아니라 episode 성격 판정용으로 사용한다.
+
+### Down-period behavior and mechanism
+
+3M은 QQQ 하락주 correlation이 6M/12M보다 낮지만 낮은 correlation이 안정적인 방어나 양(+)의 대체수익으로 일관되게 연결되지 않았다.
+
+- 2018: QQQ보다 덜 잃었지만 전략도 큰 손실을 기록했다.
+- 2020: 글로벌 equity가 동시에 무너지며 국가 rotation 자체가 방어 수단이 되지 못했다.
+- 2022: QQQ를 빠르게 제외하고 다른 국가로 이동해 손실을 완화했지만 전략 수익률 자체는 음수였다.
+- 2026 Q1: EWY 중심의 강한 아시아 leadership을 포착하면서 QQQ 약세 중 양(+)의 수익을 기록했다. 현재 표본에서 유일하게 명확한 replacement attacker 사례다.
+
+따라서 Country Momentum은 글로벌 equity shock에서 구조적 hedge가 되기 어렵고, 다른 지역에 이미 강력한 독립 winner가 존재할 때만 대체 공격 역할이 나타날 수 있다.
 
 ## Current Hypotheses
 
@@ -75,25 +92,25 @@ Status: `supported`
 
 Status: `supported`
 
-2022년처럼 QQQ를 Top3에서 제외하고 멕시코, 인도네시아, 인도 중심으로 이동해도 QQQ correlation은 여전히 높았다. ticker overlap 감소와 true diversification은 별개다.
+국가가 바뀌어도 global equity shock에서는 동반 하락하는 구조가 2020과 2022에서 확인된다. ticker overlap 감소와 true diversification은 별개다.
 
 ### H3. 3M은 standalone 전략으로는 열위지만 미국 기술주 약세기의 replacement attack 역할을 제공할 수 있다
 
-Status: `open`
+Status: `not supported for the target use case`
 
-3M은 turnover와 MDD, 장기성과에서 12M보다 불리하지만 SPY/QQQ와의 correlation 전환이 더 빠르다. 미국 기술주 하락기에 다른 국가를 빠르게 선택해 손실을 줄이거나 양(+)의 대체수익을 만드는지 별도 검증이 필요하다.
+2018과 2022에서는 주로 손실 완화에 그쳤고 2020에는 실패했다. 2026 Q1에 양(+)의 대체수익 사례가 존재하지만 EWY의 예외적으로 강한 regime에 크게 의존한다.
 
 ### H4. 6M 또는 multi-horizon 구조가 12M lag와 3M whipsaw 사이의 절충점이 될 수 있다
 
-Status: `open`
+Status: `de-prioritized`
 
-현재 결과만으로는 standalone 성과와 portfolio-level 역할을 동시에 최적화하는 horizon을 확정할 수 없다.
+2025~2026의 6M 강세는 EWY를 포함한 특정 regional leadership regime의 영향을 크게 받았을 가능성이 있다. 더 중요한 점은 horizon을 조정해도 signal universe가 모두 equity라는 구조적 한계가 남는다는 것이다. 미국 기술주 약세기의 독립 보완재라는 목표에서는 horizon 최적화보다 다른 return driver 탐색이 우선이다.
 
 ## Current Strategy View
 
 ### Momentum 12M
 
-현재 standalone 기본 후보이다.
+현재 standalone regional leadership 전략의 기본 후보이다.
 
 - 장기 regional leadership rotation에 적합하다.
 - 3M/6M보다 높은 성과와 낮은 turnover를 보인다.
@@ -102,34 +119,47 @@ Status: `open`
 
 ### Momentum 3M
 
-현재 standalone 채택 후보라기보다 빠른 replacement mechanism 후보이다.
+미국 기술주 약세기의 portfolio-complement 후보로는 현재 기각한다.
 
-- 미국 기술주 약세 초기에 다른 국가로 빠르게 이동할 가능성을 검증한다.
-- 빠른 rotation의 이점이 높은 turnover와 whipsaw 비용을 상쇄하는지가 핵심 질문이다.
+- 빠른 holdings 전환 자체는 확인됐다.
+- 하지만 빠른 반응이 안정적인 방어 또는 대체 공격 수익으로 이어지지 않았다.
+- 2018/2022에서는 주로 손실 완화에 그쳤고 2020에는 동반 하락했다.
+- 2026 Q1의 성공은 EWY라는 예외적 winner의 존재에 크게 의존했다.
+
+### Portfolio-complement use case
+
+현재까지의 evidence로는 Country Momentum을 미국 기술주 약세기에 전체 포트폴리오를 보완하는 핵심 전략으로 채택하지 않는다.
+
+이 결론은 Country Momentum 자체의 모든 가치를 부정하는 것이 아니다. 12M은 standalone regional rotation strategy로 별도 가치가 있으나, 미국 기술주가 약해질 때 안정적으로 방어하거나 새로운 공격 수익원을 공급한다는 목적에는 적합하지 않았다.
 
 ## Risks / Open Issues
 
 - 모든 signal asset이 equity이므로 global equity beta가 남는다.
-- 12M은 sudden crash와 빠른 regime reversal에 후행한다.
-- 상대강도가 음수인 자산도 Top3이면 투자하므로 absolute momentum 방어 기능은 없다.
+- relative momentum은 전체 universe가 하락할 때도 Top3를 선택하므로 절대적 방어 기능이 없다.
+- 낮은 correlation이 반드시 양(+)의 수익이나 낮은 MDD로 연결되지 않는다.
+- 2026 Q1의 replacement attack 성공은 EWY라는 역사적으로 특이한 강세 사례에 크게 의존할 수 있다.
 - Top3 equal weight가 최적이라는 근거는 아직 없다.
 - Universe 구성에 따라 결과가 달라질 수 있다.
 - 국가 ETF의 sector composition 차이가 국가 momentum 효과와 섞일 수 있다.
-- 단독 전략과 개별 자산의 correlation만으로 실제 portfolio-level 개선을 확정할 수 없다.
+- `yearly_strategy_context.csv`의 selected-symbol 연도 귀속과 calendar-year return/MDD 정의에는 보정이 필요한 분석 output 이슈가 있다.
 
 ## Next Strategic Questions
 
-1. 3M이 QQQ 하락기에 어떤 국가를 선택했고 실제 대체 공격 수익을 만들었는지 검증한다.
-2. 3M / 6M / 12M 각각에 대해 연도별 correlation, SPY/QQQ 성과, 전략 성과, annual MDD, holdings를 함께 비교한다.
-3. 기존 portfolio proxy에 Momentum을 실제 비중으로 결합해 CAGR, Sharpe, MDD, contribution 변화를 측정한다.
-4. 6M 또는 multi-horizon signal이 12M lag를 줄이면서 3M whipsaw를 피할 수 있는지 검토한다.
-5. absolute momentum filter가 급락기 방어와 장기성과 사이에서 어떤 trade-off를 만드는지 검증한다.
+1. 미국 기술주 약세기의 보완재 탐색은 Country Momentum horizon 조정보다 다른 공격 자산 또는 전략으로 확장한다.
+2. 다음 후보는 QQQ weakness episode에서 `benchmark state / candidate return / verdict` 형식으로 동일하게 비교한다.
+3. 특히 다음 세 조건을 중점 평가한다.
+   - QQQ 하락기에 낮은 downside correlation
+   - QQQ 하락 중 양(+)의 수익 또는 반복적인 명확한 초과수익
+   - global equity beta와 다른 독립적인 return driver
+4. Momentum 12M은 별도의 standalone regional leadership strategy 후보로 필요 시 후속 검증한다.
+5. r02 분석 output의 execution-year 귀속 및 calendar-year return/MDD 정의는 보정한다.
 
 ## Run Evidence
 
 - `r01 / 20260824-0002`: 10년 horizon 비교와 12M persistence 분석.
 - `r02 / 20260825-0001`: correlation pilot 최초 E2E.
 - `r02 / 20260825-0002`: 최종 comparison assets, downside correlation, yearly constituent/correlation 분석.
+- `r02 / 20260825-0003`: yearly strategy context와 QQQ weakness episode 분석. 3M의 방어 및 replacement attack 역할을 직접 검토.
 
 ## Agreed Insights
 
@@ -137,6 +167,10 @@ Status: `open`
 
 1. 이번 실험은 정적 포트폴리오의 국가 슬롯을 고정하지 않고, 의미 있는 국가만 동적으로 포트폴리오 구성에 기여하게 하는 메커니즘을 만들기 위한 노력에서 시작되었다.
 2. 중요한 검증 목적은 현재 정적 구성에서 큰 비중을 차지하는 미국 기술주가 취약해지는 기간에 다른 국가가 대체 공격 또는 방어 역할을 할 수 있는지 확인하는 것이다.
-3. Country Momentum 자체의 성과에서는 12M이 가장 우월했다. SPY 성과에 다소 못 미치지만 MDD와 turnover 등 안정성 측면에서 인상적인 결과를 보였다.
-4. 하락기 대체 가능성 측면에서 12M은 이전 winner, 주로 미국 자산의 persistence가 길어 하락 방어와 correlation에서 약점이 있다. 장기 leadership rotation에는 적합하지만 빠른 미국 기술주 약세 대응에는 한계가 있다.
-5. 다음 실험에서는 3M이 미국 기술주 하락기에 다른 국가로 빠르게 rotation하여 손실 완화뿐 아니라 대체 공격 수익을 만들 수 있는지 검증한다.
+3. Country Momentum 자체의 standalone 성과에서는 12M이 가장 우월했다. SPY 성과에 다소 못 미치지만 MDD와 turnover 등 안정성 측면에서 인상적인 결과를 보였다.
+4. 12M은 장기 leadership rotation에는 적합하지만 기존 winner persistence 때문에 빠른 미국 기술주 약세 대응에는 한계가 있다.
+5. 3M의 빠른 회전 자체는 확인됐지만, QQQ 약세기에 안정적인 방어수 또는 새로운 공격수 역할을 수행하지 못했다. 2018과 2022에서는 주로 덜 잃는 수준이었고 2020에는 동반 하락했다.
+6. 2026 Q1은 EWY 중심 rotation으로 양(+)의 대체 공격 수익을 만든 예외적 성공 사례다. 그러나 EWY의 역사적으로 특이한 강세 regime 영향이 커 일반화할 근거는 부족하다.
+7. QQQ 약세 episode별 `QQQ 상태 / 3M 전략 성과 / 판정` 표를 run report와 전략 전역 report 모두에 핵심 evidence로 유지한다.
+8. 현재까지의 결론은 Country Momentum이 미국 기술주 약세기의 전체 포트폴리오 보완재로는 적절하지 않다는 것이다. 다만 12M의 standalone regional leadership 전략 가치는 별개로 유지한다.
+9. 다음 연구는 국가 momentum의 horizon을 더 최적화하기보다 미국 기술주 약세기에 독립적인 수익 엔진을 제공할 수 있는 다른 공격 자산 또는 전략을 찾는 방향으로 전환한다.
