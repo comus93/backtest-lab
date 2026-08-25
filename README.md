@@ -34,8 +34,9 @@ Runtime
 
 ## Documents
 
+- [`doc/strategies/llm-welcome-pack.md`](doc/strategies/llm-welcome-pack.md): 새 LLM 전략 대화창용 onboarding
 - [`doc/architecture.md`](doc/architecture.md): 구조와 R&R
 - [`doc/specifications.md`](doc/specifications.md): core 기능 및 검증 요구사항
-- [`doc/strategies/`](doc/strategies/): revision별 전략 명세
+- [`doc/strategies/`](doc/strategies/): revision별 전략 명세와 전략 연구 리포트
 - [`doc/open-issues.md`](doc/open-issues.md): 보류 중인 설계 이슈
 - [`AGENTS.md`](AGENTS.md): 개발 및 전략 관리 운영 규칙
