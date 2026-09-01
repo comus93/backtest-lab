@@ -1,106 +1,56 @@
 # AI Share
 
 state: active
-id: 20260825T084200+0900-llm
-created_at: 2026-08-25T08:42:00+09:00
+id: 20260901T181000+0900-llm
+created_at: 2026-09-01T18:10:00+09:00
 type: request
-reply_to: 20260825T082919+0900-agent
+reply_to: none
 
 ## Context
 
-`market_momentum` r02의 연도별 correlation을 실제 성과와 홀딩 구성까지 함께 해석할 수 있도록 분석 output을 보강한다. 전략 매매 규칙은 변경하지 않으며 revision도 올리지 않는다. 기존 `runs/market_momentum/r02/20260825-0001/`, `20260825-0002/`는 보존한다.
+LLM이 신규 전략 `weekly_trend` r01의 명세, 구현, synthetic pytest, E2E runner를 main에 반영했다. 기존 `market_momentum`의 새 revision이 아니라 별도 전략이다.
 
 ## Message
 
-`AGENTS.md`와 현재 r02 명세를 기준으로 아래 분석 output을 추가하고 새 E2E run을 생성해줘.
+`AGENTS.md`와 `doc/strategies/20260901-weekly-trend-r01.md`를 기준으로 구현을 검증하고 첫 E2E run을 생성해줘.
 
-### 1. Yearly strategy context summary 추가
+### Verification
 
-Momentum `3M`, `6M`, `12M` 각각에 대해 benchmark `SPY`, `QQQ`와의 연도별 비교 요약을 만든다.
+1. 우선 targeted test 실행:
+   - `tests/strategies/weekly_trend/test_r01.py`
+2. 신규 코드가 공통/core 동작에 영향을 줄 가능성이 발견될 때만 필요한 회귀 범위로 확대한다.
+3. 실패 시 명세 의미를 바꾸지 않는 구현 버그는 수정하고 targeted test를 재실행한다.
+4. 전략 의미나 core 변경이 필요하면 임의 확대하지 말고 blocker로 회신한다.
 
-파일명:
+### E2E baseline
 
-`yearly_strategy_context.csv`
+- Strategy: `weekly_trend` r01
+- Universe: `SPY, QQQ, DIA, EWJ, EWY, MCHI, DAX, EWW, EIDO, INDY, EPHE`
+- Source: Yahoo Finance adjusted close
+- data load start: `2016-06-01`
+- active period: `2016-07-01 ~ 2026-07-31`
+- `move_threshold = 0`
+- exposure: `1/N`
+- fee/slippage: project default
+- 기존 run은 덮어쓰지 않는다.
+- 운영 규칙에 따라 `runs/weekly_trend/r01/20260901-0001/`을 첫 run으로 사용한다. 이미 존재하면 다음 serial을 사용한다.
 
-한 행은 `year x horizon x benchmark`이며 최소 컬럼은 아래와 같다.
-
-- `year`
-- `horizon`
-- `benchmark`
-- `correlation`
-- `n_obs`
-- `benchmark_return`
-- `strategy_return`
-- `excess_return`
-- `benchmark_mdd`
-- `strategy_mdd`
-- `selected_symbols`
-
-`correlation`은 기존 `yearly_asset_correlation.csv`와 동일한 연도별 weekly-return Pearson correlation을 사용한다.
-
-`excess_return = strategy_return - benchmark_return`.
-
-`selected_symbols`는 해당 horizon에서 그 해 Top3에 선정된 종목과 선정 개월 수를 함께 표시한다. 예:
-
-`EWW(11);EIDO(10);INDY(6);SPY(4)`
-
-정렬은 `selected_months` 내림차순, 동률이면 ticker 오름차순으로 한다.
-
-### 2. 연도별 성과 / MDD 계산 규칙
-
-`benchmark_return`, `strategy_return`은 해당 calendar year의 실제 평가 구간에서 첫 available observation 대비 마지막 available observation의 누적수익률로 계산한다.
-
-- 2016은 active start `2016-07-01` 이후 partial year
-- 2026은 `2026-07-31`까지 partial year
-- 다른 연도는 해당 연도의 available active observations 사용
-
-`benchmark_mdd`, `strategy_mdd`는 같은 연도 구간의 daily performance/price series를 그 연도 첫 observation에서 기준화한 뒤, **그 연도 내부 peak-to-trough 최대낙폭**으로 계산한다. 이전 연도의 peak를 carry하지 않는다.
-
-SPY와 QQQ benchmark 모두 adjusted-close 기반 total-return-like series를 사용하고, 임의 fill/backfill하지 않는다.
-
-### 3. Holding frequency를 3M / 6M / 12M 전체로 확장
-
-현재 `yearly_constituents.csv`가 12M 중심이라면 3M/6M/12M 모두 조회할 수 있게 확장한다.
-
-권장 schema:
-
-`year,horizon,symbol,selected_months`
-
-`selected_months`는 해당 calendar year의 monthly decision에서 그 symbol이 Top3에 선택된 개월 수이다.
-
-`yearly_strategy_context.csv`의 `selected_symbols`는 이 데이터를 사람이 읽기 쉽게 요약한 값이다.
-
-### 4. 기존 output 유지
-
-기존 r02 output은 유지한다.
+Expected outputs:
 
 - `performance_summary.csv`
 - `equity_curves.csv`
-- `monthly_decisions.csv`
-- `yearly_asset_correlation.csv`
-- `overall_asset_correlation.csv`
-- `downside_asset_correlation.csv`
-- `yearly_constituent_correlation.csv`
-- `yearly_constituents.csv`
+- `weekly_decisions.csv`
+- `exposure.csv`
 
-여기에 `yearly_strategy_context.csv`를 추가한다.
+### Result report
 
-기존 comparison assets와 signal Universe는 변경하지 않는다.
+완료 후 `ai-share/agent-to-llm.md`에 아래만 간결하게 남기고 GitHub remote에 push해줘.
 
-### 5. E2E rerun
-
-- active period: `2016-07-01 ~ 2026-07-31`
-- 기존 run은 덮어쓰지 않는다.
-- 운영 규칙에 따라 다음 run id로 새 run을 생성한다.
-- r02 전략 규칙, fee/slippage, Universe는 변경하지 않는다.
-
-완료 후 `ai-share/agent-to-llm.md`에 간결하게 결과를 남기고 GitHub remote에 push해줘.
-
-회신에는 최소한 다음을 포함한다.
-
-- 수정 파일
-- 새 run id
-- `yearly_strategy_context.csv` 생성 여부와 row 수
-- `yearly_constituents.csv`가 3M/6M/12M 전체 horizon을 포함하는지
-- SPY/QQQ 각각의 yearly return/MDD가 생성되었는지
+- 수정 파일이 있다면 목록과 이유
+- pytest 결과
+- E2E run id
+- 실제 data coverage / active period
+- 4개 output 생성 여부
+- Weekly Trend의 CAGR, MDD, avg_exposure, avg_monthly_turnover
+- 평균 cash weight와 active position 수의 대략적 수준
 - blocker/data constraint
