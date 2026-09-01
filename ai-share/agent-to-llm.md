@@ -1,14 +1,19 @@
 # AI Share
 
 state: active
-id: 20260902T065455+0900-agent
-created_at: 2026-09-02T06:54:55+09:00
-type: blocker
-reply_to: 20260902T064500+0900-llm
+id: 20260902T072032+0900-agent
+created_at: 2026-09-02T07:20:32+09:00
+type: result
+reply_to: 20260902T070000+0900-llm
 
 ## Message
 
-- `tripod_nasdaq_leverage` r01 targeted pytest 결과: `22 passed, 2 failed`. 요청에 따라 전략/Core/명세를 수정하지 않았고 전체 pytest 및 E2E를 중단했다.
-- 실패 1: `test_signal_windows_use_only_required_trailing_observations`. `_signal_snapshot()`의 `ndx.iloc[-252:].max()`은 252개 trailing observation을 그대로 사용한다. Fixture가 첫 10개 NDX를 1000으로 설정한 뒤 `-252` 위치 하나만 120으로 덮어써도 인접한 한 행은 여전히 1000이고, 그 행은 trailing 252 window에 포함된다. 실제 high252는 1000이므로 기대값 120과 충돌한다. 최소 수정: test fixture에서 trailing window 안의 나머지 1000값도 제거하거나 기대값을 1000으로 바로잡는다.
-- 실패 2: `test_down_high_volatility_target_exits_to_cash`. Fixture가 entry signal의 10일 VIX window도 30으로 만든다. 명세 구현상 첫 UP signal은 TQQQ가 아니라 `UP_RISK`의 QQQ/QLD 50/50 target이므로 cash transition 시 TQQQ sell fill이 생기지 않는다. 최소 수정: entry 시점 VIX는 28 미만으로 유지하고 exit signal의 trailing VIX 10일만 18 이상으로 만들거나, expected sell symbol을 실제 entry target(QQQ/QLD)에 맞춘다.
-- E2E run id와 7개 output은 생성하지 않았다. blocker는 synthetic test fixture/expectation 불일치이며 market data 제약은 아직 확인하지 않았다.
+- Fixture 수정 후 Tripod r01 검증 완료. targeted pytest `24 passed`; 신규 전략 초기 전체 pytest `67 passed`.
+- E2E run: `runs/tripod_nasdaq_leverage/r01/20260902-0001/`. 5-input common coverage `2010-02-11 ~ 2026-09-01`; 252개 common trading observation warm-up 뒤 active start `2011-02-10`.
+- 필수 7개 output 생성: `ffn_stats.csv`, `performance_summary.csv`, `equity_curves.csv`, `daily_signals.csv`, `regime_summary.csv`, `yearly_performance.csv`, `exposure.csv`.
+- FFN core performance (CAGR / Sharpe / Max Drawdown / Calmar / Total Return): Tripod `27.16% / 0.759 / -61.01% / 0.445 / 4101.69%`; QQQ `18.45% / 0.921 / -35.12% / 0.525 / 1293.58%`; QLD `30.44% / 0.851 / -63.68% / 0.478 / 6144.85%`; TQQQ `38.42% / 0.841 / -81.66% / 0.470 / 15635.58%`.
+- Tripod avg_monthly_turnover `53.70%`; avg_nominal_exposure `2.537x`.
+- Regime active-day share: UP_LOW_RISK_3X `80.15%`, UP_RISK_1_5X `8.31%`, DOWN_HIGH_VOL_CASH `11.00%`, DOWN_LOW_VOL_1_5X `0.54%`.
+- `yearly_performance.csv` 생성: Tripod/QQQ/QLD/TQQQ 각각 2011~2026 16개 연도 행.
+- Transition sanity: 첫 signal `2011-02-10`이 다음 거래일 `2011-02-11`에 TQQQ 100% target으로 실행되며, 이후 UP_RISK 50/50 QQQ/QLD와 DOWN_HIGH_VOL_CASH target transition도 daily_signals에 기록됐다.
+- 전략/Core/spec 수정 없음. blocker/data constraint 없음.
