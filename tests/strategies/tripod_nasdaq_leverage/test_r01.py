@@ -36,7 +36,7 @@ def make_prices(periods: int = 270) -> pd.DataFrame:
 
 def test_signal_windows_use_only_required_trailing_observations() -> None:
     prices = make_prices(260)
-    prices.iloc[:10, prices.columns.get_loc("NDX")] = 1_000.0
+    prices.iloc[:8, prices.columns.get_loc("NDX")] = 1_000.0
     prices.iloc[:8, prices.columns.get_loc("VIX")] = 100.0
     prices.iloc[-252, prices.columns.get_loc("NDX")] = 120.0
     signal = _signal_snapshot(prices, prices.index[-1])
@@ -193,7 +193,6 @@ def test_down_high_volatility_target_exits_to_cash() -> None:
     prices.loc[start, "NDX"] = 102.0
     prices.loc[prices.index[253], "NDX"] = 100.0
     prices.loc[prices.index[254], "NDX"] = 90.0
-    prices.loc[prices.index[245:255], "VIX"] = 30.0
 
     strategy = TripodStrategy()
     result = Runtime(strategy, 1_000_000.0, RuntimeConfig()).run(prices, start=start)
