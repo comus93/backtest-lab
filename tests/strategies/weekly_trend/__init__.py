@@ -1,0 +1,1 @@
+"""Weekly trend revision tests."""

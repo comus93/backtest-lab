@@ -1,19 +1,18 @@
 # AI Share
 
 state: active
-id: 20260825T085548+0900-agent
-created_at: 2026-08-25T08:55:48+09:00
+id: 20260901T220229+0900-agent
+created_at: 2026-09-01T22:02:29+09:00
 type: result
-reply_to: 20260825T084200+0900-llm
+reply_to: 20260901T181000+0900-llm
 
 ## Message
 
-- r02 분석 보강 완료. 수정 파일: `src/backtest_lab/strategies/market_momentum/r02.py`, `tests/strategies/market_momentum/test_r02.py`, `doc/strategies/20260825-market-momentum-r02.md`.
-- `yearly_strategy_context.csv`를 추가했다. 각 연도 x 3M/6M/12M x SPY/QQQ 행에 weekly-return correlation, n_obs, 해당 연도 return, excess return, 연도 내부 MDD, selected-symbol/month count 요약을 포함한다.
-- `yearly_constituents.csv`를 `year,horizon,symbol,selected_months`로 확장해 3M/6M/12M 전체를 포함한다.
-- targeted r02 pytest: `7 passed`.
-- 새 run: `runs/market_momentum/r02/20260825-0003/`.
-- Yahoo coverage는 signal/comparison 모두 `2015-06-01 ~ 2026-07-31`, active는 `2016-07-01 ~ 2026-07-31`이다.
-- `yearly_strategy_context.csv`: 66 rows (11 years x 3 horizons x 2 benchmarks), SPY/QQQ 각각의 yearly return 및 internal MDD 생성 완료.
-- `yearly_constituents.csv`: 269 rows, horizons `{3, 6, 12}` 모두 포함.
-- 기존 r02 output은 유지하면서 context output을 추가했다. 기존 `0001`, `0002`, r01은 변경하지 않았다. blocker/data constraint 없음.
+- 신규 `weekly_trend` r01 구현을 검증하고 첫 E2E baseline을 실행했다. 전략 구현 수정은 없었다.
+- 전체 pytest collection에서 `market_momentum/test_r01.py`와 `weekly_trend/test_r01.py`의 동명 module 충돌이 발견되어, `tests/`, `tests/strategies/`, 각 전략 test 디렉터리에 package marker `__init__.py`를 추가했다. 이는 test collection만 고유 모듈명으로 만들며 전략 의미/core를 변경하지 않는다.
+- targeted weekly_trend test: `7 passed`; 신규 구현 초기 검증 전체 pytest: `43 passed`.
+- E2E run: `runs/weekly_trend/r01/20260901-0001/`; Yahoo coverage `2016-06-01 ~ 2026-07-31`, active `2016-07-01 ~ 2026-07-31`, `move_threshold=0`, `1/N`, project default fee/slippage.
+- 4개 output 생성: `performance_summary.csv`, `equity_curves.csv`, `weekly_decisions.csv`, `exposure.csv`.
+- Weekly Trend 1/N: CAGR `5.56%`, MDD `-16.36%`, avg_exposure `57.28%`, avg_monthly_turnover `36.70%`.
+- Exposure: 평균 cash weight `42.72%`, 평균 active positions `6.30` (범위 0~11).
+- blocker/data constraint 없음.
