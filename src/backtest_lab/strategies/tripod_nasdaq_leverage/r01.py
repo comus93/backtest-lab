@@ -30,6 +30,29 @@ REGIME_DOWN_HIGH_VOL = "DOWN_HIGH_VOL_CASH"
 REGIME_UNKNOWN = "INITIAL_UNKNOWN_CASH"
 
 
+@dataclass(frozen=True)
+class TripodVariant:
+    name: str
+    use_up_vix: bool = True
+    use_drawdown: bool = True
+    use_down_vix: bool = True
+
+
+VARIANT_BASELINE = TripodVariant("BASELINE")
+VARIANT_NO_DOWN_VIX18 = TripodVariant("NO_DOWN_VIX18", use_down_vix=False)
+VARIANT_NO_UP_VIX28 = TripodVariant("NO_UP_VIX28", use_up_vix=False)
+VARIANT_NO_DD9 = TripodVariant("NO_DD9", use_drawdown=False)
+VARIANT_MA_ONLY = TripodVariant("MA_ONLY", use_up_vix=False, use_drawdown=False, use_down_vix=False)
+
+SENSITIVITY_VARIANTS = (
+    VARIANT_BASELINE,
+    VARIANT_NO_DOWN_VIX18,
+    VARIANT_NO_UP_VIX28,
+    VARIANT_NO_DD9,
+    VARIANT_MA_ONLY,
+)
+
+
 def _target_key(weights: Mapping[str, float]) -> tuple[tuple[str, float], ...]:
     return tuple(sorted((str(symbol), float(weight)) for symbol, weight in weights.items() if weight > 0.0))
 
@@ -86,22 +109,34 @@ def _update_trend(previous: str, trend_ratio: float) -> str:
     return previous
 
 
-def _target_for_state(trend: str, vix10: float, dd52: float) -> tuple[dict[str, float], str, float]:
+def _target_for_variant(
+    trend: str,
+    vix10: float,
+    dd52: float,
+    variant: TripodVariant,
+) -> tuple[dict[str, float], str, float]:
     if trend == "UP":
-        if vix10 < VIX_UP_RISK and dd52 >= DRAWDOWN_RISK:
+        up_vix_risk = variant.use_up_vix and vix10 >= VIX_UP_RISK
+        drawdown_risk = variant.use_drawdown and dd52 < DRAWDOWN_RISK
+        if not (up_vix_risk or drawdown_risk):
             return {"TQQQ": 1.0}, REGIME_UP_LOW_RISK, 3.0
         return {"QQQ": 0.5, "QLD": 0.5}, REGIME_UP_RISK, 1.5
 
     if trend == "DOWN":
-        if vix10 < VIX_DOWN_RISK:
+        if variant.use_down_vix and vix10 < VIX_DOWN_RISK:
             return {"QQQ": 0.5, "QLD": 0.5}, REGIME_DOWN_LOW_VOL, 1.5
         return {}, REGIME_DOWN_HIGH_VOL, 0.0
 
     return {}, REGIME_UNKNOWN, 0.0
 
 
+def _target_for_state(trend: str, vix10: float, dd52: float) -> tuple[dict[str, float], str, float]:
+    return _target_for_variant(trend, vix10, dd52, VARIANT_BASELINE)
+
+
 @dataclass
 class TripodStrategy:
+    variant: TripodVariant = VARIANT_BASELINE
     trend: str = "UNKNOWN"
     decisions: list[dict[str, object]] = field(default_factory=list)
     _started: bool = False
@@ -120,7 +155,12 @@ class TripodStrategy:
         signal_date = pd.Timestamp(signal_history.index[-1])
         signal = _signal_snapshot(signal_history, signal_date)
         self.trend = _update_trend(self.trend, signal["trend_ratio"])
-        target, regime, nominal_exposure = _target_for_state(self.trend, signal["vix10"], signal["dd52"])
+        target, regime, nominal_exposure = _target_for_variant(
+            self.trend,
+            signal["vix10"],
+            signal["dd52"],
+            self.variant,
+        )
         target_key = _target_key(target)
         target_changed = target_key != self._last_target
 
@@ -262,6 +302,19 @@ def _regime_summary(decisions: pd.DataFrame) -> pd.DataFrame:
     return grouped.loc[:, columns]
 
 
+def _variant_regime_summary(decisions: pd.DataFrame) -> pd.DataFrame:
+    columns = ["variant", "regime", "days", "share_of_active_days", "nominal_exposure"]
+    if decisions.empty:
+        return pd.DataFrame(columns=columns)
+    grouped = decisions.groupby(["variant", "regime"], sort=True).agg(
+        days=("signal_date", "size"),
+        nominal_exposure=("nominal_exposure", "first"),
+    ).reset_index()
+    totals = decisions.groupby("variant").size().rename("total_days")
+    grouped["share_of_active_days"] = grouped["days"] / grouped["variant"].map(totals)
+    return grouped.loc[:, columns]
+
+
 def _yearly_performance(results: Mapping[str, BacktestResult], start: pd.Timestamp) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for name, result in results.items():
@@ -289,6 +342,19 @@ def _exposure(decisions: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=columns)
     frame = decisions.loc[
         :, ["execution_date", "trend", "regime", "target_qqq", "target_qld", "target_tqqq", "target_cash", "nominal_exposure"]
+    ].copy()
+    frame.columns = columns
+    return frame
+
+
+def _variant_exposure(decisions: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "variant", "timestamp", "trend", "regime", "qqq_weight", "qld_weight", "tqqq_weight", "cash_weight", "nominal_exposure"
+    ]
+    if decisions.empty:
+        return pd.DataFrame(columns=columns)
+    frame = decisions.loc[
+        :, ["variant", "execution_date", "trend", "regime", "target_qqq", "target_qld", "target_tqqq", "target_cash", "nominal_exposure"]
     ].copy()
     frame.columns = columns
     return frame
@@ -336,4 +402,58 @@ def run_pilot(
         regime_summary=_regime_summary(decisions),
         yearly_performance=_yearly_performance(results, start_timestamp),
         exposure=_exposure(decisions),
+    )
+
+
+def run_sensitivity_pilot(
+    prices: pd.DataFrame,
+    start: pd.Timestamp | str,
+    config: RuntimeConfig | None = None,
+) -> PilotOutputs:
+    missing = [column for column in REQUIRED_COLUMNS if column not in prices.columns]
+    if missing:
+        raise ValueError(f"prices missing required columns: {missing}")
+
+    start_timestamp = pd.Timestamp(start)
+    config = config or RuntimeConfig(fee_rate=0.00015)
+    variant_strategies = [(variant.name, TripodStrategy(variant=variant)) for variant in SENSITIVITY_VARIANTS]
+    strategies: list[tuple[str, object]] = [
+        *variant_strategies,
+        ("QQQ Buy & Hold", BuyAndHoldStrategy("QQQ")),
+        ("QLD Buy & Hold", BuyAndHoldStrategy("QLD")),
+        ("TQQQ Buy & Hold", BuyAndHoldStrategy("TQQQ")),
+    ]
+
+    results: dict[str, BacktestResult] = {}
+    for name, strategy in strategies:
+        results[name] = Runtime(strategy, initial_cash=1_000_000.0, config=config).run(prices, start=start_timestamp)
+
+    decision_frames: list[pd.DataFrame] = []
+    avg_exposure: dict[str, float] = {
+        "QQQ Buy & Hold": 1.0,
+        "QLD Buy & Hold": 2.0,
+        "TQQQ Buy & Hold": 3.0,
+    }
+    for name, strategy in variant_strategies:
+        frame = pd.DataFrame(strategy.decisions)
+        if not frame.empty:
+            frame.insert(0, "variant", name)
+            avg_exposure[name] = float(frame["nominal_exposure"].mean())
+        else:
+            frame = pd.DataFrame(columns=["variant"])
+            avg_exposure[name] = 0.0
+        decision_frames.append(frame)
+
+    decisions = pd.concat(decision_frames, ignore_index=True, sort=False) if decision_frames else pd.DataFrame()
+    curves = pd.concat([result.performance.rename(name) for name, result in results.items()], axis=1)
+    ffn_table, stats_by_name = _ffn_stats(results)
+
+    return PilotOutputs(
+        ffn_stats=ffn_table,
+        performance_summary=_performance_summary(results, stats_by_name, start_timestamp, avg_exposure),
+        equity_curves=curves,
+        daily_signals=decisions,
+        regime_summary=_variant_regime_summary(decisions),
+        yearly_performance=_yearly_performance(results, start_timestamp),
+        exposure=_variant_exposure(decisions),
     )
