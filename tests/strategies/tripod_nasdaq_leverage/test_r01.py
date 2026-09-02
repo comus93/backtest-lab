@@ -11,12 +11,20 @@ from backtest_lab.strategies.tripod_nasdaq_leverage.r01 import (
     REGIME_UNKNOWN,
     REGIME_UP_LOW_RISK,
     REGIME_UP_RISK,
+    SENSITIVITY_VARIANTS,
+    VARIANT_BASELINE,
+    VARIANT_MA_ONLY,
+    VARIANT_NO_DD9,
+    VARIANT_NO_DOWN_VIX18,
+    VARIANT_NO_UP_VIX28,
     TripodStrategy,
     _signal_snapshot,
     _target_for_state,
+    _target_for_variant,
     _update_trend,
     find_active_start,
     run_pilot,
+    run_sensitivity_pilot,
 )
 
 
@@ -229,4 +237,71 @@ def test_run_pilot_outputs_ffn_and_strategy_analysis() -> None:
     assert set(outputs.yearly_performance.columns) == {"year", "strategy", "return", "max_drawdown"}
     assert set(outputs.exposure.columns) == {
         "timestamp", "trend", "regime", "qqq_weight", "qld_weight", "tqqq_weight", "cash_weight", "nominal_exposure"
+    }
+
+
+def test_sensitivity_variant_names_are_fixed() -> None:
+    assert [variant.name for variant in SENSITIVITY_VARIANTS] == [
+        "BASELINE",
+        "NO_DOWN_VIX18",
+        "NO_UP_VIX28",
+        "NO_DD9",
+        "MA_ONLY",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("variant", "trend", "vix10", "dd52", "expected_weights", "expected_exposure"),
+    [
+        (VARIANT_BASELINE, "UP", 30.0, 0.0, {"QQQ": 0.5, "QLD": 0.5}, 1.5),
+        (VARIANT_NO_DOWN_VIX18, "DOWN", 10.0, -0.50, {}, 0.0),
+        (VARIANT_NO_UP_VIX28, "UP", 30.0, 0.0, {"TQQQ": 1.0}, 3.0),
+        (VARIANT_NO_DD9, "UP", 20.0, -0.20, {"TQQQ": 1.0}, 3.0),
+        (VARIANT_MA_ONLY, "UP", 40.0, -0.20, {"TQQQ": 1.0}, 3.0),
+    ],
+)
+def test_each_sensitivity_variant_removes_only_its_intended_filter(
+    variant,
+    trend: str,
+    vix10: float,
+    dd52: float,
+    expected_weights: dict[str, float],
+    expected_exposure: float,
+) -> None:
+    weights, _, exposure = _target_for_variant(trend, vix10, dd52, variant)
+    assert weights == expected_weights
+    assert exposure == expected_exposure
+
+
+def test_ma_only_down_is_always_cash() -> None:
+    weights, regime, exposure = _target_for_variant("DOWN", 10.0, -0.50, VARIANT_MA_ONLY)
+    assert weights == {}
+    assert regime == REGIME_DOWN_HIGH_VOL
+    assert exposure == 0.0
+
+
+def test_run_sensitivity_pilot_compares_five_variants_in_one_run() -> None:
+    prices = make_prices(270)
+    start = prices.index[252]
+    prices.loc[start:, "NDX"] = 102.0
+
+    outputs = run_sensitivity_pilot(prices, start=start, config=RuntimeConfig())
+
+    variant_names = {variant.name for variant in SENSITIVITY_VARIANTS}
+    expected_strategies = variant_names | {
+        "QQQ Buy & Hold",
+        "QLD Buy & Hold",
+        "TQQQ Buy & Hold",
+    }
+    assert set(outputs.performance_summary["strategy"]) == expected_strategies
+    assert set(outputs.ffn_stats.columns) == expected_strategies
+    assert set(outputs.equity_curves.columns) == expected_strategies
+    assert set(outputs.daily_signals["variant"]) == variant_names
+    assert set(outputs.regime_summary["variant"]) == variant_names
+    assert set(outputs.exposure["variant"]) == variant_names
+    assert set(outputs.regime_summary.columns) == {
+        "variant", "regime", "days", "share_of_active_days", "nominal_exposure"
+    }
+    assert set(outputs.exposure.columns) == {
+        "variant", "timestamp", "trend", "regime", "qqq_weight", "qld_weight", "tqqq_weight", "cash_weight", "nominal_exposure"
     }
