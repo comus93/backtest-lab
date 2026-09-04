@@ -7,9 +7,10 @@
 1. `doc/architecture.md`
 2. `doc/specifications.md`
 3. 관련 전략 작업이면 `doc/strategies/`의 해당 revision 명세
-4. `ai-share/PROTOCOL.md`
+4. 백테스트 자동 실행 작업이면 `doc/automation.md`
+5. Agent handover가 필요한 작업이면 `ai-share/PROTOCOL.md`
 
-현재 작업 요청은 `ai-share/llm-to-agent.md`에서 확인한다.
+정상적인 백테스트 실행은 GitHub Actions 자동화를 기본 경로로 사용한다. Codex Agent는 workflow 실패, 데이터 이상, 구현 결함 등 deterministic automation만으로 해결하기 어려운 예외 진단에 사용한다.
 
 ## Development principles
 
@@ -104,22 +105,59 @@ YYYYMMDD-NNNN
 - 같은 실행에서 생성된 CSV 산출물은 모두 같은 run directory에 둔다.
 - CSV 파일명에는 strategy/revision/run id를 반복하지 않고 산출물 이름만 사용한다.
 - 결과 산출물의 종류와 컬럼은 해당 전략 revision 명세를 따른다.
-- LLM이 run 결과를 분석한 경우 같은 run directory에 `llm-analysis.md`를 둔다.
-- Agent는 계산/실행 산출물을 생성하며 `llm-analysis.md`를 생성하거나 덮어쓰지 않는다.
-- `llm-analysis.md`는 해당 run의 결과, interpretation, implications, hypotheses/provisional conclusions, risks/limitations, next questions/steps를 기록한다.
-- `Agreed Insights`는 자동 생성하지 않고 User와의 후속 논의를 통해 합의된 내용을 기록하며 `llm-analysis.md`의 마지막 섹션에 둔다.
+- GitHub Actions 자동 실행은 실제 백테스트에 사용한 공통 price frame을 `input_prices.csv`로 같은 run directory에 저장한다.
+- 자동 실행은 analysis report를 만들지 않는다.
+- LLM은 raw output을 직접 읽어 사용자에게 먼저 분석을 설명한다.
+- 사용자와 논의 후 사용자가 저장을 요청할 때만 같은 run directory에 Markdown analysis report를 작성한다.
+- analysis report 기본 파일명은 `analysis-report.md`이며 사용자가 별도 파일명을 지정하면 사용자 지시를 따른다.
+- analysis report는 Markdown/YAML tags를 사용하고 계산 사실, LLM 해석, 사용자와 합의된 결론을 구분한다.
+- `Agreed Insights`는 자동 생성하지 않는다.
+- 기존 `llm-analysis.md`는 과거 운영 방식의 유효한 historical artifact로 유지하며 자동화가 생성하거나 덮어쓰지 않는다.
 - Run Analysis와 전략 전역 report는 상호 배타적일 필요가 없으며 필요한 evidence와 insight는 중복 기록할 수 있다.
 
 예:
 
 ```text
-runs/market_momentum/r01/20260824-0001/
+runs/tripod_nasdaq_leverage/r01/20260904-0001/
+├─ input_prices.csv
+├─ ffn_stats.csv
 ├─ performance_summary.csv
 ├─ equity_curves.csv
-├─ monthly_decisions.csv
-├─ momentum_signal_analysis.csv
-└─ llm-analysis.md
+├─ daily_signals.csv
+├─ regime_summary.csv
+├─ yearly_performance.csv
+├─ exposure.csv
+└─ analysis-report.md   # 사용자 요청이 있을 때만
 ```
+
+## Backtest automation
+
+GitHub Actions 기반 자동 실행의 상세 규칙은 `doc/automation.md`를 따른다.
+
+Trigger:
+
+```text
+automation/backtest-request.json
+```
+
+- LLM은 실행을 요청할 때 이 파일을 갱신한다.
+- request는 `strategy_id`, `revision`, `mode` 등 declarative field만 포함한다.
+- shell command, Python expression, 임의 module path 같은 executable text를 넣지 않는다.
+- dispatcher가 `(strategy_id, revision, mode)`를 source code의 명시적 allow-list에 매핑한다.
+- LLM이 run serial을 지정하지 않는다. dispatcher가 request date와 기존 run directory를 보고 다음 serial을 배정한다.
+- workflow는 pytest 통과 후에만 실데이터 backtest를 실행한다.
+- output과 latest manifest는 GitHub Actions가 commit/push한다.
+
+Latest result manifest:
+
+```text
+automation/backtest-result.md
+```
+
+- 이 파일은 performance report가 아니다.
+- latest successful run의 identity, output directory, output filename, 향후 `report_url`만 지칭한다.
+- CAGR, Sharpe, drawdown 등 raw result 값은 복사하지 않는다.
+- LLM은 manifest가 가리키는 raw output 파일을 직접 읽는다.
 
 ## Implementation discipline
 
@@ -132,6 +170,8 @@ runs/market_momentum/r01/20260824-0001/
 
 ## AI Share
 
-ChatGPT와 Codex 간 메시지 및 세션 handover에는 `./ai-share/PROTOCOL.md`를 따른다.
+ChatGPT와 Codex 간 메시지 및 세션 handover가 실제로 필요한 경우 `./ai-share/PROTOCOL.md`를 따른다.
 
-작업 결과는 `agent-to-llm.md`에 최소한으로 정리하고 GitHub remote에 commit/push한 뒤 완료로 간주한다.
+정상적인 백테스트 실행/검증 결과 전달에는 `agent-to-llm.md`를 사용하지 않는다. GitHub Actions의 `automation/backtest-result.md`와 해당 run raw outputs가 기본 전달 경로다.
+
+Agent를 예외 진단에 사용한 경우에만 작업 결과를 `agent-to-llm.md`에 최소한으로 정리하고 GitHub remote에 commit/push한 뒤 완료로 간주한다.
