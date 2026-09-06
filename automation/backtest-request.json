@@ -1,6 +1,8 @@
 {
-  "request_id": "20260904T200100+0900",
-  "strategy_id": "tripod_nasdaq_leverage",
+  "request_id": "20260907T062500+0900",
+  "strategy_id": "sp500_top2_market_cap",
   "revision": "r01",
-  "mode": "baseline"
+  "mode": "baseline",
+  "start": "2016-01-01",
+  "end": "2026-01-01"
 }
