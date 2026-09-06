@@ -29,6 +29,48 @@ def test_load_request_accepts_registered_tripod_mode(tmp_path: Path) -> None:
     assert request.end is None
 
 
+def test_load_request_accepts_sp500_top2_fixed_period(tmp_path: Path) -> None:
+    path = tmp_path / "request.json"
+    path.write_text(
+        json.dumps(
+            {
+                "request_id": "20260907T062000+0900",
+                "strategy_id": "sp500_top2_market_cap",
+                "revision": "r01",
+                "mode": "baseline",
+                "start": "2016-01-01",
+                "end": "2026-01-01",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    request = load_request(path)
+
+    assert request.start == "2016-01-01"
+    assert request.end == "2026-01-01"
+
+
+def test_load_request_rejects_sp500_top2_wrong_period(tmp_path: Path) -> None:
+    path = tmp_path / "request.json"
+    path.write_text(
+        json.dumps(
+            {
+                "request_id": "20260907T062000+0900",
+                "strategy_id": "sp500_top2_market_cap",
+                "revision": "r01",
+                "mode": "baseline",
+                "start": "2017-01-01",
+                "end": "2026-01-01",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="fixed period"):
+        load_request(path)
+
+
 def test_load_request_rejects_unregistered_command_surface(tmp_path: Path) -> None:
     path = tmp_path / "request.json"
     path.write_text(
