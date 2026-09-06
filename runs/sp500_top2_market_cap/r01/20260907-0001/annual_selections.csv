@@ -1,0 +1,11 @@
+investment_year,ranking_basis_year,execution_date,rank1_company,rank1_ticker,rank2_company,rank2_ticker,rank1_weight,rank2_weight
+2016,2015,2016-01-04,Apple,AAPL,Alphabet,GOOGL,0.5,0.5
+2017,2016,2017-01-03,Apple,AAPL,Alphabet,GOOGL,0.5,0.5
+2018,2017,2018-01-02,Apple,AAPL,Alphabet,GOOGL,0.5,0.5
+2019,2018,2019-01-02,Microsoft,MSFT,Apple,AAPL,0.5,0.5
+2020,2019,2020-01-02,Apple,AAPL,Microsoft,MSFT,0.5,0.5
+2021,2020,2021-01-04,Apple,AAPL,Microsoft,MSFT,0.5,0.5
+2022,2021,2022-01-03,Apple,AAPL,Microsoft,MSFT,0.5,0.5
+2023,2022,2023-01-03,Apple,AAPL,Microsoft,MSFT,0.5,0.5
+2024,2023,2024-01-02,Apple,AAPL,Microsoft,MSFT,0.5,0.5
+2025,2024,2025-01-02,Apple,AAPL,Nvidia,NVDA,0.5,0.5
