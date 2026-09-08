@@ -24,6 +24,16 @@ from backtest_lab.strategies.tripod_nasdaq_leverage.r01 import (
     run_pilot as run_tripod_baseline,
     run_sensitivity_pilot as run_tripod_sensitivity,
 )
+from backtest_lab.strategies.us_market_cap_leaders.evaluation import (
+    run_baseline as run_market_cap_leaders_baseline,
+    run_window_sensitivity as run_market_cap_leaders_window_sensitivity,
+)
+from backtest_lab.strategies.us_market_cap_leaders.r01 import (
+    END_EXCLUSIVE as MARKET_CAP_LEADERS_END_EXCLUSIVE,
+    PRICE_START as MARKET_CAP_LEADERS_PRICE_START,
+    REQUIRED_COLUMNS as MARKET_CAP_LEADERS_REQUIRED_COLUMNS,
+    find_active_start as find_market_cap_leaders_active_start,
+)
 from backtest_lab.tripod_nasdaq_leverage_pilot import load_tripod_prices
 
 REQUEST_ID_RE = re.compile(r"^(?P<date>\d{8})T\d{6}(?:[+-]\d{4}|Z)?$")
@@ -48,6 +58,24 @@ TOP2_OUTPUT_FILES = (
     "yearly_performance.csv",
     "annual_selections.csv",
     "fills.csv",
+)
+
+MARKET_CAP_LEADERS_BASELINE_OUTPUT_FILES = (
+    "input_prices.csv",
+    "ffn_stats.csv",
+    "performance_summary.csv",
+    "equity_curves.csv",
+    "yearly_performance.csv",
+    "quarterly_rankings.csv",
+    "quarterly_selections.csv",
+    "fills.csv",
+)
+
+MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES = (
+    "input_prices.csv",
+    "quarterly_rankings.csv",
+    "window_performance.csv",
+    "rolling_summary.csv",
 )
 
 
@@ -85,16 +113,30 @@ def _top2_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: Run
     return run_top2_baseline(prices, start=active_start, config=config)
 
 
+def _market_cap_leaders_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_market_cap_leaders_baseline(prices, start=active_start, config=config)
+
+
+def _market_cap_leaders_window_sensitivity(
+    prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig
+):
+    return run_market_cap_leaders_window_sensitivity(prices, start=active_start, config=config)
+
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): _tripod_sensitivity,
     ("sp500_top2_market_cap", "r01", "baseline"): _top2_baseline,
+    ("us_market_cap_leaders", "r01", "baseline"): _market_cap_leaders_baseline,
+    ("us_market_cap_leaders", "r01", "window_sensitivity"): _market_cap_leaders_window_sensitivity,
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
     ("tripod_nasdaq_leverage", "r01", "baseline"): TRIPOD_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): TRIPOD_OUTPUT_FILES,
     ("sp500_top2_market_cap", "r01", "baseline"): TOP2_OUTPUT_FILES,
+    ("us_market_cap_leaders", "r01", "baseline"): MARKET_CAP_LEADERS_BASELINE_OUTPUT_FILES,
+    ("us_market_cap_leaders", "r01", "window_sensitivity"): MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES,
 }
 
 
@@ -123,6 +165,12 @@ def load_request(path: str | Path) -> BacktestRequest:
         if request.start != TOP2_START or request.end != TOP2_END_EXCLUSIVE:
             raise ValueError(
                 f"sp500_top2_market_cap/r01 fixed period is start={TOP2_START}, end={TOP2_END_EXCLUSIVE}."
+            )
+    if request.strategy_id == "us_market_cap_leaders" and request.revision == "r01":
+        if request.start != MARKET_CAP_LEADERS_PRICE_START or request.end != MARKET_CAP_LEADERS_END_EXCLUSIVE:
+            raise ValueError(
+                "us_market_cap_leaders/r01 fixed price coverage is "
+                f"start={MARKET_CAP_LEADERS_PRICE_START}, end={MARKET_CAP_LEADERS_END_EXCLUSIVE}."
             )
     return request
 
@@ -160,6 +208,19 @@ def _load_prices(request: BacktestRequest) -> pd.DataFrame:
             ),
         )
 
+    if request.strategy_id == "us_market_cap_leaders" and request.revision == "r01":
+        if request.end is None:
+            raise ValueError("us_market_cap_leaders/r01 requires an explicit end date.")
+        return load_market_data(
+            MARKET_CAP_LEADERS_REQUIRED_COLUMNS,
+            request.start,
+            request.end,
+            config=MarketDataConfig(
+                source=DataSource.YAHOO_FINANCE,
+                price_column="AdjClose",
+            ),
+        )
+
     raise ValueError(f"No market-data loader registered for {request.strategy_id}/{request.revision}")
 
 
@@ -168,6 +229,8 @@ def _active_start(request: BacktestRequest, prices: pd.DataFrame) -> pd.Timestam
         return find_tripod_active_start(prices)
     if request.strategy_id == "sp500_top2_market_cap" and request.revision == "r01":
         return pd.Timestamp(prices.index[0])
+    if request.strategy_id == "us_market_cap_leaders" and request.revision == "r01":
+        return find_market_cap_leaders_active_start(prices)
     raise ValueError(f"No active-start resolver registered for {request.strategy_id}/{request.revision}")
 
 
