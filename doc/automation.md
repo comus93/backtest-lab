@@ -80,9 +80,11 @@ Registered modes include:
 - `us_market_cap_leaders / r01 / baseline`
 - `us_market_cap_leaders / r01 / window_sensitivity`
 
-`us_market_cap_leaders/r01` uses fixed price coverage `2010-03-31` through end-exclusive `2026-07-01`. Its baseline mode compares TOP1, TOP2, SPY Buy & Hold, and QQQ Buy & Hold. Its `window_sensitivity` mode performs the strategy-specific 3Y/5Y/10Y rolling and start/end window evaluation inside one registered Action run; the framework dispatcher does not implement those experiment rules itself.
+`us_market_cap_leaders/r01` uses fixed price coverage `2010-03-31` through end-exclusive `2026-07-01`. Its baseline mode compares TOP1, TOP2, SPY Buy & Hold, and QQQ Buy & Hold.
 
-New strategies are added by extending the explicit dispatcher mapping and its tests.
+Its `window_sensitivity` mode defines the strategy-specific 3Y/5Y/10Y and start/end research windows, but delegates repeated start execution, canonical performance metrics, and Start × End matrix transformation to the common `backtest_lab.analysis` package. The framework dispatcher does not implement those experiment rules itself.
+
+New strategies are added by extending the explicit dispatcher mapping and its tests. Reusable post-run calculations should be added to `backtest_lab.analysis` instead of copied into each strategy evaluator.
 
 ## Run ID allocation
 
@@ -151,7 +153,15 @@ input_prices.csv
 quarterly_rankings.csv
 window_performance.csv
 rolling_summary.csv
+start_end_cagr_top1_pct.csv
+start_end_cagr_top2_pct.csv
+start_end_cagr_spy_pct.csv
+start_end_cagr_qqq_pct.csv
 ```
+
+The Start × End CSVs are absolute CAGR matrices expressed in percentage units. Rows are strategy start dates, columns are end dates, and each cell is that strategy's CAGR for the corresponding interval. They are not benchmark-relative excess-return matrices.
+
+The common analysis API can build the same matrix for another metric by selecting a different `metric` when calling `start_end_matrix()`.
 
 ## Result manifest
 
