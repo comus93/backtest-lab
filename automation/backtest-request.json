@@ -1,8 +1,8 @@
 {
-  "request_id": "20260907T062500+0900",
-  "strategy_id": "sp500_top2_market_cap",
+  "request_id": "20260908T092500+0900",
+  "strategy_id": "us_market_cap_leaders",
   "revision": "r01",
   "mode": "baseline",
-  "start": "2016-01-01",
-  "end": "2026-01-01"
+  "start": "2010-03-31",
+  "end": "2026-07-01"
 }
