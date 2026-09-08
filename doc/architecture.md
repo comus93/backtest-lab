@@ -19,6 +19,8 @@ Runtime
  ├─ fills
  └─ performance series
           ↓
+       Analysis
+          ↓
          FFN
 ```
 
@@ -74,6 +76,31 @@ Runtime은 입력 데이터 주기를 그대로 따른다. daily로 고정하지
 Portfolio는 전략 판단이나 시간 진행을 알지 않는다.
 
 Lot은 core에 포함하지 않는다. 차수별 진입 등 특수 전략의 상태는 해당 Strategy가 필요에 따라 별도로 관리한다.
+
+### Analysis
+
+백테스트 실행 이후의 공통 성과 분석과 연구용 후처리를 담당한다.
+
+`backtest_lab.analysis`는 단일 파일이 아니라 확장 가능한 package boundary로 유지한다.
+
+현재 공통 책임:
+
+- FFN `calc_stats()` 결과 추출과 canonical 성과 metric
+- monthly turnover
+- 여러 start/end window의 반복 평가
+- Start × End metric matrix 변환
+
+Strategy별 evaluator는 어떤 window를 조사할지, 어떤 benchmark를 비교할지 같은 실험 설계를 담당하고, 공통 계산과 변환은 Analysis package를 재사용한다.
+
+Analysis는 다음을 수행하지 않는다.
+
+- 주문 의사결정
+- Fill 생성
+- Portfolio 회계 변경
+- market data 조회
+- GitHub Actions dispatch
+
+향후 drawdown episode, regime, attribution, benchmark comparison 등 반복 요구가 생기면 동일 package 아래에 추가한다. 실제 반복 요구가 없는 추상화 계층은 선제적으로 만들지 않는다.
 
 ## 4. Runtime outputs
 
@@ -148,15 +175,17 @@ DB 및 on-demand 접근 코드는 Runtime core와 분리한다. Runtime과 Strat
 
 ## 8. FFN boundary
 
-FFN은 성과 분석을 담당한다.
+FFN은 Analysis package가 사용하는 성과 계산 엔진이다.
 
 - CAGR
 - Sharpe
 - drawdown
 - 기타 FFN 성과 통계
-- 여러 백테스트 성과 비교
+- 여러 백테스트 성과 비교에 필요한 기초 metric
 
 백테스트 실행이나 Portfolio accounting은 FFN의 책임이 아니다.
+
+가능하면 동일 성과 지표를 전략별 수식으로 중복 계산하지 않고 공통 Analysis 함수를 통해 FFN 결과를 사용한다.
 
 ## 9. Design principle
 
@@ -165,4 +194,5 @@ FFN은 성과 분석을 담당한다.
 - 흔한 포트폴리오 백테스트를 가장 단순하게 처리한다.
 - 특수 전략 요건은 Strategy의 자유로운 Python 코드와 필요한 추가 상태로 구현한다.
 - 특수 전략 하나를 편하게 만들기 위해 core 데이터 모델을 확장하지 않는다.
+- 반복되는 사후 분석 요구는 `backtest_lab.analysis` package로 수용하되, 전략별 실험 설계까지 framework에 강제하지 않는다.
 - `bt`는 dependency가 아니라 accounting/performance 설계의 reference로 활용한다.
