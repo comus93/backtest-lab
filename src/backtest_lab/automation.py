@@ -76,6 +76,10 @@ MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES = (
     "quarterly_rankings.csv",
     "window_performance.csv",
     "rolling_summary.csv",
+    "start_end_cagr_top1_pct.csv",
+    "start_end_cagr_top2_pct.csv",
+    "start_end_cagr_spy_pct.csv",
+    "start_end_cagr_qqq_pct.csv",
 )
 
 
