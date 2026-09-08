@@ -72,10 +72,15 @@ to an explicitly registered runner in source code.
 
 Unknown combinations fail before the E2E backtest starts.
 
-Initial registered modes:
+Registered modes include:
 
 - `tripod_nasdaq_leverage / r01 / baseline`
 - `tripod_nasdaq_leverage / r01 / sensitivity`
+- `sp500_top2_market_cap / r01 / baseline`
+- `us_market_cap_leaders / r01 / baseline`
+- `us_market_cap_leaders / r01 / window_sensitivity`
+
+`us_market_cap_leaders/r01` uses fixed price coverage `2010-03-31` through end-exclusive `2026-07-01`. Its baseline mode compares TOP1, TOP2, SPY Buy & Hold, and QQQ Buy & Hold. Its `window_sensitivity` mode performs the strategy-specific 3Y/5Y/10Y rolling and start/end window evaluation inside one registered Action run; the framework dispatcher does not implement those experiment rules itself.
 
 New strategies are added by extending the explicit dispatcher mapping and its tests.
 
@@ -124,6 +129,28 @@ daily_signals.csv
 regime_summary.csv
 yearly_performance.csv
 exposure.csv
+```
+
+For `us_market_cap_leaders/r01/baseline` the expected files are:
+
+```text
+input_prices.csv
+ffn_stats.csv
+performance_summary.csv
+equity_curves.csv
+yearly_performance.csv
+quarterly_rankings.csv
+quarterly_selections.csv
+fills.csv
+```
+
+For `us_market_cap_leaders/r01/window_sensitivity` the expected files are:
+
+```text
+input_prices.csv
+quarterly_rankings.csv
+window_performance.csv
+rolling_summary.csv
 ```
 
 ## Result manifest
