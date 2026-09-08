@@ -1,19 +1,23 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20260908T094500+0900
+request_id: 20260908T100600+0900
 strategy_id: us_market_cap_leaders
 revision: r01
 mode: window_sensitivity
-run_id: 20260908-0002
+run_id: 20260908-0003
 
 output_directory:
-`runs/us_market_cap_leaders/r01/20260908-0002/`
+`runs/us_market_cap_leaders/r01/20260908-0003/`
 
 default_outputs:
 - `input_prices.csv`
 - `quarterly_rankings.csv`
 - `rolling_summary.csv`
+- `start_end_cagr_qqq_pct.csv`
+- `start_end_cagr_spy_pct.csv`
+- `start_end_cagr_top1_pct.csv`
+- `start_end_cagr_top2_pct.csv`
 - `window_performance.csv`
 
 report_url: pending
