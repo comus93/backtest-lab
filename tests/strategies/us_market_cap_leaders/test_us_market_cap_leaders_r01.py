@@ -49,7 +49,11 @@ def test_top1_uses_ranking_only_after_ranking_date() -> None:
     strategy = QuarterlyMarketCapLeaderStrategy(top_n=1, rankings=rankings)
     result = Runtime(strategy, initial_cash=1000.0, config=RuntimeConfig()).run(prices, start="2020-03-31")
 
-    assert [fill.timestamp for fill in result.fills] == [pd.Timestamp("2020-04-01"), pd.Timestamp("2020-07-01"), pd.Timestamp("2020-07-01")]
+    assert [fill.timestamp for fill in result.fills] == [
+        pd.Timestamp("2020-04-01"),
+        pd.Timestamp("2020-07-01"),
+        pd.Timestamp("2020-07-01"),
+    ]
     assert result.fills[0].symbol == "AAA"
     assert result.fills[-1].symbol == "BBB"
     assert strategy.decisions[0]["ranking_date"] == pd.Timestamp("2020-03-31")
@@ -99,7 +103,7 @@ def test_baseline_compares_top1_top2_spy_and_qqq() -> None:
     assert set(outputs.quarterly_selections["strategy"]) == {TOP1_NAME, TOP2_NAME}
 
 
-def test_window_sensitivity_generates_fixed_and_matrix_windows() -> None:
+def test_window_sensitivity_generates_fixed_matrix_windows_and_absolute_cagr_matrices() -> None:
     ranking_dates = (
         pd.period_range("2010Q1", periods=22, freq="Q")
         .to_timestamp(how="end")
@@ -128,3 +132,6 @@ def test_window_sensitivity_generates_fixed_and_matrix_windows() -> None:
     assert outputs.window_performance["matrix_eligible"].any()
     assert set(outputs.rolling_summary["strategy"]) == {TOP1_NAME, TOP2_NAME}
     assert set(outputs.rolling_summary["benchmark"]) == {SPY_NAME, QQQ_NAME}
+    assert set(outputs.cagr_matrices) == {TOP1_NAME, TOP2_NAME, SPY_NAME, QQQ_NAME}
+    assert not outputs.cagr_matrices[TOP1_NAME].empty
+    assert not outputs.cagr_matrices[TOP2_NAME].empty

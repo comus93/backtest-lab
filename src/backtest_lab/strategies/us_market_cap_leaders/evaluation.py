@@ -6,8 +6,15 @@ from typing import Mapping
 
 import pandas as pd
 
-from backtest_lab.analysis import average_monthly_turnover
-from backtest_lab.core import BacktestResult, Runtime, RuntimeConfig, StrategyContext, Order
+from backtest_lab.analysis import (
+    WindowSpec,
+    average_monthly_turnover,
+    evaluate_windows,
+    ffn_stats_table,
+    start_end_matrix,
+    stat_value,
+)
+from backtest_lab.core import BacktestResult, Order, Runtime, RuntimeConfig, StrategyContext
 from backtest_lab.strategies.us_market_cap_leaders.r01 import (
     QuarterlyMarketCapLeaderStrategy,
     load_rankings,
@@ -18,6 +25,13 @@ TOP1_NAME = "TOP1"
 TOP2_NAME = "TOP2"
 SPY_NAME = "SPY Buy & Hold"
 QQQ_NAME = "QQQ Buy & Hold"
+
+MATRIX_FILE_LABELS = {
+    TOP1_NAME: "top1",
+    TOP2_NAME: "top2",
+    SPY_NAME: "spy",
+    QQQ_NAME: "qqq",
+}
 
 
 @dataclass
@@ -71,6 +85,7 @@ class WindowSensitivityOutputs:
     quarterly_rankings: pd.DataFrame
     window_performance: pd.DataFrame
     rolling_summary: pd.DataFrame
+    cagr_matrices: Mapping[str, pd.DataFrame] = field(default_factory=dict)
 
     def write_csv(self, output_dir: str | Path) -> dict[str, Path]:
         path = Path(output_dir)
@@ -83,6 +98,12 @@ class WindowSensitivityOutputs:
         }.items():
             frame.to_csv(path / f"{name}.csv", index=False)
             outputs[name] = path / f"{name}.csv"
+
+        for strategy_name, matrix in self.cagr_matrices.items():
+            label = MATRIX_FILE_LABELS[strategy_name]
+            filename = f"start_end_cagr_{label}_pct.csv"
+            matrix.to_csv(path / filename, index=True, index_label="start_date")
+            outputs[f"start_end_cagr_{label}_pct"] = path / filename
         return outputs
 
 
@@ -112,30 +133,6 @@ def _run_four(
     return results, [top1, top2]
 
 
-def _raw_stats(series: pd.Series) -> pd.Series:
-    import ffn  # noqa: F401
-
-    stats_object = series.calc_stats()
-    raw = getattr(stats_object, "stats", None)
-    if raw is None:
-        raise ValueError("FFN calc_stats() result does not expose .stats.")
-    return pd.Series(raw)
-
-
-def _stat(stats: pd.Series, key: str) -> float:
-    if key not in stats.index:
-        return float("nan")
-    try:
-        return float(stats.loc[key])
-    except (TypeError, ValueError):
-        return float("nan")
-
-
-def _ffn_stats(results: Mapping[str, BacktestResult]) -> tuple[pd.DataFrame, dict[str, pd.Series]]:
-    columns = {name: _raw_stats(result.performance) for name, result in results.items()}
-    return pd.concat(columns, axis=1), columns
-
-
 def _summary_row(
     name: str,
     result: BacktestResult,
@@ -147,13 +144,13 @@ def _summary_row(
         "strategy": name,
         "start_date": start.date(),
         "end_date": active.index[-1].date(),
-        "total_return": _stat(stats, "total_return"),
-        "cagr": _stat(stats, "cagr"),
-        "volatility": _stat(stats, "daily_vol"),
-        "sharpe": _stat(stats, "daily_sharpe"),
-        "sortino": _stat(stats, "daily_sortino"),
-        "max_drawdown": _stat(stats, "max_drawdown"),
-        "calmar": _stat(stats, "calmar"),
+        "total_return": stat_value(stats, "total_return"),
+        "cagr": stat_value(stats, "cagr"),
+        "volatility": stat_value(stats, "daily_vol"),
+        "sharpe": stat_value(stats, "daily_sharpe"),
+        "sortino": stat_value(stats, "daily_sortino"),
+        "max_drawdown": stat_value(stats, "max_drawdown"),
+        "calmar": stat_value(stats, "calmar"),
         "avg_monthly_turnover": average_monthly_turnover(result),
     }
 
@@ -212,7 +209,7 @@ def run_baseline(
     config = config or RuntimeConfig(fee_rate=0.00015)
 
     results, leader_strategies = _run_four(prices, start_timestamp, config, rankings)
-    ffn_table, stats_by_name = _ffn_stats(results)
+    ffn_table, stats_by_name = ffn_stats_table(results)
     performance_summary = pd.DataFrame(
         [_summary_row(name, result, stats_by_name[name], start_timestamp) for name, result in results.items()]
     )
@@ -242,59 +239,36 @@ def _last_price_on_or_before(prices: pd.DataFrame, timestamp: pd.Timestamp) -> p
     return pd.Timestamp(eligible[-1]) if not eligible.empty else None
 
 
-def _window_metrics(series: pd.Series, end_date: pd.Timestamp) -> dict[str, float]:
-    sliced = series.loc[series.index <= end_date]
-    if len(sliced) < 2:
-        raise ValueError("window must contain at least two performance observations.")
-    stats = _raw_stats(sliced)
-    return {
-        "total_return": _stat(stats, "total_return"),
-        "cagr": _stat(stats, "cagr"),
-        "volatility": _stat(stats, "daily_vol"),
-        "sharpe": _stat(stats, "daily_sharpe"),
-        "sortino": _stat(stats, "daily_sortino"),
-        "max_drawdown": _stat(stats, "max_drawdown"),
-        "calmar": _stat(stats, "calmar"),
-    }
+def _add_benchmark_deltas(window_performance: pd.DataFrame) -> pd.DataFrame:
+    result = window_performance.copy()
+    keys = ["start_date", "end_date"]
 
-
-def _window_rows(
-    results: Mapping[str, BacktestResult],
-    start_ranking_date: pd.Timestamp,
-    start_date: pd.Timestamp,
-    end_ranking_date: pd.Timestamp,
-    end_date: pd.Timestamp,
-    quarter_span: int,
-) -> list[dict[str, object]]:
-    metrics = {name: _window_metrics(result.performance, end_date) for name, result in results.items()}
-    fixed_horizon = {12: 3, 20: 5, 40: 10}.get(quarter_span)
-    rows: list[dict[str, object]] = []
-    for name, values in metrics.items():
-        row: dict[str, object] = {
-            "start_ranking_date": start_ranking_date.date(),
-            "start_date": start_date.date(),
-            "end_ranking_date": end_ranking_date.date(),
-            "end_date": end_date.date(),
-            "quarter_span": quarter_span,
-            "fixed_horizon_years": fixed_horizon,
-            "matrix_eligible": quarter_span >= 20,
-            "strategy": name,
-            **values,
-        }
-        spy = metrics[SPY_NAME]
-        qqq = metrics[QQQ_NAME]
-        row.update(
-            {
-                "excess_cagr_vs_spy": values["cagr"] - spy["cagr"],
-                "excess_cagr_vs_qqq": values["cagr"] - qqq["cagr"],
-                "sharpe_delta_vs_spy": values["sharpe"] - spy["sharpe"],
-                "sharpe_delta_vs_qqq": values["sharpe"] - qqq["sharpe"],
-                "mdd_improvement_vs_spy": values["max_drawdown"] - spy["max_drawdown"],
-                "mdd_improvement_vs_qqq": values["max_drawdown"] - qqq["max_drawdown"],
+    for benchmark_name, suffix in ((SPY_NAME, "spy"), (QQQ_NAME, "qqq")):
+        benchmark = result.loc[
+            result["strategy"] == benchmark_name,
+            [*keys, "cagr", "sharpe", "max_drawdown"],
+        ].rename(
+            columns={
+                "cagr": f"_benchmark_cagr_{suffix}",
+                "sharpe": f"_benchmark_sharpe_{suffix}",
+                "max_drawdown": f"_benchmark_mdd_{suffix}",
             }
         )
-        rows.append(row)
-    return rows
+        result = result.merge(benchmark, on=keys, how="left", validate="many_to_one")
+        result[f"excess_cagr_vs_{suffix}"] = result["cagr"] - result[f"_benchmark_cagr_{suffix}"]
+        result[f"sharpe_delta_vs_{suffix}"] = result["sharpe"] - result[f"_benchmark_sharpe_{suffix}"]
+        result[f"mdd_improvement_vs_{suffix}"] = (
+            result["max_drawdown"] - result[f"_benchmark_mdd_{suffix}"]
+        )
+        result = result.drop(
+            columns=[
+                f"_benchmark_cagr_{suffix}",
+                f"_benchmark_sharpe_{suffix}",
+                f"_benchmark_mdd_{suffix}",
+            ]
+        )
+
+    return result
 
 
 def _rolling_summary(window_performance: pd.DataFrame) -> pd.DataFrame:
@@ -331,27 +305,16 @@ def _rolling_summary(window_performance: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def run_window_sensitivity(
-    prices: pd.DataFrame,
-    start: pd.Timestamp | str,
-    config: RuntimeConfig | None = None,
-    rankings: pd.DataFrame | None = None,
-) -> WindowSensitivityOutputs:
-    rankings = load_rankings() if rankings is None else rankings.copy()
-    rankings["ranking_date"] = pd.to_datetime(rankings["ranking_date"])
-    rankings = rankings.sort_values("ranking_date").reset_index(drop=True)
-    _validate_prices(prices, rankings)
-    config = config or RuntimeConfig(fee_rate=0.00015)
-
-    rows: list[dict[str, object]] = []
+def _build_window_specs(prices: pd.DataFrame, rankings: pd.DataFrame) -> list[WindowSpec]:
+    specs: list[WindowSpec] = []
     for start_index, start_row in rankings.iterrows():
         if start_index + 12 >= len(rankings):
             break
+
         start_ranking_date = pd.Timestamp(start_row["ranking_date"])
         active_start = _first_price_after(prices, start_ranking_date)
         if active_start is None:
             continue
-        results, _ = _run_four(prices, active_start, config, rankings)
 
         end_indices = {start_index + 12}
         if start_index + 20 < len(rankings):
@@ -364,20 +327,59 @@ def run_window_sensitivity(
             end_date = _last_price_on_or_before(prices, end_ranking_date)
             if end_date is None or end_date < active_start:
                 continue
-            rows.extend(
-                _window_rows(
-                    results,
-                    start_ranking_date=start_ranking_date,
+
+            quarter_span = end_index - start_index
+            specs.append(
+                WindowSpec(
                     start_date=active_start,
-                    end_ranking_date=end_ranking_date,
                     end_date=end_date,
-                    quarter_span=end_index - start_index,
+                    metadata={
+                        "start_ranking_date": start_ranking_date.date(),
+                        "end_ranking_date": end_ranking_date.date(),
+                        "quarter_span": quarter_span,
+                        "fixed_horizon_years": {12: 3, 20: 5, 40: 10}.get(quarter_span),
+                        "matrix_eligible": quarter_span >= 20,
+                    },
                 )
             )
+    return specs
 
-    window_performance = pd.DataFrame(rows)
+
+def run_window_sensitivity(
+    prices: pd.DataFrame,
+    start: pd.Timestamp | str,
+    config: RuntimeConfig | None = None,
+    rankings: pd.DataFrame | None = None,
+) -> WindowSensitivityOutputs:
+    rankings = load_rankings() if rankings is None else rankings.copy()
+    rankings["ranking_date"] = pd.to_datetime(rankings["ranking_date"])
+    rankings = rankings.sort_values("ranking_date").reset_index(drop=True)
+    _validate_prices(prices, rankings)
+    config = config or RuntimeConfig(fee_rate=0.00015)
+
+    specs = _build_window_specs(prices, rankings)
+
+    def run_from_start(active_start: pd.Timestamp) -> Mapping[str, BacktestResult]:
+        results, _ = _run_four(prices, active_start, config, rankings)
+        return results
+
+    window_performance = evaluate_windows(specs, run_from_start)
+    window_performance = _add_benchmark_deltas(window_performance)
+
+    cagr_matrices = {
+        name: start_end_matrix(
+            window_performance,
+            strategy=name,
+            metric="cagr",
+            eligible_column="matrix_eligible",
+            scale=100.0,
+        )
+        for name in (TOP1_NAME, TOP2_NAME, SPY_NAME, QQQ_NAME)
+    }
+
     return WindowSensitivityOutputs(
         quarterly_rankings=rankings.copy(),
         window_performance=window_performance,
         rolling_summary=_rolling_summary(window_performance),
+        cagr_matrices=cagr_matrices,
     )
