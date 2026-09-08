@@ -1,0 +1,131 @@
+strategy,ranking_date,execution_date,rank1_company,rank1_ticker,rank1_market_cap_b,rank2_company,rank2_ticker,rank2_market_cap_b,rank1_weight,rank2_weight,source_group,confidence
+TOP1,2010-03-31,2010-04-01,Exxon Mobil,XOM,316.231,Microsoft,MSFT,256.865,1.0,0.0,FT/archived FT,high
+TOP1,2010-06-30,2010-07-01,Exxon Mobil,XOM,291.789,Apple,AAPL,228.877,1.0,0.0,FT/archived FT,high
+TOP1,2010-09-30,2010-10-01,Exxon Mobil,XOM,314.623,Apple,AAPL,259.223,1.0,0.0,FT/archived FT,high
+TOP1,2010-12-31,2011-01-03,Exxon Mobil,XOM,368.712,Apple,AAPL,295.886,1.0,0.0,FT/archived FT,high
+TOP1,2011-03-31,2011-04-01,Exxon Mobil,XOM,417.167,Apple,AAPL,321.072,1.0,0.0,FT/archived FT,high
+TOP1,2011-06-30,2011-07-01,Exxon Mobil,XOM,400.885,Apple,AAPL,310.412,1.0,0.0,FT/archived FT,high
+TOP1,2011-09-30,2011-10-03,Apple,AAPL,353.518,Exxon Mobil,XOM,353.135,1.0,0.0,FT/archived FT,high
+TOP1,2011-12-31,2012-01-03,Exxon Mobil,XOM,406.272,Apple,AAPL,376.411,1.0,0.0,FT/archived FT,high
+TOP1,2012-03-31,2012-04-02,Apple,AAPL,559.002,Exxon Mobil,XOM,408.777,1.0,0.0,FT/archived FT,high
+TOP1,2012-06-30,2012-07-02,Apple,AAPL,546.076,Exxon Mobil,XOM,400.139,1.0,0.0,FT/archived FT,high
+TOP1,2012-09-30,2012-10-01,Apple,AAPL,625.348,Exxon Mobil,XOM,422.128,1.0,0.0,FT/archived FT,high
+TOP1,2012-12-31,2013-01-02,Apple,AAPL,500.611,Exxon Mobil,XOM,394.611,1.0,0.0,FT/archived FT,high
+TOP1,2013-03-31,2013-04-01,Apple,AAPL,415.683,Exxon Mobil,XOM,403.733,1.0,0.0,FT/archived FT,high
+TOP1,2013-06-30,2013-07-01,Exxon Mobil,XOM,401.73,Apple,AAPL,372.202,1.0,0.0,FT/archived FT,high
+TOP1,2013-09-30,2013-10-01,Apple,AAPL,433.1,Exxon Mobil,XOM,378.716,1.0,0.0,FT/archived FT,high
+TOP1,2013-12-31,2014-01-02,Apple,AAPL,504.771,Exxon Mobil,XOM,442.143,1.0,0.0,FT/archived FT,high
+TOP1,2014-03-31,2014-04-01,Apple,AAPL,478.766,Exxon Mobil,XOM,422.098,1.0,0.0,FT/archived FT,high
+TOP1,2014-06-30,2014-07-01,Apple,AAPL,560.337,Exxon Mobil,XOM,432.357,1.0,0.0,FT/archived FT,high
+TOP1,2014-09-30,2014-10-01,Apple,AAPL,603.277,Exxon Mobil,XOM,401.094,1.0,0.0,FT/archived FT,high
+TOP1,2014-12-31,2015-01-02,Apple,AAPL,647.361,Exxon Mobil,XOM,391.482,1.0,0.0,FT/archived FT,high
+TOP1,2015-03-31,2015-04-01,Apple,AAPL,724.773,Exxon Mobil,XOM,356.549,1.0,0.0,FT/archived FT,high
+TOP1,2015-06-30,2015-07-01,Apple,AAPL,722.577,Microsoft,MSFT,357.154,1.0,0.0,FT/archived FT,high
+TOP1,2015-09-30,2015-10-01,Apple,AAPL,621.939,Google,GOOGL,407.87,1.0,0.0,FT/archived FT,high
+TOP1,2015-12-31,2016-01-04,Apple,AAPL,598.344,Alphabet,GOOGL,534.09,1.0,0.0,FT/archived FT,high
+TOP1,2016-03-31,2016-04-01,Apple,AAPL,607.465,Alphabet,GOOGL,535.66,1.0,0.0,FT/archived FT,high
+TOP1,2016-06-30,2016-07-01,Apple,AAPL,517.069,Alphabet,GOOGL,475.32,1.0,0.0,FT/archived FT,high
+TOP1,2016-09-30,2016-10-03,Apple,AAPL,604.475,Alphabet,GOOGL,535.66,1.0,0.0,FT/archived FT,high
+TOP1,2016-12-31,2017-01-03,Apple,AAPL,617.588,Alphabet,GOOGL,531.97,1.0,0.0,FT/archived FT,high
+TOP1,2017-03-31,2017-04-03,Apple,AAPL,753.718,Alphabet,GOOGL,573.57,1.0,0.0,FT/archived FT,high
+TOP1,2017-06-30,2017-07-03,Apple,AAPL,749.124,Alphabet,GOOGL,628.61,1.0,0.0,FT/archived FT,high
+TOP1,2017-09-30,2017-10-02,Apple,AAPL,791.726,Alphabet,GOOGL,664.55,1.0,0.0,FT/archived FT,high
+TOP1,2017-12-31,2018-01-02,Apple,AAPL,868.88,Alphabet,GOOGL,727.04,1.0,0.0,FT/archived FT,high
+TOP1,2018-03-31,2018-04-02,Apple,AAPL,851.317,Alphabet,GOOGL,715.404,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2018-06-30,2018-07-02,Apple,AAPL,909.84,Amazon,AMZN,824.79,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2018-09-30,2018-10-01,Apple,AAPL,1091.0,Amazon,AMZN,976.65,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2018-12-31,2019-01-02,Microsoft,MSFT,780.52,Apple,AAPL,748.68,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2019-03-31,2019-04-01,Microsoft,MSFT,905.0,Apple,AAPL,896.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2019-06-30,2019-07-01,Microsoft,MSFT,1028.0,Amazon,AMZN,928.54,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2019-09-30,2019-10-01,Microsoft,MSFT,1062.0,Apple,AAPL,1012.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2019-12-31,2020-01-02,Apple,AAPL,1305.0,Microsoft,MSFT,1203.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2020-03-31,2020-04-01,Microsoft,MSFT,1200.0,Apple,AAPL,1113.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2020-06-30,2020-07-01,Apple,AAPL,1568.0,Microsoft,MSFT,1505.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2020-09-30,2020-10-01,Apple,AAPL,1981.0,Microsoft,MSFT,1592.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2020-12-31,2021-01-04,Apple,AAPL,2254.0,Microsoft,MSFT,1682.0,1.0,0.0,FT/PwC/secondary cross-check,medium_high
+TOP1,2021-03-31,2021-04-01,Apple,AAPL,2051.0,Microsoft,MSFT,1778.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2021-06-30,2021-07-01,Apple,AAPL,2286.0,Microsoft,MSFT,2040.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2021-09-30,2021-10-01,Apple,AAPL,2339.0,Microsoft,MSFT,2119.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2021-12-31,2022-01-03,Apple,AAPL,2913.0,Microsoft,MSFT,2525.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2022-03-31,2022-04-01,Apple,AAPL,2850.0,Microsoft,MSFT,2311.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2022-06-30,2022-07-01,Apple,AAPL,2212.0,Microsoft,MSFT,1920.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2022-09-30,2022-10-03,Apple,AAPL,2221.0,Microsoft,MSFT,1737.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2022-12-31,2023-01-03,Apple,AAPL,2066.0,Microsoft,MSFT,1787.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2023-03-31,2023-04-03,Apple,AAPL,2609.0,Microsoft,MSFT,2146.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2023-06-30,2023-07-03,Apple,AAPL,3050.0,Microsoft,MSFT,2532.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2023-09-30,2023-10-02,Apple,AAPL,2677.0,Microsoft,MSFT,2346.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2023-12-31,2024-01-02,Apple,AAPL,2994.0,Microsoft,MSFT,2795.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2024-03-31,2024-04-01,Microsoft,MSFT,3126.0,Apple,AAPL,2648.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2024-06-30,2024-07-01,Apple,AAPL,3322.0,Microsoft,MSFT,3230.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2024-09-30,2024-10-01,Microsoft,MSFT,3543.0,Apple,AAPL,3198.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2024-12-31,2025-01-02,Apple,AAPL,3785.0,Nvidia,NVDA,3289.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2025-03-31,2025-04-01,Apple,AAPL,3337.0,Microsoft,MSFT,2791.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2025-06-30,2025-07-01,Nvidia,NVDA,3850.0,Microsoft,MSFT,3700.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2025-09-30,2025-10-01,Nvidia,NVDA,4542.0,Microsoft,MSFT,3850.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2025-12-31,2026-01-02,Nvidia,NVDA,4638.0,Apple,AAPL,4057.0,1.0,0.0,PwC/secondary historical,medium
+TOP1,2026-03-31,2026-04-01,Nvidia,NVDA,4238.0,Apple,AAPL,3726.0,1.0,0.0,FinanceCharts/LSEG cross-check,medium_high
+TOP2,2010-03-31,2010-04-01,Exxon Mobil,XOM,316.231,Microsoft,MSFT,256.865,0.5,0.5,FT/archived FT,high
+TOP2,2010-06-30,2010-07-01,Exxon Mobil,XOM,291.789,Apple,AAPL,228.877,0.5,0.5,FT/archived FT,high
+TOP2,2010-09-30,2010-10-01,Exxon Mobil,XOM,314.623,Apple,AAPL,259.223,0.5,0.5,FT/archived FT,high
+TOP2,2010-12-31,2011-01-03,Exxon Mobil,XOM,368.712,Apple,AAPL,295.886,0.5,0.5,FT/archived FT,high
+TOP2,2011-03-31,2011-04-01,Exxon Mobil,XOM,417.167,Apple,AAPL,321.072,0.5,0.5,FT/archived FT,high
+TOP2,2011-06-30,2011-07-01,Exxon Mobil,XOM,400.885,Apple,AAPL,310.412,0.5,0.5,FT/archived FT,high
+TOP2,2011-09-30,2011-10-03,Apple,AAPL,353.518,Exxon Mobil,XOM,353.135,0.5,0.5,FT/archived FT,high
+TOP2,2011-12-31,2012-01-03,Exxon Mobil,XOM,406.272,Apple,AAPL,376.411,0.5,0.5,FT/archived FT,high
+TOP2,2012-03-31,2012-04-02,Apple,AAPL,559.002,Exxon Mobil,XOM,408.777,0.5,0.5,FT/archived FT,high
+TOP2,2012-06-30,2012-07-02,Apple,AAPL,546.076,Exxon Mobil,XOM,400.139,0.5,0.5,FT/archived FT,high
+TOP2,2012-09-30,2012-10-01,Apple,AAPL,625.348,Exxon Mobil,XOM,422.128,0.5,0.5,FT/archived FT,high
+TOP2,2012-12-31,2013-01-02,Apple,AAPL,500.611,Exxon Mobil,XOM,394.611,0.5,0.5,FT/archived FT,high
+TOP2,2013-03-31,2013-04-01,Apple,AAPL,415.683,Exxon Mobil,XOM,403.733,0.5,0.5,FT/archived FT,high
+TOP2,2013-06-30,2013-07-01,Exxon Mobil,XOM,401.73,Apple,AAPL,372.202,0.5,0.5,FT/archived FT,high
+TOP2,2013-09-30,2013-10-01,Apple,AAPL,433.1,Exxon Mobil,XOM,378.716,0.5,0.5,FT/archived FT,high
+TOP2,2013-12-31,2014-01-02,Apple,AAPL,504.771,Exxon Mobil,XOM,442.143,0.5,0.5,FT/archived FT,high
+TOP2,2014-03-31,2014-04-01,Apple,AAPL,478.766,Exxon Mobil,XOM,422.098,0.5,0.5,FT/archived FT,high
+TOP2,2014-06-30,2014-07-01,Apple,AAPL,560.337,Exxon Mobil,XOM,432.357,0.5,0.5,FT/archived FT,high
+TOP2,2014-09-30,2014-10-01,Apple,AAPL,603.277,Exxon Mobil,XOM,401.094,0.5,0.5,FT/archived FT,high
+TOP2,2014-12-31,2015-01-02,Apple,AAPL,647.361,Exxon Mobil,XOM,391.482,0.5,0.5,FT/archived FT,high
+TOP2,2015-03-31,2015-04-01,Apple,AAPL,724.773,Exxon Mobil,XOM,356.549,0.5,0.5,FT/archived FT,high
+TOP2,2015-06-30,2015-07-01,Apple,AAPL,722.577,Microsoft,MSFT,357.154,0.5,0.5,FT/archived FT,high
+TOP2,2015-09-30,2015-10-01,Apple,AAPL,621.939,Google,GOOGL,407.87,0.5,0.5,FT/archived FT,high
+TOP2,2015-12-31,2016-01-04,Apple,AAPL,598.344,Alphabet,GOOGL,534.09,0.5,0.5,FT/archived FT,high
+TOP2,2016-03-31,2016-04-01,Apple,AAPL,607.465,Alphabet,GOOGL,535.66,0.5,0.5,FT/archived FT,high
+TOP2,2016-06-30,2016-07-01,Apple,AAPL,517.069,Alphabet,GOOGL,475.32,0.5,0.5,FT/archived FT,high
+TOP2,2016-09-30,2016-10-03,Apple,AAPL,604.475,Alphabet,GOOGL,535.66,0.5,0.5,FT/archived FT,high
+TOP2,2016-12-31,2017-01-03,Apple,AAPL,617.588,Alphabet,GOOGL,531.97,0.5,0.5,FT/archived FT,high
+TOP2,2017-03-31,2017-04-03,Apple,AAPL,753.718,Alphabet,GOOGL,573.57,0.5,0.5,FT/archived FT,high
+TOP2,2017-06-30,2017-07-03,Apple,AAPL,749.124,Alphabet,GOOGL,628.61,0.5,0.5,FT/archived FT,high
+TOP2,2017-09-30,2017-10-02,Apple,AAPL,791.726,Alphabet,GOOGL,664.55,0.5,0.5,FT/archived FT,high
+TOP2,2017-12-31,2018-01-02,Apple,AAPL,868.88,Alphabet,GOOGL,727.04,0.5,0.5,FT/archived FT,high
+TOP2,2018-03-31,2018-04-02,Apple,AAPL,851.317,Alphabet,GOOGL,715.404,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2018-06-30,2018-07-02,Apple,AAPL,909.84,Amazon,AMZN,824.79,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2018-09-30,2018-10-01,Apple,AAPL,1091.0,Amazon,AMZN,976.65,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2018-12-31,2019-01-02,Microsoft,MSFT,780.52,Apple,AAPL,748.68,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2019-03-31,2019-04-01,Microsoft,MSFT,905.0,Apple,AAPL,896.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2019-06-30,2019-07-01,Microsoft,MSFT,1028.0,Amazon,AMZN,928.54,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2019-09-30,2019-10-01,Microsoft,MSFT,1062.0,Apple,AAPL,1012.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2019-12-31,2020-01-02,Apple,AAPL,1305.0,Microsoft,MSFT,1203.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2020-03-31,2020-04-01,Microsoft,MSFT,1200.0,Apple,AAPL,1113.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2020-06-30,2020-07-01,Apple,AAPL,1568.0,Microsoft,MSFT,1505.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2020-09-30,2020-10-01,Apple,AAPL,1981.0,Microsoft,MSFT,1592.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2020-12-31,2021-01-04,Apple,AAPL,2254.0,Microsoft,MSFT,1682.0,0.5,0.5,FT/PwC/secondary cross-check,medium_high
+TOP2,2021-03-31,2021-04-01,Apple,AAPL,2051.0,Microsoft,MSFT,1778.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2021-06-30,2021-07-01,Apple,AAPL,2286.0,Microsoft,MSFT,2040.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2021-09-30,2021-10-01,Apple,AAPL,2339.0,Microsoft,MSFT,2119.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2021-12-31,2022-01-03,Apple,AAPL,2913.0,Microsoft,MSFT,2525.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2022-03-31,2022-04-01,Apple,AAPL,2850.0,Microsoft,MSFT,2311.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2022-06-30,2022-07-01,Apple,AAPL,2212.0,Microsoft,MSFT,1920.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2022-09-30,2022-10-03,Apple,AAPL,2221.0,Microsoft,MSFT,1737.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2022-12-31,2023-01-03,Apple,AAPL,2066.0,Microsoft,MSFT,1787.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2023-03-31,2023-04-03,Apple,AAPL,2609.0,Microsoft,MSFT,2146.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2023-06-30,2023-07-03,Apple,AAPL,3050.0,Microsoft,MSFT,2532.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2023-09-30,2023-10-02,Apple,AAPL,2677.0,Microsoft,MSFT,2346.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2023-12-31,2024-01-02,Apple,AAPL,2994.0,Microsoft,MSFT,2795.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2024-03-31,2024-04-01,Microsoft,MSFT,3126.0,Apple,AAPL,2648.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2024-06-30,2024-07-01,Apple,AAPL,3322.0,Microsoft,MSFT,3230.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2024-09-30,2024-10-01,Microsoft,MSFT,3543.0,Apple,AAPL,3198.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2024-12-31,2025-01-02,Apple,AAPL,3785.0,Nvidia,NVDA,3289.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2025-03-31,2025-04-01,Apple,AAPL,3337.0,Microsoft,MSFT,2791.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2025-06-30,2025-07-01,Nvidia,NVDA,3850.0,Microsoft,MSFT,3700.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2025-09-30,2025-10-01,Nvidia,NVDA,4542.0,Microsoft,MSFT,3850.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2025-12-31,2026-01-02,Nvidia,NVDA,4638.0,Apple,AAPL,4057.0,0.5,0.5,PwC/secondary historical,medium
+TOP2,2026-03-31,2026-04-01,Nvidia,NVDA,4238.0,Apple,AAPL,3726.0,0.5,0.5,FinanceCharts/LSEG cross-check,medium_high
