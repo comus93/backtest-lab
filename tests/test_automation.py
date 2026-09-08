@@ -71,6 +71,50 @@ def test_load_request_rejects_sp500_top2_wrong_period(tmp_path: Path) -> None:
         load_request(path)
 
 
+def test_load_request_accepts_market_cap_leaders_modes(tmp_path: Path) -> None:
+    for mode in ("baseline", "window_sensitivity"):
+        path = tmp_path / f"{mode}.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "request_id": "20260908T091500+0900",
+                    "strategy_id": "us_market_cap_leaders",
+                    "revision": "r01",
+                    "mode": mode,
+                    "start": "2010-03-31",
+                    "end": "2026-07-01",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        request = load_request(path)
+
+        assert request.start == "2010-03-31"
+        assert request.end == "2026-07-01"
+        assert request.mode == mode
+
+
+def test_load_request_rejects_market_cap_leaders_wrong_period(tmp_path: Path) -> None:
+    path = tmp_path / "request.json"
+    path.write_text(
+        json.dumps(
+            {
+                "request_id": "20260908T091500+0900",
+                "strategy_id": "us_market_cap_leaders",
+                "revision": "r01",
+                "mode": "baseline",
+                "start": "2011-01-01",
+                "end": "2026-07-01",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="fixed price coverage"):
+        load_request(path)
+
+
 def test_load_request_rejects_unregistered_command_surface(tmp_path: Path) -> None:
     path = tmp_path / "request.json"
     path.write_text(
