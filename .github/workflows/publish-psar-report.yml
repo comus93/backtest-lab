@@ -1,0 +1,73 @@
+name: Publish PSAR Case Study
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/backtest_lab/reporting/**'
+      - 'tests/test_psar_reporting.py'
+      - 'pyproject.toml'
+      - '.github/workflows/publish-psar-report.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: psar-report-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install report dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[report,dev]"
+
+      - name: Validate archived data and report renderer
+        run: python -m pytest -q tests/test_psar_reporting.py
+
+      - name: Build standalone static HTML
+        run: |
+          python -m backtest_lab.reporting.psar_report \
+            --run runs/psar_segment_duration/r01/20261103-0002 \
+            --output _site/index.html
+          test -s _site/index.html
+
+      - name: Upload HTML preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: psar-report-html
+          path: _site/index.html
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy static report
+        id: deployment
+        uses: actions/deploy-pages@v4
