@@ -130,9 +130,13 @@ def test_chart_style_and_mouse_hover(archived):
     assert set(colors) == {COLORS["bullish"], COLORS["bearish"]}
     spans = [r for r in price.renderers if type(getattr(r, "glyph", None)).__name__ == "MultiLine"]
     assert len(spans) == 1
-    assert spans[0].glyph.line_width == 6
+    assert spans[0].glyph.line_width == 3
     assert spans[0].glyph.line_alpha == .80
     assert list(spans[0].glyph.line_dash) == [12, 9]
+    assert COLORS["trade_span_loss"] == "#AD2960"
+    assert COLORS["trade_span_profit"] == "#24954E"
+    span_colors = set(spans[0].data_source.data["color"])
+    assert span_colors <= {COLORS["trade_span_profit"], COLORS["trade_span_loss"]}
 
 
 def test_volume_panel_is_explicitly_optional(archived, tmp_path):

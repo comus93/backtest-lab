@@ -17,6 +17,7 @@ COLORS = {
     "psar_up": "#F59E0B", "psar_down": "#8B5CF6",
     "buy": "#16A34A", "sell": "#DC2626",
     "profit": "#16A34A", "loss": "#DC2626",
+    "trade_span_profit": "#24954E", "trade_span_loss": "#AD2960",
     "grid": "#94A3B8", "wick": "#64748B",
 }
 DAY_MS = 24 * 60 * 60 * 1000
@@ -387,10 +388,11 @@ def _make_charts(block: dict[str, object], *, show_volume: bool = False):
             beams = pd.DataFrame({
                 "xs": [[r.entry_date, r.date] for r in trades.itertuples()],
                 "ys": [[r.entry_qqq, r.exit_qqq] for r in trades.itertuples()],
-                "color": np.where(trades["win"], COLORS["profit"], COLORS["loss"]),
+                "color": np.where(trades["win"], COLORS["trade_span_profit"],
+                                  COLORS["trade_span_loss"]),
             })
             price.multi_line(xs="xs", ys="ys", source=ColumnDataSource(beams),
-                             line_width=6, line_alpha=.80, line_dash=[12, 9],
+                             line_width=3, line_alpha=.80, line_dash=[12, 9],
                              color="color", legend_label="Trade spans (QQQ axis)")
     price.legend.location = "top_left"
     price.legend.click_policy = "hide"
