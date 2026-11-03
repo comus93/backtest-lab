@@ -33,7 +33,7 @@ Status: `draft / awaiting remaining user decisions`
 - 입력 데이터에 결측, 가격 조정 불일치가 있으면 임의로 forward-fill하지 않고 기록/처리 기준을 명시한다.
 - 현재 `load_market_data`는 가격 컬럼 한 종류를 반환하므로, PSAR OHLC 입력은 전략별 데이터 준비 단계에서 조합한다. 합의 없이 Runtime/Core를 변경하지 않는다.
 
-**미확정:** PSAR을 계산할 나스닥 기초 시계열(예: Nasdaq-100 지수, QQQ 등). QLD/PSQ 자체의 서로 다른 가격에서 각각 계산하는 방식으로 임의 결정하지 않는다. FDR 해당 티커 및 OHLC 과거 coverage도 확인해야 한다.
+**확정:** PSAR 신호 기초자산은 **NASDAQ-100 지수**이며, 원천 Yahoo Finance의 지수 티커 `^NDX`를 FDR의 `fdr.DataReader('YAHOO:^NDX', ...)` 경로로 조회한다. 이는 FDR 소스 코드의 `YAHOO:` 라우팅 및 `^NDX`의 Yahoo 심볼 형식에 따른 **지원 경로 확인**이며, 실제 API에서 2006년부터 High/Low 포함 데이터를 반환하는지까지 검증한 것은 아니다. 수집 실패 시 QQQ로 **자동 대체하지 말고** blocker로 보고한다.
 
 ## 4. Historical test windows (confirmed plan)
 
@@ -141,9 +141,9 @@ Synthetic data로 다음을 검증한다.
 
 ## 12. Open decisions before implementation
 
-1. **PSAR 신호 기초자산 및 FDR 티커**: Nasdaq-100 지수 vs QQQ 등 중 선택.
+1. **PSAR 신호 기초자산 및 FDR 티커 [결정 완료]**: NASDAQ-100 `^NDX`, FDR 입력 `YAHOO:^NDX`. 실제 FDR OHLC 반환·과거 coverage는 실행 단계에서 확인.
 2. **PSAR 계산 파라미터/초기화**: 통상적인 AF 시작/증분 0.02, 최대 0.20을 기본 후보로 두지만 사용자 확정은 아직 없음. 구현 라이브러리의 초기화·반전·경계조건 확인 필요.
-3. **FDR OHLC와 ETF 시계열 coverage**: 고가/저가, 배당·분할 조정, 데이터 품질/거래일 교집합 검증.
+3. **FDR OHLC와 ETF 시계열 coverage [미확인]**: `YAHOO:^NDX`의 과거 High/Low, QLD/PSQ 가격 및 분할·분배금 조정, 데이터 품질/거래일 교집합 검증.
 4. **초기 투자금** 및 정확한 거래비용 환경 설정은 프로젝트 기본 설정을 재사용하되 run 전 확인.
 5. 1차 성과가 좋을 때에만 현실적 다음 거래일 체결 검증과 필터/인버스 제거 대조군을 추가할지 논의.
 
