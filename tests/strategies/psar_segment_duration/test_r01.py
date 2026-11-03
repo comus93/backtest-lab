@@ -116,6 +116,35 @@ def test_fdr_loader_rejects_missing_trade_dates_and_reverse_split(monkeypatch):
         load_fdr_prices("2025-01-01", "2025-02-01")
 
 
+def test_long_only_disables_psq_without_changing_qld_signals():
+    index = pd.bdate_range("2020-01-01", periods=20)
+    directions = pd.Series(
+        ["UP"] * 2 + ["DOWN"] * 3 + ["UP"] * 4 + ["DOWN"] * 5 + ["UP"] * 6,
+        index=index,
+    )
+    signals = pd.DataFrame({
+        "psar_value": 95.0,
+        "psar_direction": directions,
+    }, index=index).join(r01.segment_fields(directions))
+    prices = pd.DataFrame({"QQQ": 100.0, "QLD": 100.0, "PSQ": 100.0}, index=index)
+
+    original = r01.PSARSegmentDurationStrategy(signals)
+    long_only = r01.PSARSegmentDurationStrategy(signals, long_only=True)
+    full_fills = Runtime(original, 1000.0).run(prices).fills
+    long_fills = Runtime(long_only, 1000.0).run(prices).fills
+    assert any(fill.symbol == "PSQ" for fill in full_fills)
+    assert all(fill.symbol == "QLD" for fill in long_fills)
+    assert [
+        (fill.timestamp, fill.symbol, fill.side) for fill in full_fills if fill.symbol == "QLD"
+    ] == [
+        (fill.timestamp, fill.symbol, fill.side) for fill in long_fills
+    ]
+    assert all(
+        item["held_symbol"] == "CASH" for item in long_only.decisions
+        if item["psar_direction"] == "DOWN"
+    )
+
+
 def test_four_windows_are_strictly_bounded_and_carry_warmup():
     prices = sample_prices(pd.bdate_range("2006-06-19", "2026-11-03"))
     outputs = r01.run_pilot(prices)

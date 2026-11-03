@@ -144,6 +144,10 @@ def _psar_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: Run
     return run_psar_baseline(prices, config=config)
 
 
+def _psar_long_only(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_psar_baseline(prices, config=config, long_only=True)
+
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): _tripod_sensitivity,
@@ -151,6 +155,7 @@ ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
     ("us_market_cap_leaders", "r01", "baseline"): _market_cap_leaders_baseline,
     ("us_market_cap_leaders", "r01", "window_sensitivity"): _market_cap_leaders_window_sensitivity,
     ("psar_segment_duration", "r01", "baseline"): _psar_baseline,
+    ("psar_segment_duration", "r01", "long_only"): _psar_long_only,
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
@@ -160,6 +165,7 @@ REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
     ("us_market_cap_leaders", "r01", "baseline"): MARKET_CAP_LEADERS_BASELINE_OUTPUT_FILES,
     ("us_market_cap_leaders", "r01", "window_sensitivity"): MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES,
     ("psar_segment_duration", "r01", "baseline"): PSAR_OUTPUT_FILES,
+    ("psar_segment_duration", "r01", "long_only"): PSAR_OUTPUT_FILES,
 }
 
 

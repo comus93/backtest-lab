@@ -8,6 +8,24 @@ import pytest
 from backtest_lab.automation import BacktestRequest, load_request, next_run_id
 
 
+def test_load_request_accepts_psar_long_only_mode(tmp_path: Path) -> None:
+    path = tmp_path / "request.json"
+    path.write_text(
+        json.dumps({
+            "request_id": "20261103T200000+0900",
+            "strategy_id": "psar_segment_duration",
+            "revision": "r01",
+            "mode": "long_only",
+            "start": "2007-01-01",
+            "end": "2026-11-04",
+        }), encoding="utf-8",
+    )
+    request = load_request(path)
+    assert (request.strategy_id, request.revision, request.mode) == (
+        "psar_segment_duration", "r01", "long_only",
+    )
+
+
 def test_load_request_accepts_registered_tripod_mode(tmp_path: Path) -> None:
     path = tmp_path / "request.json"
     path.write_text(

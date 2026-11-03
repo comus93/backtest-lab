@@ -147,4 +147,14 @@ Synthetic data로 다음을 검증한다.
 4. **초기 투자금** 및 정확한 거래비용 환경 설정은 프로젝트 기본 설정을 재사용하되 run 전 확인.
 5. 1차 성과가 좋을 때에만 현실적 다음 거래일 체결 검증과 필터/인버스 제거 대조군을 추가할지 논의.
 
-**Current stage:** 개발된 r01 코드는 독립 검토에서 발견된 5년 윈도우 범위 오류 및 포지션 오청산 문제를 수정했다. 전체 103개 테스트 통과. GitHub Actions 실데이터 실행은 최종 반영 후 요청한다. 결과의 신호는 QQQ High/Low를 같은 날짜 Runtime reference price로 체결하므로 lookahead/same-bar bias가 있다.
+## 13. Follow-up experiment: long_only mode (2026-11-03)
+
+- 기존 `r01/baseline` 양방향 결과(`20261103-0001`)는 변경·덮어쓰지 않는다.
+- 동일한 QQQ PSAR 상태, 직전 반대 구간보다 길어지는 진입 필터, 상승 신호 시 QLD 100%, PSAR 반전 청산 규칙을 유지한다.
+- **차이는 하나:** PSAR DOWN 구간에서는 `PSQ`에 전혀 투자하지 않고 현금 100%를 유지한다. UP 진입 조건이 충족되면 QLD로 전환한다.
+- dispatcher 모드: `(psar_segment_duration, r01, long_only)`. 비교 가능성을 위해 데이터 로딩, 거래일, 동일날 체결 가정, fee/slippage, 4개 5년 구간, QQQ/QLD 단순보유 비교군을 유지한다.
+- 출력을 기존과 동일하게 `runs/psar_segment_duration/r01/<run_id>/`에 새 실행 ID로 보존한다.
+- `long_only`에서도 PSQ 데이터를 수집하나 실제 PSQ 주문·보유·체결은 없어야 한다.
+- 사전 정의한 단일 변수 제거 실험이며, 기존 양방향 결과가 나쁘다는 사실을 확인한 뒤 시행하는 **사후 탐색**이다. 결과 개선을 독립적인 예측력 검증으로 해석하지 않는다.
+
+**Current stage:** 양방향 r01 baseline(`20261103-0001`)은 완료·보존. 별도 long_only 모드를 테스트 및 실행 대상으로 준비한다. 결과의 신호는 QQQ High/Low를 같은 날짜 Runtime reference price로 체결하므로 lookahead/same-bar bias가 있다.

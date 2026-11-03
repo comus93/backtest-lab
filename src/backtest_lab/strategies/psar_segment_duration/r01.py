@@ -107,6 +107,7 @@ def _target_weight_orders(context: StrategyContext, target: Mapping[str, float])
 @dataclass
 class PSARSegmentDurationStrategy:
     signals: pd.DataFrame
+    long_only: bool = False
     decisions: list[dict[str, object]] = field(default_factory=list)
     _entered_segment: int | None = None
 
@@ -124,7 +125,7 @@ class PSARSegmentDurationStrategy:
             action = "EXIT_ON_REVERSAL"
             orders = _target_weight_orders(context, {})
             after = "CASH"
-        elif not holdings and eligible and self._entered_segment != segment_id:
+        elif not holdings and eligible and self._entered_segment != segment_id and (not self.long_only or direction == "UP"):
             action = "ENTER_QLD" if direction == "UP" else "ENTER_PSQ"
             self._entered_segment = segment_id
             orders = _target_weight_orders(context, {symbol: 1.0})
@@ -207,7 +208,7 @@ def _fills(results: Mapping[str, BacktestResult]) -> pd.DataFrame:
     ])
 
 
-def run_pilot(prices: pd.DataFrame, config: RuntimeConfig | None = None) -> PSAROutputs:
+def run_pilot(prices: pd.DataFrame, config: RuntimeConfig | None = None, *, long_only: bool = False) -> PSAROutputs:
     missing = sorted(set(REQUIRED_COLUMNS) - set(prices.columns))
     if missing:
         raise ValueError(f"prices missing required columns: {missing}")
@@ -230,9 +231,10 @@ def run_pilot(prices: pd.DataFrame, config: RuntimeConfig | None = None) -> PSAR
             raise ValueError(f"No active rows for window {window}.")
         # The frame passed to Runtime ends at this window boundary, never 2026
         # for 2007-2011. Signal state, however, retains the 2006 warm-up.
-        strategy = PSARSegmentDurationStrategy(signals)
+        strategy = PSARSegmentDurationStrategy(signals, long_only=long_only)
+        strategy_name = "PSAR Long Only" if long_only else "PSAR"
         runs = {
-            f"PSAR {window}": Runtime(strategy, INITIAL_CASH, config).run(sliced),
+            f"{strategy_name} {window}": Runtime(strategy, INITIAL_CASH, config).run(sliced),
             f"QLD Buy & Hold {window}": Runtime(BuyAndHoldStrategy("QLD"), INITIAL_CASH, config).run(sliced),
             f"QQQ Buy & Hold {window}": Runtime(BuyAndHoldStrategy("QQQ"), INITIAL_CASH, config).run(sliced),
         }

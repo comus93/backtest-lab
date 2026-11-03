@@ -80,6 +80,7 @@ Registered modes include:
 - `us_market_cap_leaders / r01 / baseline`
 - `us_market_cap_leaders / r01 / window_sensitivity`
 - `psar_segment_duration / r01 / baseline`
+- `psar_segment_duration / r01 / long_only` (same QQQ PSAR signals; QLD or cash, never PSQ)
 
 `us_market_cap_leaders/r01` uses fixed price coverage `2010-03-31` through end-exclusive `2026-07-01`. Its baseline mode compares TOP1, TOP2, SPY Buy & Hold, and QQQ Buy & Hold.
 
