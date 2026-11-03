@@ -1,14 +1,14 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20261103T193000+0900
+request_id: 20261103T200000+0900
 strategy_id: psar_segment_duration
 revision: r01
-mode: baseline
-run_id: 20261103-0001
+mode: long_only
+run_id: 20261103-0002
 
 output_directory:
-`runs/psar_segment_duration/r01/20261103-0001/`
+`runs/psar_segment_duration/r01/20261103-0002/`
 
 default_outputs:
 - `input_prices.csv`
