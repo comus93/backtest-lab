@@ -1,24 +1,24 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20260908T100600+0900
-strategy_id: us_market_cap_leaders
+request_id: 20261103T193000+0900
+strategy_id: psar_segment_duration
 revision: r01
-mode: window_sensitivity
-run_id: 20260908-0003
+mode: baseline
+run_id: 20261103-0001
 
 output_directory:
-`runs/us_market_cap_leaders/r01/20260908-0003/`
+`runs/psar_segment_duration/r01/20261103-0001/`
 
 default_outputs:
 - `input_prices.csv`
-- `quarterly_rankings.csv`
-- `rolling_summary.csv`
-- `start_end_cagr_qqq_pct.csv`
-- `start_end_cagr_spy_pct.csv`
-- `start_end_cagr_top1_pct.csv`
-- `start_end_cagr_top2_pct.csv`
-- `window_performance.csv`
+- `daily_signals.csv`
+- `equity_curves.csv`
+- `ffn_stats.csv`
+- `fills.csv`
+- `performance_summary.csv`
+- `segment_summary.csv`
+- `yearly_performance.csv`
 
 report_url: pending
 
