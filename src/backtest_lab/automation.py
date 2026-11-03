@@ -34,6 +34,8 @@ from backtest_lab.strategies.us_market_cap_leaders.r01 import (
     REQUIRED_COLUMNS as MARKET_CAP_LEADERS_REQUIRED_COLUMNS,
     find_active_start as find_market_cap_leaders_active_start,
 )
+from backtest_lab.strategies.psar_segment_duration.data import load_fdr_prices
+from backtest_lab.strategies.psar_segment_duration.r01 import run_pilot as run_psar_baseline
 from backtest_lab.tripod_nasdaq_leverage_pilot import load_tripod_prices
 
 REQUEST_ID_RE = re.compile(r"^(?P<date>\d{8})T\d{6}(?:[+-]\d{4}|Z)?$")
@@ -82,6 +84,17 @@ MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES = (
     "start_end_cagr_qqq_pct.csv",
 )
 
+PSAR_OUTPUT_FILES = (
+    "input_prices.csv",
+    "ffn_stats.csv",
+    "performance_summary.csv",
+    "equity_curves.csv",
+    "daily_signals.csv",
+    "segment_summary.csv",
+    "yearly_performance.csv",
+    "fills.csv",
+)
+
 
 @dataclass(frozen=True)
 class BacktestRequest:
@@ -127,12 +140,17 @@ def _market_cap_leaders_window_sensitivity(
     return run_market_cap_leaders_window_sensitivity(prices, start=active_start, config=config)
 
 
+def _psar_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_psar_baseline(prices, config=config)
+
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): _tripod_sensitivity,
     ("sp500_top2_market_cap", "r01", "baseline"): _top2_baseline,
     ("us_market_cap_leaders", "r01", "baseline"): _market_cap_leaders_baseline,
     ("us_market_cap_leaders", "r01", "window_sensitivity"): _market_cap_leaders_window_sensitivity,
+    ("psar_segment_duration", "r01", "baseline"): _psar_baseline,
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
@@ -141,6 +159,7 @@ REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
     ("sp500_top2_market_cap", "r01", "baseline"): TOP2_OUTPUT_FILES,
     ("us_market_cap_leaders", "r01", "baseline"): MARKET_CAP_LEADERS_BASELINE_OUTPUT_FILES,
     ("us_market_cap_leaders", "r01", "window_sensitivity"): MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES,
+    ("psar_segment_duration", "r01", "baseline"): PSAR_OUTPUT_FILES,
 }
 
 
@@ -195,6 +214,10 @@ def next_run_id(runs_root: str | Path, request: BacktestRequest) -> str:
 
 
 def _load_prices(request: BacktestRequest) -> pd.DataFrame:
+    if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
+        if request.end is None:
+            raise ValueError("psar_segment_duration/r01 requires an explicit end date.")
+        return load_fdr_prices("2006-01-01", request.end)
     if request.strategy_id == "tripod_nasdaq_leverage" and request.revision == "r01":
         end = request.end or str(date.today() + timedelta(days=1))
         return load_tripod_prices(request.start, end)
@@ -229,6 +252,8 @@ def _load_prices(request: BacktestRequest) -> pd.DataFrame:
 
 
 def _active_start(request: BacktestRequest, prices: pd.DataFrame) -> pd.Timestamp:
+    if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
+        return pd.Timestamp(prices.index[0])
     if request.strategy_id == "tripod_nasdaq_leverage" and request.revision == "r01":
         return find_tripod_active_start(prices)
     if request.strategy_id == "sp500_top2_market_cap" and request.revision == "r01":

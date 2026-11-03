@@ -3,9 +3,9 @@
 Strategy ID: `psar_segment_duration`  
 Revision: `r01`  
 Revision date: `2026-11-03`  
-Status: `draft / awaiting remaining user decisions`
+Status: `reviewed implementation / baseline execution pending`
 
-> 이 문서는 사용자와 LLM이 2026-11-03 논의한 원안의 최초 전략 명세다. **확정 사항**과 **미확정 사항**을 구분한다. 사용자 승인 전 구현·백테스트를 시작하거나 다른 지표/추가 청산 규칙을 넣지 않는다.
+> 이 문서는 사용자 승인에 따라 구현·백테스트한 r01 명세다. PSAR은 표준 AF 시작/증분 `0.02`, 최대 `0.20`을 사용하고, FDR의 `Close`를 공통 체결 가격으로 사용한다. FDR 행은 QQQ/QLD/PSQ 공통 거래일 교집합만 사용하며 결측 forward-fill은 하지 않는다.
 
 ## 1. Purpose / investment hypothesis
 
@@ -33,7 +33,7 @@ Status: `draft / awaiting remaining user decisions`
 - 입력 데이터에 결측, 가격 조정 불일치가 있으면 임의로 forward-fill하지 않고 기록/처리 기준을 명시한다.
 - 현재 `load_market_data`는 가격 컬럼 한 종류를 반환하므로, PSAR OHLC 입력은 전략별 데이터 준비 단계에서 조합한다. 합의 없이 Runtime/Core를 변경하지 않는다.
 
-**확정:** PSAR 신호 기초자산은 **QQQ ETF**로 한다. FinanceDataReader로 QQQ의 일봉 OHLC(특히 High/Low)를 가져와 PSAR을 계산한다. 이 선택은 사용자가 NASDAQ-100 지수(`^NDX`) 대신 명시적으로 지정한 사항이다. FDR에서 실제 과거 OHLC 데이터 범위는 실행 전 확인한다.
+**확정:** PSAR 신호 기초자산은 **QQQ ETF**로 한다. FinanceDataReader로 QQQ의 일봉 OHLC(특히 High/Low)를 가져와 PSAR을 계산한다. 이 선택은 사용자가 NASDAQ-100 지수(`^NDX`) 대신 명시적으로 지정한 사항이다. FDR에서 실제 과거 OHLC 데이터 범위는 실행 전 확인한다. 데이터 준비 시 QQQ 대비 QLD/PSQ 누락 거래일과 큰 일일 추적오차(액면분할·병합 조정 문제 가능성)를 감지하면 중단한다.
 
 ## 4. Historical test windows (confirmed plan)
 
@@ -46,7 +46,7 @@ ETF 두 종목은 2006-06-19 상장. 단, **상장일과 FDR 실데이터 커버
 3. `2017-01-01 ~ 2021-12-31`
 4. `2022-01-01 ~ 2026-12-31`: 현재 날짜(2026-11-03) 및 FDR 마지막 유효 거래일까지만 평가하는 **미완료 구간**.
 
-모든 기간의 시작·종료는 실제 거래일에 맞추고, 각 구간의 수익률/포트폴리오는 독립 초기화한다. 신호 계산에만 이전 히스토리를 warm-up으로 활용한다. 첫 분석 기간 이전 2006년 하반기를 초기 PSAR 계산 및 직전 구간 식별에 활용한다. 이후 분석 구간도 이전 거래일 데이터를 신호 warm-up으로 사용할 수 있지만 미래 가격을 쓰지 않는다.
+모든 기간의 시작·종료는 실제 거래일에 맞추고, 각 구간의 수익률/포트폴리오는 독립 초기화한다. **각 구간 진입일에 이미 QQQ의 PSAR 상승/하락 지속기간 조건을 충족한 상태라면 독립 포트폴리오는 해당 구간 첫 거래일에 진입한다.** 신호의 이전 기간 이력은 초기화하지 않는다. 신호 계산에만 이전 히스토리를 warm-up으로 활용한다. 첫 분석 기간 이전 2006년 하반기를 초기 PSAR 계산 및 직전 구간 식별에 활용한다. 이후 분석 구간도 이전 거래일 데이터를 신호 warm-up으로 사용할 수 있지만 미래 가격을 쓰지 않는다.
 
 **미확정/실행 시 검증:** FDR의 신호 기초자산 및 QLD/PSQ가 필요한 모든 기간을 실제로 제공하는지. PSAR 초기화 알고리즘과 완전한 직전 구간을 확보하는 최소 warm-up 조건.
 
@@ -147,4 +147,4 @@ Synthetic data로 다음을 검증한다.
 4. **초기 투자금** 및 정확한 거래비용 환경 설정은 프로젝트 기본 설정을 재사용하되 run 전 확인.
 5. 1차 성과가 좋을 때에만 현실적 다음 거래일 체결 검증과 필터/인버스 제거 대조군을 추가할지 논의.
 
-**Current stage:** 전략 명세 저장만 진행. 구현, dispatcher 등록, Actions 트리거, 백테스트는 아직 요청·수행되지 않음.
+**Current stage:** 개발된 r01 코드는 독립 검토에서 발견된 5년 윈도우 범위 오류 및 포지션 오청산 문제를 수정했다. 전체 103개 테스트 통과. GitHub Actions 실데이터 실행은 최종 반영 후 요청한다. 결과의 신호는 QQQ High/Low를 같은 날짜 Runtime reference price로 체결하므로 lookahead/same-bar bias가 있다.
