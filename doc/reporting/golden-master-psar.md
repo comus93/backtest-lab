@@ -6,7 +6,7 @@
 - **Guard:** `uv run --extra report --extra dev python -m pytest tests/test_reporting_golden.py`.
 - **Pre-refactor validation:** `tests/test_psar_reporting.py` passed 15/15 and a Bokeh HTML file was generated locally from the pinned source.
 
-The fixture was generated **before extracting the common renderer**, from the original Bokeh figure models and output CSVs. It includes SHA-256 checksums for six archived inputs, exactly four windows, time ranges, normalized equity endpoints, performance matrices, execution/completed/winning trade counts, chart titles/height/x-axis visibility/glyph-layer order, and trade-span styling.
+The fixture was generated **before extracting the common renderer**, from the original Bokeh figure models and output CSVs. It includes newline-normalized SHA-256 checksums for six archived inputs (CRLF and LF are equivalent), exactly four windows, time ranges, normalized equity endpoints, performance matrices, execution/completed/winning trade counts, chart titles/height/x-axis visibility/glyph-layer order, and trade-span styling.
 
 This is a deterministic **semantic and structural** Golden Master; it is not a screenshot diff. Do **not** overwrite the fixture merely to make refactored tests pass. If an intentional UI change is authorized, document the delta, preserve the historical baseline (Git), and introduce a separately reviewed baseline.
 

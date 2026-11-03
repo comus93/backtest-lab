@@ -48,7 +48,7 @@ All DataFrames are treated as read-only after adaptation. A report may take alre
 6. Signal/Execution/Display instruments remain distinct; no projected QLD fill price is misrepresented as QQQ dollars. Open trades never receive invented realized-P/L points.
 7. Optional real Volume is aligned to price dates; absent/invalid data with volume enabled raises an explicit error.
 8. The renderer emits standalone HTML using embedded BokehJS and keeps the CLI/Pages entrypoint compatible.
-9. Archived input CSV bytes are identical before and after refactoring; tests compare an immutable Golden Master manifest pinned to commit `38eee2673663c11931857b6fd71509968b193a3d`.
+9. Archived input CSV values and newline-normalized bytes are identical before and after refactoring; tests compare an immutable Golden Master manifest pinned to commit `38eee2673663c11931857b6fd71509968b193a3d`.
 10. No new indicator calculation, new backtest run, data download, external network fetch, or PSAR revision change is permitted during report building.
 
 ## Boundaries and follow-ups

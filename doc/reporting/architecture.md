@@ -31,7 +31,7 @@ Reporting is downstream of `backtest_lab.analysis`. It does not modify `ffn`, mo
 
 ## Baseline and regression
 
-Golden Master: `tests/fixtures/reporting/psar_golden_master.json` generated from the original PSAR report at commit `38eee267...`, with archived CSV SHA-256, four windows' metric tables, date ranges, trade counts, per-plot Bokeh glyph structure, and span colors/geometry.
+Golden Master: `tests/fixtures/reporting/psar_golden_master.json` generated from the original PSAR report at commit `38eee267...`, with newline-normalized archived CSV SHA-256, four windows' metric tables, date ranges, trade counts, per-plot Bokeh glyph structure, and span colors/geometry.
 
 `tests/test_reporting_golden.py` compares **all these immutable facts** after the refactor. The original source at the pinned commit can be checked out and its HTML rebuilt as the historical implementation reference. Since Bokeh model IDs are randomly generated, byte-identical HTML is not an appropriate assertion. Browser pixel regression is a separate future test and must not be claimed without execution.
 

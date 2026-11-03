@@ -28,7 +28,9 @@ def golden_snapshot() -> dict:
     result = {
         "baseline_commit": "38eee2673663c11931857b6fd71509968b193a3d",
         "csv_sha256": {
-            name: hashlib.sha256((RUN / f"{name}.csv").read_bytes()).hexdigest()
+            name: hashlib.sha256(
+                (RUN / f"{name}.csv").read_bytes().replace(bytes([13, 10]), bytes([10]))
+            ).hexdigest()
             for name in CSV_NAMES
         },
         "windows": {},
