@@ -1,0 +1,393 @@
+{
+  "baseline_commit": "38eee2673663c11931857b6fd71509968b193a3d",
+  "csv_sha256": {
+    "input_prices": "83438b763a89d82f3057bf571c760e31f72d89d16cd58617b3dab8d7dff8628e",
+    "daily_signals": "d60c515f4feb800d29a3408fc017b67037287f59913b12c2bb4190963da949f9",
+    "equity_curves": "27faf3a797acbf37909f7ba4170d749f95914455e565792305997c76c76e48c6",
+    "fills": "3b50b8c017ec00b6fb0e7d9af7d1207c8dbee686d675ee59636aac08c433d37f",
+    "performance_summary": "a8e872b05d374809ccd1e364b2eb86ec10e6c5101bc7ef3b636a91ad69f562c2",
+    "ffn_stats": "e4a0d018197e1312143dd67ada0a163dd3b864c40b8ec09ff2ad78da67853c12"
+  },
+  "windows": {
+    "2007-2011": {
+      "days": 1260,
+      "from": "2007-01-03",
+      "to": "2011-12-30",
+      "fill_count": 76,
+      "completed_trades": 38,
+      "profitable_trades": 15,
+      "last_equity": {
+        "strategy": 104.93605774,
+        "QLD": 100.18176974,
+        "QQQ": 129.09719339
+      },
+      "performance": [
+        {
+          "Metric": "Total Return",
+          "PSAR Long Only": "+4.94%",
+          "QLD Buy & Hold": "+0.18%",
+          "QQQ Buy & Hold": "+29.10%"
+        },
+        {
+          "Metric": "CAGR",
+          "PSAR Long Only": "+0.97%",
+          "QLD Buy & Hold": "+0.04%",
+          "QQQ Buy & Hold": "+5.25%"
+        },
+        {
+          "Metric": "Sharpe",
+          "PSAR Long Only": "0.145",
+          "QLD Buy & Hold": "0.264",
+          "QQQ Buy & Hold": "0.325"
+        },
+        {
+          "Metric": "Max Drawdown",
+          "PSAR Long Only": "-21.85%",
+          "QLD Buy & Hold": "-84.00%",
+          "QQQ Buy & Hold": "-53.55%"
+        }
+      ],
+      "plots": [
+        {
+          "title": "Equity | strategy vs buy-and-hold (FFN performance index, initial 100)",
+          "height": 180,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "Line",
+            "Line",
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Profit / Loss",
+          "height": 110,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Strategy drawdown (%)",
+          "height": 125,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "VArea"
+          ]
+        },
+        {
+          "title": "QQQ OHLC / Parabolic SAR / QLD execution dates",
+          "height": 430,
+          "xaxis_visible": true,
+          "glyphs": [
+            "Segment",
+            "VBar",
+            "Segment",
+            "VBar",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "MultiLine"
+          ]
+        }
+      ],
+      "span_width": 3,
+      "span_alpha": 0.8,
+      "span_dash": [
+        12,
+        9
+      ],
+      "span_colors": [
+        "#24954E",
+        "#AD2960"
+      ]
+    },
+    "2012-2016": {
+      "days": 1258,
+      "from": "2012-01-03",
+      "to": "2016-12-30",
+      "fill_count": 92,
+      "completed_trades": 46,
+      "profitable_trades": 19,
+      "last_equity": {
+        "strategy": 109.60611023,
+        "QLD": 407.94537871,
+        "QQQ": 208.19372732
+      },
+      "performance": [
+        {
+          "Metric": "Total Return",
+          "PSAR Long Only": "+9.61%",
+          "QLD Buy & Hold": "+307.95%",
+          "QQQ Buy & Hold": "+108.19%"
+        },
+        {
+          "Metric": "CAGR",
+          "PSAR Long Only": "+1.85%",
+          "QLD Buy & Hold": "+32.52%",
+          "QQQ Buy & Hold": "+15.82%"
+        },
+        {
+          "Metric": "Sharpe",
+          "PSAR Long Only": "0.207",
+          "QLD Buy & Hold": "1.085",
+          "QQQ Buy & Hold": "1.042"
+        },
+        {
+          "Metric": "Max Drawdown",
+          "PSAR Long Only": "-26.90%",
+          "QLD Buy & Hold": "-30.78%",
+          "QQQ Buy & Hold": "-16.36%"
+        }
+      ],
+      "plots": [
+        {
+          "title": "Equity | strategy vs buy-and-hold (FFN performance index, initial 100)",
+          "height": 180,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "Line",
+            "Line",
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Profit / Loss",
+          "height": 110,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Strategy drawdown (%)",
+          "height": 125,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "VArea"
+          ]
+        },
+        {
+          "title": "QQQ OHLC / Parabolic SAR / QLD execution dates",
+          "height": 430,
+          "xaxis_visible": true,
+          "glyphs": [
+            "Segment",
+            "VBar",
+            "Segment",
+            "VBar",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "MultiLine"
+          ]
+        }
+      ],
+      "span_width": 3,
+      "span_alpha": 0.8,
+      "span_dash": [
+        12,
+        9
+      ],
+      "span_colors": [
+        "#24954E",
+        "#AD2960"
+      ]
+    },
+    "2017-2021": {
+      "days": 1259,
+      "from": "2017-01-03",
+      "to": "2021-12-31",
+      "fill_count": 93,
+      "completed_trades": 46,
+      "profitable_trades": 23,
+      "last_equity": {
+        "strategy": 175.636509,
+        "QLD": 812.75329324,
+        "QQQ": 332.76755438
+      },
+      "performance": [
+        {
+          "Metric": "Total Return",
+          "PSAR Long Only": "+75.64%",
+          "QLD Buy & Hold": "+712.75%",
+          "QQQ Buy & Hold": "+232.77%"
+        },
+        {
+          "Metric": "CAGR",
+          "PSAR Long Only": "+11.94%",
+          "QLD Buy & Hold": "+52.13%",
+          "QQQ Buy & Hold": "+27.22%"
+        },
+        {
+          "Metric": "Sharpe",
+          "PSAR Long Only": "0.760",
+          "QLD Buy & Hold": "1.166",
+          "QQQ Buy & Hold": "1.190"
+        },
+        {
+          "Metric": "Max Drawdown",
+          "PSAR Long Only": "-17.56%",
+          "QLD Buy & Hold": "-51.72%",
+          "QQQ Buy & Hold": "-28.56%"
+        }
+      ],
+      "plots": [
+        {
+          "title": "Equity | strategy vs buy-and-hold (FFN performance index, initial 100)",
+          "height": 180,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "Line",
+            "Line",
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Profit / Loss",
+          "height": 110,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Strategy drawdown (%)",
+          "height": 125,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "VArea"
+          ]
+        },
+        {
+          "title": "QQQ OHLC / Parabolic SAR / QLD execution dates",
+          "height": 430,
+          "xaxis_visible": true,
+          "glyphs": [
+            "Segment",
+            "VBar",
+            "Segment",
+            "VBar",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "MultiLine"
+          ]
+        }
+      ],
+      "span_width": 3,
+      "span_alpha": 0.8,
+      "span_dash": [
+        12,
+        9
+      ],
+      "span_colors": [
+        "#24954E",
+        "#AD2960"
+      ]
+    },
+    "2022-2026": {
+      "days": 1213,
+      "from": "2022-01-03",
+      "to": "2026-11-02",
+      "fill_count": 82,
+      "completed_trades": 41,
+      "profitable_trades": 15,
+      "last_equity": {
+        "strategy": 59.08903027,
+        "QLD": 176.70949143,
+        "QQQ": 169.53492608
+      },
+      "performance": [
+        {
+          "Metric": "Total Return",
+          "PSAR Long Only": "-40.91%",
+          "QLD Buy & Hold": "+76.71%",
+          "QQQ Buy & Hold": "+69.53%"
+        },
+        {
+          "Metric": "CAGR",
+          "PSAR Long Only": "-10.32%",
+          "QLD Buy & Hold": "+12.50%",
+          "QQQ Buy & Hold": "+11.54%"
+        },
+        {
+          "Metric": "Sharpe",
+          "PSAR Long Only": "-0.434",
+          "QLD Buy & Hold": "0.486",
+          "QQQ Buy & Hold": "0.589"
+        },
+        {
+          "Metric": "Max Drawdown",
+          "PSAR Long Only": "-46.51%",
+          "QLD Buy & Hold": "-63.19%",
+          "QQQ Buy & Hold": "-35.26%"
+        }
+      ],
+      "plots": [
+        {
+          "title": "Equity | strategy vs buy-and-hold (FFN performance index, initial 100)",
+          "height": 180,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "Line",
+            "Line",
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Profit / Loss",
+          "height": 110,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Scatter"
+          ]
+        },
+        {
+          "title": "Strategy drawdown (%)",
+          "height": 125,
+          "xaxis_visible": false,
+          "glyphs": [
+            "Line",
+            "VArea"
+          ]
+        },
+        {
+          "title": "QQQ OHLC / Parabolic SAR / QLD execution dates",
+          "height": 430,
+          "xaxis_visible": true,
+          "glyphs": [
+            "Segment",
+            "VBar",
+            "Segment",
+            "VBar",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "Scatter",
+            "MultiLine"
+          ]
+        }
+      ],
+      "span_width": 3,
+      "span_alpha": 0.8,
+      "span_dash": [
+        12,
+        9
+      ],
+      "span_colors": [
+        "#24954E",
+        "#AD2960"
+      ]
+    }
+  }
+}

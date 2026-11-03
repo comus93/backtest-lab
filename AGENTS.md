@@ -6,9 +6,10 @@
 
 1. `doc/architecture.md`
 2. `doc/specifications.md`
-3. 관련 전략 작업이면 `doc/strategies/`의 해당 revision 명세
-4. 백테스트 자동 실행 작업이면 `doc/automation.md`
-5. Agent handover가 필요한 작업이면 `ai-share/PROTOCOL.md`
+3. Reporting 개발·변경이면 `doc/reporting/specifications.md`와 `doc/reporting/architecture.md`
+4. 관련 전략 작업이면 `doc/strategies/`의 해당 revision 명세
+5. 백테스트 자동 실행 작업이면 `doc/automation.md`
+6. Agent handover가 필요한 작업이면 `ai-share/PROTOCOL.md`
 
 정상적인 백테스트 실행은 GitHub Actions 자동화를 기본 경로로 사용한다. Codex Agent는 workflow 실패, 데이터 이상, 구현 결함 등 deterministic automation만으로 해결하기 어려운 예외 진단에 사용한다.
 
@@ -25,6 +26,13 @@
 - FFN은 performance analysis에 사용한다. Runtime/Portfolio accounting을 FFN에 맡기지 않는다.
 - `bt`는 dependency가 아니라 설계 reference다.
 - 흔한 요건을 단순하게 처리하고 실제 반복 요구가 없는 추상화는 추가하지 않는다.
+
+## Reporting subsystem
+
+- Reporting 계약은 `doc/reporting/specifications.md`, 설계는 `doc/reporting/architecture.md`를 따른다.
+- Reporting은 이미 계산된 Runtime/FFN 결과를 읽기 전용으로 시각화하며, 매매·회계·성과 지표를 재계산하지 않는다.
+- 공통 `ReportData`/`ReportConfig`와 차트/테이블/팔레트에는 전략별 종목이나 지표 이름을 하드코딩하지 않는다.
+- 전략 특수 로직은 `reporting/adapters/`에 둔다. 공통화 변경 시 PSAR Golden Master 검증을 통과해야 한다.
 
 ## Strategy management
 

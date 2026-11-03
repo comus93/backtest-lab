@@ -230,6 +230,10 @@ v1 구현은 최소한 다음을 검증해야 한다.
 - minimal: 실제 반복 요구가 없는 추상화 계층을 선제적으로 추가하지 않는다.
 - data-source boundary: v1은 Local MySQL을 사용하지만 market data 조회와 실행 코어의 책임은 분리한다.
 
+## Reporting visual subsystem (separate from research narrative)
+
+공통 HTML Reporting은 [`doc/reporting/specifications.md`](reporting/specifications.md)를 따른다. 이는 아래의 사용자·LLM 해석을 기록하는 Run Analysis / Strategy Report 문서와 별도의 읽기 전용 시각화 기능이다. 기존 FFN 계산값을 그대로 표시하며 Runtime, Strategy, archived run을 수정하지 않는다.
+
 ## 15. Strategy and run research reporting
 
 백테스트의 계산 산출물뿐 아니라 그 결과에 대한 해석과 전략의 누적 연구 상태도 repository에 보존한다.

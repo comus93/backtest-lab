@@ -6,6 +6,9 @@ on:
     paths:
       - 'src/backtest_lab/reporting/**'
       - 'tests/test_psar_reporting.py'
+      - 'tests/test_reporting_golden.py'
+      - 'tests/test_reporting_common.py'
+      - 'tests/fixtures/reporting/**'
       - 'pyproject.toml'
       - '.github/workflows/publish-psar-report.yml'
   workflow_dispatch:
@@ -34,7 +37,7 @@ jobs:
           python -m pip install -e ".[report,dev]"
 
       - name: Validate archived data and report renderer
-        run: python -m pytest -q tests/test_psar_reporting.py
+        run: python -m pytest -q tests/test_psar_reporting.py tests/test_reporting_golden.py tests/test_reporting_common.py
 
       - name: Build standalone static HTML
         run: |

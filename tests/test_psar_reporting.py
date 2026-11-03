@@ -139,6 +139,26 @@ def test_chart_style_and_mouse_hover(archived):
     assert span_colors <= {COLORS["trade_span_profit"], COLORS["trade_span_loss"]}
 
 
+def test_psar_adapter_keeps_signal_display_and_fill_instruments_distinct(archived):
+    from backtest_lab.reporting.adapters.psar import build_psar_data, psar_config
+
+    report = build_psar_data(archived)
+    config = psar_config()
+    assert (config.signal_symbol, config.execution_symbol, config.display_symbol) == (
+        "QQQ", "QLD", "QQQ",
+    )
+    report.validate(config)
+    for period in report.periods:
+        assert period.events["symbol"].eq("QLD").all()
+        assert not period.events["price"].equals(period.events["display_price"])
+        aligned = period.prices.loc[period.events["date"], "Close"].to_numpy()
+        assert (period.events["display_price"].to_numpy() == aligned).all()
+        assert len(period.trades) <= len(period.events) // 2
+        for trade in period.trades.itertuples():
+            assert trade.entry_display_price == period.prices.loc[trade.entry_date, "Close"]
+            assert trade.exit_display_price == period.prices.loc[trade.date, "Close"]
+
+
 def test_volume_panel_is_explicitly_optional(archived, tmp_path):
     pytest.importorskip("bokeh")
     block = window_data(archived, WINDOWS[0])

@@ -1,5 +1,8 @@
 # PSAR Case Study: Static Bokeh Report
 
+This case study now uses the shared [`Reporting subsystem`](reporting/architecture.md):
+`reporting/adapters/psar.py` maps PSAR artifacts to `ReportData` and `ReportConfig`, and `reporting/charts.py`, `tables.py`, `palette.py`, `render.py` supply reusable visual components. The CLI below remains compatible. The original approved view is frozen as [`Golden Master`](reporting/golden-master-psar.md).
+
 Source outputs: `runs/psar_segment_duration/r01/20261103-0002/` (`long_only` QLD/cash).
 
 ## Objective
