@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from backtest_lab.reporting.psar_report import (
-    WINDOWS, build_report, load_outputs, pair_trades, window_data,
+    COLORS, WINDOWS, _make_charts, _monthly_candles, _performance_matrix,
+    build_report, load_outputs, pair_trades, window_data,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,7 +63,10 @@ def test_generate_self_contained_bokeh_html(tmp_path):
     target = build_report(RUN, tmp_path / "site" / "index.html")
     text = target.read_text(encoding="utf-8")
     assert "PSAR QLD / Cash" in text
-    assert "Cumulative return (%)" in text
+    assert "Cumulative return (%)" not in text
+    assert "Profit / Loss" in text
+    assert "QQQ Volume" not in text
+    assert "Total Return" in text
     assert "QQQ OHLC" in text
     assert "Trade spans" in text
     assert "FFN result matrix" in text
@@ -71,3 +75,83 @@ def test_generate_self_contained_bokeh_html(tmp_path):
     assert "Bokeh" in text
     assert len(text) > 500_000
     assert target.stat().st_size < 40_000_000
+
+
+def test_period_performance_matrix_is_transposed(archived):
+    comparison = _performance_matrix(archived["performance_summary"], WINDOWS[0])
+    assert comparison.columns.tolist() == [
+        "Metric", "PSAR Long Only", "QLD Buy & Hold", "QQQ Buy & Hold",
+    ]
+    assert comparison["Metric"].tolist() == ["Total Return", "CAGR", "Sharpe", "Max Drawdown"]
+    assert comparison.loc[0, "PSAR Long Only"] == "+4.94%"
+    assert comparison.loc[2, "PSAR Long Only"] == "0.145"
+
+
+def test_monthly_overlay_distinguishes_up_and_down():
+    dates = pd.to_datetime(["2026-01-02", "2026-01-05", "2026-02-02", "2026-02-03"])
+    candles = pd.DataFrame({
+        "QQQ_Open": [100, 106, 110, 103],
+        "QQQ_High": [108, 112, 112, 105],
+        "QQQ_Low": [99, 104, 102, 98],
+        "QQQ_Close": [106, 111, 103, 99],
+    }, index=dates)
+    monthly = _monthly_candles(candles)
+    assert monthly["color"].tolist() == [COLORS["monthly_bullish"], COLORS["monthly_bearish"]]
+    assert monthly["high"].tolist() == [112.0, 112.0]
+    assert monthly["low"].tolist() == [99.0, 98.0]
+    assert monthly["top"].tolist() == [111.0, 110.0]
+    assert monthly["bottom"].tolist() == [100.0, 99.0]
+
+
+def test_chart_style_and_mouse_hover(archived):
+    pytest.importorskip("bokeh")
+    from bokeh.models import HoverTool
+
+    charts = _make_charts(window_data(archived, WINDOWS[0]))
+    assert len(charts.children) == 4  # Equity, Profit/Loss, drawdown, price
+    equity, profit, drawdown, price = charts.children
+    assert profit.title.text == "Profit / Loss"
+    assert drawdown.title.text == "Strategy drawdown (%)"
+    hover = [tool for tool in equity.tools if isinstance(tool, HoverTool)]
+    assert not hover  # One CustomJS nearest-line tooltip, never three tooltips.
+    move_callbacks = [callbacks for name, callbacks in equity.js_event_callbacks.items()
+                      if "mousemove" in name]
+    assert len(move_callbacks) == 1
+    assert len(move_callbacks[0]) == 1
+    assert "nearest.distance" in move_callbacks[0][0].code
+    assert len(move_callbacks[0][0].args["lines"]) == 3
+    assert all(fig.x_range is equity.x_range for fig in charts.children)
+    assert all(fig.xgrid.grid_line_alpha == .20 for fig in charts.children)
+    bars = [r for r in price.renderers if type(getattr(r, "glyph", None)).__name__ == "VBar"]
+    assert len(bars) == 2  # translucent monthly + daily candlesticks
+    assert bars[0].glyph.fill_alpha == .25
+    assert bars[1].glyph.fill_color == "color"
+    colors = bars[1].data_source.data["color"]
+    assert set(colors) == {COLORS["bullish"], COLORS["bearish"]}
+    spans = [r for r in price.renderers if type(getattr(r, "glyph", None)).__name__ == "MultiLine"]
+    assert len(spans) == 1
+    assert spans[0].glyph.line_width == 6
+    assert spans[0].glyph.line_alpha == .80
+    assert list(spans[0].glyph.line_dash) == [12, 9]
+
+
+def test_volume_panel_is_explicitly_optional(archived, tmp_path):
+    pytest.importorskip("bokeh")
+    block = window_data(archived, WINDOWS[0])
+    assert len(_make_charts(block).children) == 4
+    with pytest.raises(ValueError, match="QQQ_Volume"):
+        _make_charts(block, show_volume=True)
+    # Derived numeric volume below is only a plotting fixture, never used in backtest results.
+    block["price"] = block["price"].copy()
+    block["price"]["QQQ_Volume"] = 1000000.0
+    result = _make_charts(block, show_volume=True)
+    assert len(result.children) == 5
+    price, volume = result.children[-2:]
+    assert price.title.text.startswith("QQQ OHLC")
+    assert volume.title.text == "QQQ Volume"
+    assert volume.x_range is price.x_range
+    assert volume.yaxis.axis_label == "QQQ Volume"
+    assert any(type(getattr(r, "glyph", None)).__name__ == "VBar" for r in volume.renderers)
+    # Report output can also be explicitly configured with a separate real data file.
+    with pytest.raises(ValueError, match="Volume was requested"):
+        build_report(RUN, tmp_path / "missing.html", show_volume=True)

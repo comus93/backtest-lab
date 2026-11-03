@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import date
 
+import numpy as np
 import pandas as pd
 
 from backtest_lab.data import DataCoverageError
 
 
 def load_fdr_prices(start: str | date, end: str | date) -> pd.DataFrame:
-    """Load QQQ OHLC plus QQQ/QLD/PSQ close prices from FinanceDataReader.
+    """Load QQQ OHLCV plus QQQ/QLD/PSQ close prices from FinanceDataReader.
 
     Rows are restricted to the complete-date intersection. No fill or price
     substitution is performed. Close is intentionally the common execution
@@ -44,6 +45,11 @@ def load_fdr_prices(start: str | date, end: str | date) -> pd.DataFrame:
     output = pd.DataFrame(index=common.sort_values())
     for column in ("Open", "High", "Low", "Close"):
         output[f"QQQ_{column}"] = frames["QQQ"].loc[common, column].astype(float)
+    if "Volume" in frames["QQQ"]:
+        output["QQQ_Volume"] = frames["QQQ"].loc[common, "Volume"].astype(float)
+        volume = output["QQQ_Volume"]
+        if volume.isna().any() or (~np.isfinite(volume)).any() or (volume < 0).any():
+            raise DataCoverageError("FDR QQQ Volume contains invalid observations")
     output["QQQ"] = output["QQQ_Close"]
     output["QLD"] = frames["QLD"].loc[common, "Close"].astype(float)
     output["PSQ"] = frames["PSQ"].loc[common, "Close"].astype(float)
