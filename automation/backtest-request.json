@@ -1,8 +1,8 @@
 {
-  "request_id": "20261103T193000+0900",
+  "request_id": "20261103T200000+0900",
   "strategy_id": "psar_segment_duration",
   "revision": "r01",
-  "mode": "baseline",
+  "mode": "long_only",
   "start": "2007-01-01",
   "end": "2026-11-04"
 }
