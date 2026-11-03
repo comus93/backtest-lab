@@ -1,8 +1,8 @@
 {
-  "request_id": "20260908T100600+0900",
-  "strategy_id": "us_market_cap_leaders",
+  "request_id": "20261103T193000+0900",
+  "strategy_id": "psar_segment_duration",
   "revision": "r01",
-  "mode": "window_sensitivity",
-  "start": "2010-03-31",
-  "end": "2026-07-01"
+  "mode": "baseline",
+  "start": "2007-01-01",
+  "end": "2026-11-04"
 }
