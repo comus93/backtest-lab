@@ -139,6 +139,22 @@ def test_chart_style_and_mouse_hover(archived):
     assert span_colors <= {COLORS["trade_span_profit"], COLORS["trade_span_loss"]}
 
 
+def test_psar_indicators_use_muted_brown_and_purple_with_global_size(archived):
+    pytest.importorskip("bokeh")
+    from backtest_lab.reporting.adapters.psar import psar_config
+
+    config = psar_config()
+    assert config.indicator_marker_size == 2
+    assert [overlay.color for overlay in config.overlays] == ["#8C786A", "#8B7F99"]
+    price = _make_charts(window_data(archived, WINDOWS[0])).children[-1]
+    overlays = [renderer.glyph for renderer in price.renderers
+                if type(getattr(renderer, "glyph", None)).__name__ == "Scatter"]
+    assert len(overlays) >= 2
+    for expected, glyph in zip(config.overlays, overlays):
+        assert glyph.size == config.indicator_marker_size
+        assert glyph.fill_color == expected.color
+
+
 def test_psar_adapter_keeps_signal_display_and_fill_instruments_distinct(archived):
     from backtest_lab.reporting.adapters.psar import build_psar_data, psar_config
 
