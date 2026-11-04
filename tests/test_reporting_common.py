@@ -76,6 +76,29 @@ def test_agnostic_report_contract_and_render(tmp_path):
     pd.testing.assert_frame_equal(data.periods[0].prices, before)
 
 
+def test_indicator_marker_size_is_shared_across_overlays():
+    pytest.importorskip("bokeh")
+    data, config = sample(volume=False)
+    period = data.periods[0]
+    indicators = pd.DataFrame({
+        "first": [10.0, 11.0, 12.0, 13.0],
+        "second": [10.5, 11.5, 12.5, 13.5],
+    }, index=period.prices.index)
+    config = replace(config, indicator_marker_size=2, overlays=(
+        OverlayConfig("first", "First", "#8C786A"),
+        OverlayConfig("second", "Second", "#8B7F99"),
+    ))
+    price = build_charts(replace(period, indicators=indicators), config).children[-1]
+    markers = [renderer.glyph for renderer in price.renderers
+               if type(getattr(renderer, "glyph", None)).__name__ == "Scatter"]
+    assert len(markers) == 2
+    assert all(glyph.size == config.indicator_marker_size for glyph in markers)
+    smaller = replace(config, indicator_marker_size=1)
+    smaller_price = build_charts(replace(period, indicators=indicators), smaller).children[-1]
+    assert all(renderer.glyph.size == 1 for renderer in smaller_price.renderers
+               if type(getattr(renderer, "glyph", None)).__name__ == "Scatter")
+
+
 def test_opaque_volume_is_a_opt_in_requirement():
     data, config = sample(volume=False)
     data.validate(replace(config, show_volume=False))
