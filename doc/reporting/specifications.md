@@ -31,7 +31,7 @@ All DataFrames are treated as read-only after adaptation. A report may take alre
 `ReportConfig` describes presentation, not investment logic.
 
 - `series`: ordered `SeriesConfig(key, label, color, width, table_label?)`. Chart legend and comparison-table header can differ while sharing one series key; the first series is the primary strategy for drawdown.
-- `overlays`: strategy-selected `OverlayConfig(field, label, color, marker, size)` for price overlays (e.g. PSAR, not hardcoded in the chart engine).
+- `overlays`: strategy-selected `OverlayConfig(field, label, color, marker)` for price overlays (e.g. PSAR, not hardcoded in the chart engine). All overlay marker sizes are controlled by one global `ReportConfig.indicator_marker_size` (default 2px).
 - Titles/labels and user-facing notes, as well as `signal_symbol`, `execution_symbol`, and `display_symbol`, are explicit.
 - Shared `ReportPalette` defines candles, monthly OHLC, trade-span gain/loss, execution markers, grids, and P/L dots.
 - `show_volume=False` by default; enabling requires actual complete `Volume` data and adds a short chart immediately below OHLC with the **same x-range**. No synthetic zero bars.
