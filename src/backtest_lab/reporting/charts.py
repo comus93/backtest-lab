@@ -192,7 +192,7 @@ def build_charts(period: ReportPeriod, config: ReportConfig):
     ], formatters={"@date": "datetime"}, mode="vline"))
     for overlay in config.overlays:
         price.scatter("date", overlay.field, source=source,
-                      marker=overlay.marker, size=overlay.size,
+                      marker=overlay.marker, size=config.indicator_marker_size,
                       color=overlay.color, legend_label=overlay.label)
 
     if config.show_trades and not fills.empty:

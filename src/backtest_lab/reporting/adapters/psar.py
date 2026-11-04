@@ -13,8 +13,8 @@ from ..tables import performance_matrix
 
 WINDOWS = ("2007-2011", "2012-2016", "2017-2021", "2022-2026")
 PALETTE = {"strategy": "#2563eb", "QLD": "#f97316", "QQQ": "#71717a"}
-PSAR_UP_COLOR = "#F59E0B"
-PSAR_DOWN_COLOR = "#8B5CF6"
+PSAR_UP_COLOR = "#8C786A"  # desaturated brown
+PSAR_DOWN_COLOR = "#8B7F99"  # desaturated purple
 
 
 def load_outputs(run_dir: str | Path, volume_path: str | Path | None = None) -> dict[str, pd.DataFrame]:
