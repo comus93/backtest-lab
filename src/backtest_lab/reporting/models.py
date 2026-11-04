@@ -28,7 +28,6 @@ class OverlayConfig:
     label: str
     color: str
     marker: str = "circle"
-    size: int = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +47,7 @@ class ReportConfig:
     pnl_net_label: str = "Net"
     price_currency: str = ""
     overlays: tuple[OverlayConfig, ...] = ()
+    indicator_marker_size: int = 2
     price_hover_fields: tuple[tuple[str, str], ...] = ()
     palette: ReportPalette = DEFAULT_PALETTE
     equity_title: str = "Equity | strategy vs benchmarks (performance index)"
@@ -78,6 +78,8 @@ class ReportData:
     def validate(self, config: ReportConfig) -> None:
         if not self.periods:
             raise ValueError("ReportData has no periods")
+        if config.indicator_marker_size < 1:
+            raise ValueError("indicator_marker_size must be positive")
         keys = [s.key for s in config.series]
         if not keys or len(set(keys)) != len(keys):
             raise ValueError("ReportConfig requires unique non-empty series keys")
