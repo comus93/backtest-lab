@@ -23,7 +23,7 @@ Reporting is downstream of `backtest_lab.analysis`. It does not modify `ffn`, mo
 
 - **Adapter** validates and maps source-specific column names, evaluation windows, QQQ indicator dates, QLD fills and paired trades into canonical fields. Pairing is PSAR-specific and must not be silently reused for multi-asset strategies.
 - **ReportData** is the normalized result package, without implementation-specific chart decisions. Its pandas frames are input-only; the reporting functions do not mutate them.
-- **ReportConfig** controls visible charts, labels, series ordering, indicator overlays, price/display symbols, axis details and color scheme. It does not perform data fetching or strategy decisions.
+- **ReportConfig** controls visible charts, labels, series ordering, indicator overlays, globally shared indicator marker size, price/display symbols, axis details and color scheme. It does not perform data fetching or strategy decisions.
 - **Tables** own metric formatting and escaping. Canonical percentages are converted for display only. Raw FFN rows are displayed verbatim.
 - **Charts** create independent Bokeh panels with a common time range and shared palette. Only generic overlay definitions/fields enter the price renderer.
 - **Renderer** composes period tabs, summary matrices and self-contained HTML. A strategy supplies display strings/notes through its configuration.
