@@ -1,0 +1,19 @@
+asset_id,display_name
+sp500,미국 S&P500
+nasdaq100,미국 나스닥100
+russell2000,미국 러셀2000
+kospi200,한국 코스피200
+msci_korea,한국 MSCI
+nikkei225,일본 니케이225
+topix,일본 TOPIX
+csi300,중국 CSI300
+nifty50,인도 Nifty50
+emerging,신흥국 MSCI
+eurostoxx50,유럽 Euro STOXX 50
+gold,금
+silver,은
+copper,구리
+wti,WTI 원유
+grains,3대 농산물
+soybeans,대두
+agriculture,농산물 종합
