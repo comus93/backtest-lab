@@ -220,3 +220,26 @@ report_url: pending
 A later phase may generate dynamic HTML using a reporting layer derived from `portfolio-optimizer-kr`, expose the full FFN result set, publish the report with GitHub Pages, and replace `pending` with the published URL.
 
 That HTML reporting phase is outside the current automation scope.
+
+
+## Multi-asset weekly SMA integration (2026-11-27)
+
+The explicitly allowed request is strategy_id multi_asset_weekly_sma, revision r01,
+mode baseline, start 2016-11-21, end exclusive 2026-11-21. The runner loads
+Yahoo/FDR daily references and Korea ETF prices from 2016-01-01 onward as warmup,
+saves the unmodified cross-market price snapshot to input_prices.csv, and runs
+18 completely independent strategies. A missing source fails explicitly.
+
+Main performance_summary.csv uses the established ten columns unchanged and
+contains one Long/Cash row per asset. Per-asset directories also hold FFN stats,
+equity curves, fills, and signal decisions. No calculated metrics are recreated
+in the presentation subsystem.
+
+After the backtest workflow commits an actual successful run to main it dispatches
+the existing publish-psar-report.yml Pages workflow. That workflow preserves the
+existing PSAR site root while adding the new study under research/multi_asset_weekly_sma/.
+A generated report is optional until a completed archived SMA run exists.
+The run manifest continues to be the latest-run locator, not a performance report.
+
+This is a study-specific integration; it does not promise Pages URLs in the result
+manifest until the publication mechanism records them there.

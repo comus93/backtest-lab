@@ -1,4 +1,4 @@
-name: Publish PSAR Case Study
+name: Publish BTLab Research Reports
 
 on:
   push:
@@ -10,6 +10,11 @@ on:
       - 'tests/test_reporting_common.py'
       - 'tests/fixtures/reporting/**'
       - 'pyproject.toml'
+      - 'src/backtest_lab/strategies/multi_asset_weekly_sma/**'
+      - 'src/backtest_lab/reporting/multi_asset_weekly_sma_report.py'
+      - 'src/backtest_lab/reporting/adapters/multi_asset_weekly_sma.py'
+      - 'runs/multi_asset_weekly_sma/**'
+      - 'tests/test_multi_asset_weekly_sma_reporting.py'
       - '.github/workflows/publish-psar-report.yml'
   workflow_dispatch:
 
@@ -39,6 +44,9 @@ jobs:
       - name: Validate archived data and report renderer
         run: python -m pytest -q tests/test_psar_reporting.py tests/test_reporting_golden.py tests/test_reporting_common.py
 
+      - name: Validate SMA report integration
+        run: python -m pytest -q tests/strategies/multi_asset_weekly_sma tests/test_multi_asset_weekly_sma_reporting.py
+
       - name: Build standalone static HTML
         run: |
           python -m backtest_lab.reporting.psar_report \
@@ -46,11 +54,27 @@ jobs:
             --output _site/index.html
           test -s _site/index.html
 
+      - name: Build multi-asset report if a successful run is archived
+        shell: bash
+        run: |
+          # Keep the existing PSAR root /index.html unchanged.
+          if test -d runs/multi_asset_weekly_sma/r01; then
+            latest=$(find runs/multi_asset_weekly_sma/r01 -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
+            if test -n "$latest" && test -f "$latest/asset_manifest.csv"; then
+              python -m backtest_lab.reporting.multi_asset_weekly_sma_report --run "$latest" --output _site/research/multi_asset_weekly_sma
+              test -s _site/research/multi_asset_weekly_sma/index.html
+            else
+              echo "No complete SMA archive yet; publishing PSAR only."
+            fi
+          else
+            echo "No multi-asset study run yet; publishing PSAR only."
+          fi
+
       - name: Upload HTML preview artifact
         uses: actions/upload-artifact@v4
         with:
           name: psar-report-html
-          path: _site/index.html
+          path: _site
           retention-days: 30
 
       - name: Upload Pages artifact

@@ -54,3 +54,16 @@ All DataFrames are treated as read-only after adaptation. A report may take alre
 ## Boundaries and follow-ups
 
 The FFN adapter here consumes **already archived FFN metrics**. An adapter from live `ffn.GroupStats` or `PerformanceStats`, a configurable multi-position trade ledger, and a second unrelated strategy are future work only after acceptance. The Golden Master freezes deterministic data and Bokeh model structure, not raster-perfect browser screenshots.
+
+
+## Second case: weekly SMA summary
+
+The 2026-11-27 second-case adapter is limited to its own read-only
+archived CSVs and does not alter the PSAR ReportData/ReportConfig contracts,
+common charts or immutable PSAR Golden Master fixture.
+
+The multi-asset summary reuses the same performance_summary columns and FFN
+values without recalculation. One summary HTML links to separate detail HTMLs.
+The current data snapshot contains daily Close only: the adapter uses
+Bokeh equity lines instead of inventing OHLC price candles or misplacing
+foreign reference instrument prices on a KRW domestic ETF axis.

@@ -1,0 +1,354 @@
+"""Independent 21-completed-week SMA tests. No shared-portfolio allocation.
+
+Signals use the reference instrument; fills use the Korea-listed ETF price.
+All positions are long ETF positions (including inverse ETF), never naked shorts.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import pandas as pd
+
+from backtest_lab.analysis import average_monthly_turnover, ffn_stats_table
+from backtest_lab.core import BacktestResult, Order, Runtime, RuntimeConfig, StrategyContext
+
+STRATEGY_ID = "multi_asset_weekly_sma"
+REVISION = "r01"
+START = "2016-11-21"
+END = "2026-11-21"  # exclusive; last fully completed week is 2026-11-20
+SMA_WEEKS = 21
+INITIAL_CASH = 1_000_000.0
+SUMMARY_COLUMNS = (
+    "strategy", "start_date", "end_date", "total_return", "cagr",
+    "volatility", "sharpe", "max_drawdown", "avg_monthly_turnover", "avg_exposure",
+)
+
+
+def weekly_sma_signals(reference_close: pd.Series, weeks: int = SMA_WEEKS) -> pd.DataFrame:
+    """Last observed close in each week; only completed bars are usable.
+
+    No synthetic holiday prices. The caller's cutoff must exclude the
+    unfinished current week; execution always requires date > signal_date.
+    """
+    if weeks < 2:
+        raise ValueError("weeks must be >= 2")
+    s = reference_close.dropna().sort_index().astype(float)
+    if not isinstance(s.index, pd.DatetimeIndex) or s.index.has_duplicates:
+        raise ValueError("reference_close requires unique DatetimeIndex")
+    if (s <= 0).any():
+        raise ValueError("reference close must be positive")
+    weekly = s.groupby(s.index.to_period("W-FRI")).tail(1)
+    sma = weekly.rolling(weeks, min_periods=weeks).mean()
+    result = pd.DataFrame({"reference_close": weekly, "sma21": sma})
+    result.index.name = "signal_date"
+    result["direction"] = pd.Series(0, index=result.index, dtype=int)
+    result.loc[weekly > sma, "direction"] = 1
+    result.loc[weekly < sma, "direction"] = -1
+    result["direction"] = result["direction"].where(sma.notna(), 0)
+    return result
+
+
+def _positions_to_orders(context: StrategyContext, symbol: str | None) -> list[Order]:
+    owned = context.portfolio.positions
+    if symbol is not None and set(owned) == {symbol}:
+        return []
+    orders = [Order(s, "sell", qty) for s, qty in sorted(owned.items()) if qty > 1e-12]
+    if symbol is not None:
+        nav = context.portfolio.value(context.prices)
+        orders.append(Order(symbol, "buy", nav / float(context.prices[symbol])))
+    return orders
+
+
+@dataclass
+class SMARegimeStrategy:
+    signals: pd.DataFrame
+    long_symbol: str
+    inverse_symbol: str | None = None
+    decisions: list[dict[str, object]] = field(default_factory=list)
+    _last_signal_date: pd.Timestamp | None = None
+
+    def on_step(self, context: StrategyContext) -> list[Order]:
+        # Strictly earlier than the domestic execution day. For US Friday
+        # closes, a Korean Monday execution is safely after US Friday close.
+        eligible = self.signals.index[self.signals.index < context.timestamp]
+        if len(eligible) == 0:
+            return []
+        signal_date = pd.Timestamp(eligible[-1])
+        if self._last_signal_date == signal_date:
+            return []
+        self._last_signal_date = signal_date
+        state = self.signals.loc[signal_date]
+        direction = int(state["direction"])
+        held = self.long_symbol if direction > 0 else (
+            self.inverse_symbol if direction < 0 else None
+        )
+        orders = _positions_to_orders(context, held)
+        self.decisions.append({
+            "signal_date": signal_date, "execution_date": context.timestamp,
+            "reference_close": float(state["reference_close"]),
+            "sma21": float(state["sma21"]) if pd.notna(state["sma21"]) else float("nan"),
+            "direction": direction, "held_etf": held or "CASH",
+            "changed_position": bool(orders),
+        })
+        return orders
+
+
+@dataclass
+class BuyAndHold:
+    symbol: str
+    _done: bool = False
+
+    def on_step(self, context: StrategyContext) -> list[Order]:
+        if self._done:
+            return []
+        self._done = True
+        return _positions_to_orders(context, self.symbol)
+
+
+@dataclass(frozen=True)
+class AssetInput:
+    asset_id: str
+    display_name: str
+    reference_close: pd.Series
+    long_close: pd.Series
+    long_symbol: str
+    inverse_close: pd.Series | None = None
+    inverse_symbol: str | None = None
+
+    def __post_init__(self) -> None:
+        if bool(self.inverse_close is not None) != bool(self.inverse_symbol is not None):
+            raise ValueError("inverse_close and inverse_symbol must be supplied together")
+
+
+@dataclass(frozen=True)
+class AssetBacktest:
+    asset_id: str
+    display_name: str
+    curves: pd.DataFrame
+    performance_summary: pd.DataFrame
+    ffn_stats: pd.DataFrame
+    signals: pd.DataFrame
+    fills: pd.DataFrame
+
+
+def _clean_prices(series: pd.Series, name: str) -> pd.Series:
+    data = series.copy().dropna().astype(float)
+    if not isinstance(data.index, pd.DatetimeIndex):
+        raise ValueError(f"{name}: missing DatetimeIndex")
+    data = data.sort_index()
+    if data.index.has_duplicates or (data <= 0).any():
+        raise ValueError(f"{name}: invalid prices")
+    return data.rename(name)
+
+
+def run_asset(
+    item: AssetInput,
+    start: str = START,
+    end: str = END,
+    config: RuntimeConfig | None = None,
+    weeks: int = SMA_WEEKS,
+) -> AssetBacktest:
+    if not item.asset_id or not item.long_symbol:
+        raise ValueError("asset_id and long_symbol are required")
+    config = config or RuntimeConfig(fee_rate=0.00015)
+    reference = _clean_prices(item.reference_close, "reference")
+    reference = reference.loc[reference.index < pd.Timestamp(end)]
+    signals = weekly_sma_signals(reference, weeks)
+    # Limit to local Korean ETF trading dates. Missing dates are never ffilled.
+    long = _clean_prices(item.long_close, item.long_symbol)
+    long = long.loc[(long.index >= pd.Timestamp(start)) & (long.index < pd.Timestamp(end))]
+    if len(long) < 25:
+        raise ValueError(f"{item.asset_id}: insufficient domestic ETF observations")
+    # Late-inception domestic products may not have a 21-week pre-inception
+    # reference (e.g. the domestic fund itself as documented fallback).
+    # Hold cash until the first eligible completed 21-week SMA signal.
+    if not ((signals["sma21"].notna()) & (signals.index < long.index[-1])).any():
+        raise ValueError(f"{item.asset_id}: fewer than 21 reference weeks before last execution")
+
+    prices = long.to_frame()
+    mode = SMARegimeStrategy(signals, item.long_symbol)
+    runs: dict[str, BacktestResult] = {
+        "Long/Cash": Runtime(mode, INITIAL_CASH, config).run(prices),
+        "Buy & Hold": Runtime(BuyAndHold(item.long_symbol), INITIAL_CASH, config).run(prices),
+    }
+    decisions = [("Long/Cash", mode.decisions)]
+    if item.inverse_close is not None and item.inverse_symbol is not None:
+        inverse = _clean_prices(item.inverse_close, item.inverse_symbol)
+        inverse = inverse.loc[(inverse.index >= pd.Timestamp(start)) & (inverse.index < pd.Timestamp(end))]
+        both = pd.concat([long, inverse], axis=1).dropna()
+        if len(both) >= 25:
+            inverse_mode = SMARegimeStrategy(signals, item.long_symbol, item.inverse_symbol)
+            runs["Long/Inverse"] = Runtime(inverse_mode, INITIAL_CASH, config).run(both)
+            decisions.append(("Long/Inverse", inverse_mode.decisions))
+
+    stats, raw = ffn_stats_table(runs)
+    summary = []
+    fills = []
+    for name, result in runs.items():
+        stat = raw[name]
+        # Reuse canonical FFN metrics and the existing performance-summary column set.
+        # Each asset has independent coverage. These are NOT pooled portfolio returns.
+        invested = []
+        position_qty: dict[str, float] = {}
+        by_date: dict[pd.Timestamp, list] = {}
+        for fill in result.fills:
+            by_date.setdefault(pd.Timestamp(fill.timestamp), []).append(fill)
+            fills.append({
+                "asset": item.asset_id, "strategy": name, "timestamp": fill.timestamp,
+                "symbol": fill.symbol, "side": fill.side, "quantity": fill.quantity,
+                "reference_price": fill.reference_price, "fill_price": fill.fill_price,
+                "fee": fill.fee,
+            })
+        current_prices = prices if name != "Long/Inverse" else both
+        for ts, row in current_prices.iterrows():
+            for fill in by_date.get(pd.Timestamp(ts), []):
+                position_qty[fill.symbol] = position_qty.get(fill.symbol, 0.0) + (
+                    fill.quantity if fill.side == "buy" else -fill.quantity
+                )
+            invested_value = sum(q * float(row[s]) for s, q in position_qty.items())
+            invested.append(invested_value / float(result.equity.loc[ts]))
+        summary.append({
+            "strategy": name,
+            "start_date": result.equity.index[0].date(),
+            "end_date": result.equity.index[-1].date(),
+            "total_return": float(stat["total_return"]),
+            "cagr": float(stat["cagr"]),
+            "volatility": float(stat["daily_vol"]),
+            "sharpe": float(stat["daily_sharpe"]),
+            "max_drawdown": float(stat["max_drawdown"]),
+            "avg_monthly_turnover": average_monthly_turnover(result),
+            "avg_exposure": sum(invested) / len(invested),
+        })
+    summary_df = pd.DataFrame(summary, columns=SUMMARY_COLUMNS)
+    signals_out = pd.concat([
+        pd.DataFrame(records).assign(strategy=mode_name)
+        for mode_name, records in decisions if records
+    ], ignore_index=True) if any(records for _, records in decisions) else pd.DataFrame()
+    curves = pd.concat([r.performance.rename(name) for name, r in runs.items()], axis=1)
+    return AssetBacktest(item.asset_id, item.display_name, curves, summary_df, stats, signals_out,
+                         pd.DataFrame(fills))
+
+
+def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[str, Path]:
+    """Every asset gets a distinct immutable input/output directory.
+
+    Combined summary is a *projection* of existing per-asset FFN metrics;
+    it never recalculates investment performance.
+    """
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    paths: dict[str, Path] = {}
+    summary_rows = []
+    manifest_rows = []
+    for result in results:
+        manifest_rows.append({"asset_id": result.asset_id, "display_name": result.display_name})
+        path = root / "assets" / result.asset_id
+        path.mkdir(parents=True, exist_ok=True)
+        tables = {
+            "performance_summary.csv": result.performance_summary,
+            "ffn_stats.csv": result.ffn_stats.reset_index(names="metric"),
+            "equity_curves.csv": result.curves.reset_index(names="timestamp"),
+            "weekly_signals.csv": result.signals,
+            "fills.csv": result.fills,
+        }
+        for filename, table in tables.items():
+            dest = path / filename
+            table.to_csv(dest, index=False)
+            paths[f"{result.asset_id}/{filename}"] = dest
+        main = result.performance_summary.loc[result.performance_summary["strategy"] == "Long/Cash"].copy()
+        main["strategy"] = result.display_name
+        summary_rows.append(main)
+    if not summary_rows:
+        raise ValueError("No successful asset backtests.")
+    combined = pd.concat(summary_rows, ignore_index=True).loc[:, SUMMARY_COLUMNS]
+    manifest_path = root / "asset_manifest.csv"
+    pd.DataFrame(manifest_rows).to_csv(manifest_path, index=False)
+    paths["asset_manifest.csv"] = manifest_path
+    output = root / "performance_summary.csv"
+    combined.to_csv(output, index=False)
+    paths["performance_summary.csv"] = output
+    return paths
+
+
+
+
+@dataclass(frozen=True)
+class MultiAssetOutputs:
+    assets: tuple[AssetBacktest, ...]
+    coverage: pd.DataFrame
+
+    def write_csv(self, output_dir: str | Path) -> dict[str, Path]:
+        root = Path(output_dir)
+        written = write_asset_results(list(self.assets), root)
+        combined_stats = pd.concat([
+            r.ffn_stats.rename(columns={c: f"{r.asset_id}::{c}" for c in r.ffn_stats.columns})
+            for r in self.assets
+        ], axis=1)
+        combined_curves = pd.concat([
+            r.curves.rename(columns={c: f"{r.asset_id}::{c}" for c in r.curves.columns})
+            for r in self.assets
+        ], axis=1)
+        signal_frames = [
+            r.signals.assign(asset_id=r.asset_id)
+            for r in self.assets if not r.signals.empty
+        ]
+        tables = {
+            "ffn_stats.csv": combined_stats.reset_index(names="metric"),
+            "equity_curves.csv": combined_curves.reset_index(names="timestamp"),
+            "weekly_signals.csv": pd.concat(signal_frames, ignore_index=True)
+            if signal_frames else pd.DataFrame(),
+            "fills.csv": pd.concat([r.fills for r in self.assets], ignore_index=True),
+            "instrument_coverage.csv": self.coverage,
+        }
+        for filename, table in tables.items():
+            dest = root / filename
+            table.to_csv(dest, index=False)
+            written[filename] = dest
+        return written
+
+
+def run_pilot(
+    prices: pd.DataFrame,
+    start: str = START,
+    end: str = END,
+    config: RuntimeConfig | None = None,
+) -> MultiAssetOutputs:
+    """Run ALL 18 independent underlying-asset studies from saved price data.
+
+    Strict by design: absent assets are failures, not silently excluded from
+    research ranking. Comparisons involving inverse ETF periods show each
+    strategy's original start/end and must not be called common-window tests.
+    """
+    from .data import ASSETS, extract_assets
+
+    inputs = extract_assets(prices)
+    if len(inputs) != len(ASSETS):
+        raise ValueError("Incomplete research universe")
+    results = []
+    coverage = []
+    for item, spec in zip(inputs, ASSETS, strict=True):
+        if item.asset_id != spec.asset_id:
+            raise ValueError("Asset order does not match source registry")
+        result = run_asset(item, start=start, end=end, config=config)
+        if len(result.curves) < 25:
+            raise ValueError(f"{item.asset_id}: insufficient result coverage")
+        results.append(result)
+        coverage.append({
+            "asset_id": item.asset_id,
+            "display_name": item.display_name,
+            "reference_source": spec.reference_source,
+            "reference_ticker": spec.reference_ticker,
+            "long_etf": spec.long_etf,
+            "inverse_etf": spec.inverse_etf or "",
+            "proxy_note": spec.proxy_note,
+            "reference_start": item.reference_close.index.min().date(),
+            "reference_end": item.reference_close.index.max().date(),
+            "long_start": item.long_close.index.min().date(),
+            "long_end": item.long_close.index.max().date(),
+            "inverse_start": item.inverse_close.index.min().date()
+            if item.inverse_close is not None and not item.inverse_close.empty else "",
+            "inverse_end": item.inverse_close.index.max().date()
+            if item.inverse_close is not None and not item.inverse_close.empty else "",
+        })
+    return MultiAssetOutputs(tuple(results), pd.DataFrame(coverage))
