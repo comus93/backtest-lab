@@ -1,9 +1,9 @@
-# Multi-Asset Weekly SMA Trend Research r01 (Draft)
+# Multi-Asset Weekly SMA Trend Research r01 (Implementation Pilot)
 
 - Strategy ID: `multi_asset_weekly_sma`
 - Revision: `r01` (new strategy, not a revision of `weekly_trend`)
 - Revision date: `2026-11-27`
-- Status: **research specification draft; not implemented or registered for automated execution**
+- Status: **implemented and locally verified; main-branch Actions and Pages publication pending**
 
 ## 1. Purpose / hypotheses
 
@@ -102,32 +102,24 @@ Proposed outputs include `input_prices.csv`, `ffn_stats.csv`, `performance_summa
 
 For the Pages view, create a **strategy-specific reporting adapter** mapping immutable run artifacts to `ReportData`/`ReportConfig`. Reuse existing Bokeh renderer without embedding commodity or ticker-specific assumptions in common charts. Run the PSAR Golden Master tests before changing shared reporting. Present per-asset tabs/tables and distinct reference-signal versus Korea ETF execution prices.
 
-## 8. Integration with the existing repository
+## 8. Implemented r01 pilot and integration (supersedes planned parts above)
 
-- Spec (this document): `doc/strategies/20261127-multi-asset-weekly-sma-r01.md`
-- Living research report: `doc/strategies/reports/multi_asset_weekly_sma.md`
-- **Future**, once agreed: `src/backtest_lab/strategies/multi_asset_weekly_sma/r01.py`
-- **Future** tests: `tests/strategies/multi_asset_weekly_sma/test_r01.py`
-- **Future** dispatcher: explicit allow-list in `src/backtest_lab/automation.py`
-- **Future** trigger only after allow-list and tests: `automation/backtest-request.json`
-- **Future** output: `runs/multi_asset_weekly_sma/r01/<run_id>/`
-- **Future** Pages: report adapter and publishing workflow, preserving PSAR report.
+Implementation uses the explicitly mapped instruments in the multi_asset_weekly_sma strategy data module and runs all 18 independently. The source snapshot preserves missing cross-market dates and is saved by automation as input_prices.csv.
 
-Do not edit `automation/backtest-request.json` at specification stage: changing that file triggers a live GitHub Actions backtest, and this new strategy has no registered runner yet.
+- Primary signal: last available fully completed weekly close > 21-week simple moving average = long; below average = cash or domestic inverse ETF; equal/missing = cash.
+- Signal date is strictly earlier than the Korean ETF trade date. The next available domestic ETF Close is the current fill approximation because the data source is Close-only.
+- Baseline: up to 100% single domestic ETF exposure in each independent study, with project default fee and slippage. No actual naked short trades.
+- Reference signal and Korean ETF execution instruments are separated. Any differences in FX hedging, proxy, spot/futures or benchmark variant appear in the asset metadata.
+- Main performance_summary.csv uses the existing ten-column BTLab performance-summary format unchanged, with exactly one Long/Cash row per asset. Actual Long/Inverse and Buy & Hold results appear in separate per-asset detail tables.
+- Per-asset archived outputs include performance_summary, ffn_stats, equity_curves, weekly_signals and fills CSV; the combined run also includes asset_manifest and instrument_coverage CSV. Existing FFN calculations and metrics are NOT implemented again for reporting.
+- Run automation explicitly allows multi_asset_weekly_sma / r01 / baseline. The actual triggering backtest-request.json is deliberately unchanged in the research PR.
+- Reporting generates a standalone summary index and individual 18 Bokeh HTML equity pages. Only existing FFN values are displayed; no synthetic OHLC candles are generated from Close-only data. The original PSAR root report stays at its existing Pages path.
+- The existing PSAR Golden Master tests must remain green and Pages must deploy the combined site artifact.
 
-## 9. Acceptance tests (for implementation phase)
+## 9. Verified status and limitations
 
-- Weekly resampling uses last available completed trading day, handles Korean/foreign calendar boundaries.
-- 21-week SMA uses no future bar and has sufficient warm-up without pre-start fills.
-- Prices above/below/equal SMA map to explicitly agreed signals.
-- Changed next-day execution prices cannot alter the previous signal.
-- Independent assets have independent decisions and exposure.
-- Reference theoretical short is never passed off as Korea inverse ETF return.
-- Price / currency / benchmark mismatches and insufficient coverage are surfaced, never silently filled.
-- FFN and reporting metrics are computed upstream; reporting is strictly read-only.
-- Existing automation and PSAR reporting Golden Master regression suite passes.
-- End-to-end run uses verified real data and preserves immutable outputs with reproducible `input_prices.csv`.
+The local proof-of-concept completed all 18 reference / domestic ETF study rows on actual Yahoo and FDR data and generated 1 summary and 18 asset HTML files. The GitHub Actions canonical run, recorded price snapshot and deployed Pages URL require a subsequent main-branch run.
 
-## 10. Status and blockers
+Important: not all domestic ETFs cover the full ten years, so the summary retains start_date and end_date and must not be sorted as if all rows had equal coverage. FDR domestic Close is PRICE only and not a confirmed distribution-adjusted total-return feed. Inverse fund compounding differs from a theoretical short.
 
-This is a **registration draft** of the agreed research direction, not evidence that data were downloaded, a strategy was implemented, tests passed, Actions ran, or Pages published. Further discussion is required to finalize execution timing, ETF symbol mapping and sizing.
+Theoretical short diagnostics, slope/sensitivity optimization, regime-duration and yearly subreports are not included in this first runnable version. The earlier sections are the broader research roadmap, not a claim that those outputs already exist.

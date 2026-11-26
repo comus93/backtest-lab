@@ -37,6 +37,10 @@ from backtest_lab.strategies.us_market_cap_leaders.r01 import (
 from backtest_lab.strategies.psar_segment_duration.data import load_fdr_prices
 from backtest_lab.strategies.psar_segment_duration.r01 import run_pilot as run_psar_baseline
 from backtest_lab.tripod_nasdaq_leverage_pilot import load_tripod_prices
+from backtest_lab.strategies.multi_asset_weekly_sma.data import load_price_snapshot
+from backtest_lab.strategies.multi_asset_weekly_sma.r01 import (
+    START as SMA_START, END as SMA_END, run_pilot as run_multi_asset_weekly_sma,
+)
 
 REQUEST_ID_RE = re.compile(r"^(?P<date>\d{8})T\d{6}(?:[+-]\d{4}|Z)?$")
 RUN_ID_RE_TEMPLATE = r"^{date}-(\d{{4}})$"
@@ -82,6 +86,12 @@ MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES = (
     "start_end_cagr_top2_pct.csv",
     "start_end_cagr_spy_pct.csv",
     "start_end_cagr_qqq_pct.csv",
+)
+
+SMA_OUTPUT_FILES = (
+    "input_prices.csv", "asset_manifest.csv", "performance_summary.csv",
+    "ffn_stats.csv", "equity_curves.csv", "weekly_signals.csv",
+    "fills.csv", "instrument_coverage.csv",
 )
 
 PSAR_OUTPUT_FILES = (
@@ -148,7 +158,12 @@ def _psar_long_only(prices: pd.DataFrame, active_start: pd.Timestamp, config: Ru
     return run_psar_baseline(prices, config=config, long_only=True)
 
 
+def _sma_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_multi_asset_weekly_sma(prices, start=SMA_START, end=SMA_END, config=config)
+
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
+    ("multi_asset_weekly_sma", "r01", "baseline"): _sma_baseline,
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): _tripod_sensitivity,
     ("sp500_top2_market_cap", "r01", "baseline"): _top2_baseline,
@@ -159,6 +174,7 @@ ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
+    ("multi_asset_weekly_sma", "r01", "baseline"): SMA_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "baseline"): TRIPOD_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): TRIPOD_OUTPUT_FILES,
     ("sp500_top2_market_cap", "r01", "baseline"): TOP2_OUTPUT_FILES,
@@ -201,6 +217,9 @@ def load_request(path: str | Path) -> BacktestRequest:
                 "us_market_cap_leaders/r01 fixed price coverage is "
                 f"start={MARKET_CAP_LEADERS_PRICE_START}, end={MARKET_CAP_LEADERS_END_EXCLUSIVE}."
             )
+    if key == ("multi_asset_weekly_sma", "r01", "baseline"):
+        if request.start != SMA_START or request.end != SMA_END:
+            raise ValueError(f"multi_asset_weekly_sma/r01 fixed dates: {SMA_START} to {SMA_END} (exclusive)")
     return request
 
 
@@ -220,6 +239,8 @@ def next_run_id(runs_root: str | Path, request: BacktestRequest) -> str:
 
 
 def _load_prices(request: BacktestRequest) -> pd.DataFrame:
+    if request.strategy_id == "multi_asset_weekly_sma" and request.revision == "r01":
+        return load_price_snapshot(start="2016-01-01", end=SMA_END)
     if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
         if request.end is None:
             raise ValueError("psar_segment_duration/r01 requires an explicit end date.")
@@ -258,6 +279,8 @@ def _load_prices(request: BacktestRequest) -> pd.DataFrame:
 
 
 def _active_start(request: BacktestRequest, prices: pd.DataFrame) -> pd.Timestamp:
+    if request.strategy_id == "multi_asset_weekly_sma" and request.revision == "r01":
+        return pd.Timestamp(SMA_START)
     if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
         return pd.Timestamp(prices.index[0])
     if request.strategy_id == "tripod_nasdaq_leverage" and request.revision == "r01":
@@ -334,7 +357,7 @@ def execute_request(
     outputs = runner(prices, active_start, runtime_config)
     written = outputs.write_csv(output_dir)
 
-    output_files = ["input_prices.csv", *sorted(path.name for path in written.values())]
+    output_files = ["input_prices.csv", *sorted(path.relative_to(output_dir).as_posix() for path in written.values())]
     required_outputs = REQUIRED_OUTPUTS_BY_KEY[key]
     missing = [name for name in required_outputs if name not in output_files]
     if missing:

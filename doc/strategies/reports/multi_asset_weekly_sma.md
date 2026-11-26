@@ -3,7 +3,7 @@
 - Strategy ID: `multi_asset_weekly_sma`
 - Initial revision: `r01`
 - Created: `2026-11-27`
-- Status: hypothesis registered; backtest **not executed**
+- Status: local 18-asset pilot verified; Actions and Pages deployment pending
 
 ## Background / agreed direction
 The investigation began with a hypothesis that gold, silver and copper might yield more stable medium-term directional trends than stock indices. The research scope broadened to major country/region stock indices, energy and agricultural commodities, preserving **all 18 provisional candidate underlying exposures** that have a corresponding Korea-listed long ETF after listing/index checks.
@@ -28,7 +28,7 @@ Reference:
 - `runs/weekly_trend/r01/20260901-0001/llm-analysis-260901-btlab-country_weekly_trend.md`
 
 ## Research evidence
-No new 21-week SMA run outputs yet. Keep calculated metrics separate from AI interpretations, and add user-agreed insights only after discussing evidence.
+A local actual-data E2E completed all 18 candidate assets and produced a summary plus 18 Bokeh detailed reports. The canonical GitHub Actions archived run is not yet executed. Keep the underlying calculated results separate from interpretation; do not automatically add Agreed Insights.
 
 ## Risks / open issues
 - Confirm Korea-listed funds, live listing status and exact index/FX/hedge/futures match; 18 is a provisional candidate count.
@@ -43,3 +43,12 @@ No new 21-week SMA run outputs yet. Keep calculated metrics separate from AI int
 3. Implement isolated strategy and tests without modifying common core unless justified.
 4. Register explicit automation runner, trigger GitHub Actions, inspect raw FFN/output.
 5. Extend read-only reporting and publish a separate Pages case view without breaking PSAR Golden Master.
+
+
+## Implementation checkpoint 2026-11-27
+
+- Independent r01 strategy and source/ETF mapping added; uses real Korea ETF prices and weekly overseas index/ETF reference proxies when available.
+- The existing canonical ten-column FFN performance table is reused without recalculation; summary has one Long/Cash row per asset.
+- Report adapter produces summary and detail pages while preserving the existing PSAR root Page and common Bokeh renderer.
+- Local E2E ran 18 assets and rendered 19 HTML files. Actions run and Pages deployment remain to verify.
+- Shorter domestic ETF listing history, FX/futures differences, and close-only execution must be considered before interpreting returns.

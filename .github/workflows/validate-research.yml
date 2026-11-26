@@ -1,0 +1,32 @@
+name: Validate BTLab Research PR
+
+on:
+  pull_request:
+    paths:
+      - 'src/backtest_lab/strategies/multi_asset_weekly_sma/**'
+      - 'src/backtest_lab/reporting/**'
+      - 'src/backtest_lab/automation.py'
+      - 'tests/**'
+      - 'doc/strategies/20261127-multi-asset-weekly-sma-r01.md'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,report]"
+      - name: Full BTLab and PSAR Golden Master regression
+        run: python -m pytest -q
