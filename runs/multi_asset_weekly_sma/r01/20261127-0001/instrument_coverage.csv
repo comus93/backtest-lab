@@ -1,0 +1,19 @@
+asset_id,display_name,reference_source,reference_ticker,long_etf,inverse_etf,proxy_note,reference_start,reference_end,long_start,long_end,inverse_start,inverse_end
+sp500,미국 S&P500,yahoo,SPY,219480,225030,US equity index ETF vs KR futures-hedged ETF; not identical return series,2016-01-04,2026-11-20,2016-01-04,2026-11-20,2016-01-04,2026-11-20
+nasdaq100,미국 나스닥100,yahoo,QQQ,304940,409810,US equity ETF vs KR futures-hedged ETF,2016-01-04,2026-11-20,2018-08-30,2026-11-20,2021-12-09,2026-11-20
+russell2000,미국 러셀2000,yahoo,IWM,280930,,,2016-01-04,2026-11-20,2017-11-09,2026-11-20,,
+kospi200,한국 코스피200,fdr,KS200,069500,114800,,2016-01-04,2026-11-20,2016-01-04,2026-11-20,2016-01-04,2026-11-20
+msci_korea,한국 MSCI,yahoo,EWY,310970,,EWY benchmark variant differs from TIGER MSCI Korea TR; proxy only,2016-01-04,2026-11-20,2018-11-20,2026-11-20,,
+nikkei225,일본 니케이225,yahoo,^N225,241180,,,2016-01-04,2026-11-20,2016-03-31,2026-11-20,,
+topix,일본 TOPIX,yahoo,1306.T,195920,205720,"1306.T is a Japanese TOPIX ETF proxy, not the index itself",2016-01-04,2026-11-20,2016-01-04,2026-11-20,2016-01-04,2026-11-20
+csi300,중국 CSI300,yahoo,ASHR,283580,217780,"ASHR is a US-listed CSI300 ETF proxy, not the raw index",2016-01-04,2026-11-20,2017-12-13,2026-11-20,2016-01-04,2026-11-20
+nifty50,인도 Nifty50,yahoo,^NSEI,453810,,,2016-01-04,2026-11-20,2023-04-21,2026-11-20,,
+emerging,신흥국 MSCI,yahoo,EEM,195980,,Check MSCI benchmark and currency hedge variant,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
+eurostoxx50,유럽 Euro STOXX 50,yahoo,FEZ,195930,,FEZ is a US-listed ETF proxy; domestic product is KRW hedged,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
+gold,금,yahoo,GLD,132030,280940,"GLD holds physical gold; Korea-listed ETF uses gold futures, with roll costs",2016-01-04,2026-11-20,2016-01-04,2026-11-20,2017-11-09,2026-11-20
+silver,은,yahoo,SLV,144600,,SLV physical silver vs KR silver futures ETF,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
+copper,구리,yahoo,CPER,138910,,Copper futures fund methodologies may differ,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
+wti,WTI 원유,yahoo,USO,261220,271050,Both are futures funds; their roll methodologies can differ,2016-01-04,2026-11-20,2016-12-27,2026-11-20,2017-06-13,2026-11-20
+grains,3대 농산물,domestic,271060,271060,,No verified overseas matching index feed; interim domestic ETF signal,2017-06-13,2026-11-20,2017-06-13,2026-11-20,,
+soybeans,대두,yahoo,SOYB,138920,,SOYB vs Korea futures roll methodologies may differ,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
+agriculture,농산물 종합,yahoo,DBA,137610,,DBA broad agriculture basket is only an approximate benchmark,2016-01-04,2026-11-20,2016-01-04,2026-11-20,,
