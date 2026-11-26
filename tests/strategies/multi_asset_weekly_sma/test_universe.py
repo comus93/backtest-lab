@@ -66,3 +66,53 @@ def test_dispatcher_registered_with_user_approved_fixed_period(tmp_path):
     path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ValueError, match="fixed dates"):
         load_request(path)
+
+
+def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
+    from backtest_lab.strategies.multi_asset_weekly_sma.data import REFERENCE_ASSETS
+    from backtest_lab.core import RuntimeConfig
+    assert len(REFERENCE_ASSETS) == 18
+    assert next(a for a in REFERENCE_ASSETS if a.asset_id == "gold").long_etf == "GLD"
+    assert next(a for a in REFERENCE_ASSETS if a.asset_id == "gold").inverse_etf == "GLL"
+    dates = pd.bdate_range("2015-01-01", periods=535)
+    seen = []
+    def yahoo(ticker, *_):
+        seen.append(("yahoo", ticker))
+        return pd.Series(np.linspace(100.0, 180.0, len(dates)), index=dates)
+    def fdr(ticker, *_):
+        seen.append(("fdr", ticker))
+        return pd.Series(np.linspace(200.0, 300.0, len(dates)), index=dates)
+    prices = load_price_snapshot("2015-01-01", "2018-01-01", yahoo_reader=yahoo,
+                                 fdr_reader=fdr, reference_only=True)
+    assert [x for x in seen if x[0] == "fdr"] == [("fdr", "KS200")]
+    assert prices["gold__long"].equals(prices["gold__reference"])
+    outputs = run_pilot(prices, start="2016-01-01", end="2018-01-01",
+                        config=RuntimeConfig(fee_rate=0.00015), reference_only=True)
+    gold = next(x for x in outputs.assets if x.asset_id == "gold")
+    assert set(gold.fills.symbol) <= {"GLD", "GLL"}
+    assert "Long/Inverse" in gold.performance_summary.strategy.values
+    p = prices.loc[prices.index >= pd.Timestamp("2016-01-01"), "gold__long"].dropna()
+    expected = p.iloc[-1] / p.iloc[0] / 1.00015 - 1.0
+    actual = gold.performance_summary.loc[gold.performance_summary.strategy == "Buy & Hold",
+                                           "total_return"].iloc[0]
+    assert actual == pytest.approx(expected)
+    for name, group in gold.yearly_performance.groupby("strategy"):
+        total = gold.performance_summary.loc[gold.performance_summary.strategy == name,
+                                              "total_return"].iloc[0]
+        assert (1.0 + group["return"]).prod() - 1.0 == pytest.approx(total)
+    written = outputs.write_csv(tmp_path)
+    assert len(pd.read_csv(written["performance_summary.csv"])) == 18
+    annual = pd.read_csv(written["yearly_performance.csv"])
+    assert annual.asset_id.nunique() == 18
+    assert set(outputs.coverage.study_basis) == {"reference"}
+    assert set(outputs.coverage.currency) == {"USD", "JPY", "KRW index"}
+
+
+def test_reference_dispatcher_is_explicit(tmp_path):
+    assert ("multi_asset_weekly_sma", "r01", "reference") in ALLOWED_RUNNERS
+    path = tmp_path / "request.json"
+    path.write_text(json.dumps({
+        "request_id": "20261127T080000+0900", "strategy_id": "multi_asset_weekly_sma",
+        "revision": "r01", "mode": "reference", "start": "2016-11-21", "end": "2026-11-21"
+    }), encoding="utf-8")
+    assert load_request(path).mode == "reference"

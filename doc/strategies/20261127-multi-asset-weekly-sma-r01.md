@@ -123,3 +123,34 @@ The local proof-of-concept completed all 18 reference / domestic ETF study rows 
 Important: not all domestic ETFs cover the full ten years, so the summary retains start_date and end_date and must not be sorted as if all rows had equal coverage. FDR domestic Close is PRICE only and not a confirmed distribution-adjusted total-return feed. Inverse fund compounding differs from a theoretical short.
 
 Theoretical short diagnostics, slope/sensitivity optimization, regime-duration and yearly subreports are not included in this first runnable version. The earlier sections are the broader research roadmap, not a claim that those outputs already exist.
+
+
+## 10. Reference-first correction (2026-11-27)
+
+User clarified that phase one must evaluate the external reference instrument itself, with
+domestic ETF implementation postponed. Use explicit automation mode reference (r01).
+The earlier baseline mode and run 20261127-0001 are preserved as a domestic implementation
+experiment, not phase-one evidence. No revision number change or overwrite.
+
+The reference instrument is both the weekly SMA signal and the actual long execution
+series. Use Yahoo adjusted daily close for ETF data. Buy & Hold and Long/Cash
+use the same reference ticker; Long/Inverse uses a separately observed inverse ETF
+price only where matching available. GLL, ZSL and SCO are -2x DAILY products;
+their results are not symmetric -1x short returns.
+
+US-listed ETFs are preferred. Exceptions: KS200 is the non-tradable KOSPI200 price index
+(FDR; hypothetical reference-price test, not an ETF); Japan uses 1329.T/1571.T
+and 1306.T/1569.T in JPY. India uses INDY. TAGS is an approximate grains proxy
+that includes sugar, not the exact three-grain basket. The former CSI300 inverse CHAD
+liquidated in 2023 and is not used in the full-period study. Mapping, currency,
+inverse daily multiplier, and Korean eligibility code are archived in instrument_coverage.csv.
+No currency conversion across USD/JPY/KRW-index is performed; mixed-currency comparisons
+are reference-market returns, not a common KRW investment return.
+
+Calendar-year returns are calculated from the Runtime performance index before rendering.
+The first anchor includes opening trade costs; each daily return belongs to its ending year.
+Compounding annual returns must equal total_return. Keep the existing ten-column FFN
+summary unchanged, display return/volatility/drawdown/turnover/exposure as percentages,
+and add a separate annual table for all strategies in the summary and each asset detail.
+2016 and 2026 are partial years, not annualized. Store yearly_performance.csv
+in each asset folder and combined at the run root.

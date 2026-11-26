@@ -91,7 +91,7 @@ MARKET_CAP_LEADERS_WINDOW_OUTPUT_FILES = (
 SMA_OUTPUT_FILES = (
     "input_prices.csv", "asset_manifest.csv", "performance_summary.csv",
     "ffn_stats.csv", "equity_curves.csv", "weekly_signals.csv",
-    "fills.csv", "instrument_coverage.csv",
+    "fills.csv", "instrument_coverage.csv", "yearly_performance.csv",
 )
 
 PSAR_OUTPUT_FILES = (
@@ -162,7 +162,13 @@ def _sma_baseline(prices: pd.DataFrame, active_start: pd.Timestamp, config: Runt
     return run_multi_asset_weekly_sma(prices, start=SMA_START, end=SMA_END, config=config)
 
 
+def _sma_reference(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_multi_asset_weekly_sma(prices, start=SMA_START, end=SMA_END, config=config,
+                                      reference_only=True)
+
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
+    ("multi_asset_weekly_sma", "r01", "reference"): _sma_reference,
     ("multi_asset_weekly_sma", "r01", "baseline"): _sma_baseline,
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): _tripod_sensitivity,
@@ -174,6 +180,7 @@ ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
+    ("multi_asset_weekly_sma", "r01", "reference"): SMA_OUTPUT_FILES,
     ("multi_asset_weekly_sma", "r01", "baseline"): SMA_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "baseline"): TRIPOD_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "sensitivity"): TRIPOD_OUTPUT_FILES,
@@ -217,7 +224,7 @@ def load_request(path: str | Path) -> BacktestRequest:
                 "us_market_cap_leaders/r01 fixed price coverage is "
                 f"start={MARKET_CAP_LEADERS_PRICE_START}, end={MARKET_CAP_LEADERS_END_EXCLUSIVE}."
             )
-    if key == ("multi_asset_weekly_sma", "r01", "baseline"):
+    if key[:2] == ("multi_asset_weekly_sma", "r01"):
         if request.start != SMA_START or request.end != SMA_END:
             raise ValueError(f"multi_asset_weekly_sma/r01 fixed dates: {SMA_START} to {SMA_END} (exclusive)")
     return request
@@ -240,7 +247,7 @@ def next_run_id(runs_root: str | Path, request: BacktestRequest) -> str:
 
 def _load_prices(request: BacktestRequest) -> pd.DataFrame:
     if request.strategy_id == "multi_asset_weekly_sma" and request.revision == "r01":
-        return load_price_snapshot(start="2016-01-01", end=SMA_END)
+        return load_price_snapshot(start="2016-01-01", end=SMA_END, reference_only=request.mode == "reference")
     if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
         if request.end is None:
             raise ValueError("psar_segment_duration/r01 requires an explicit end date.")

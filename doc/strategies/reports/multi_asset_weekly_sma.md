@@ -52,3 +52,16 @@ A local actual-data E2E completed all 18 candidate assets and produced a summary
 - Report adapter produces summary and detail pages while preserving the existing PSAR root Page and common Bokeh renderer.
 - Local E2E ran 18 assets and rendered 19 HTML files. Actions run and Pages deployment remain to verify.
 - Shorter domestic ETF listing history, FX/futures differences, and close-only execution must be considered before interpreting returns.
+
+
+## Reference-first correction (2026-11-27)
+
+User clarified phase one evaluates the overseas reference ticker itself (GLD,
+not KODEX gold futures, for example). Domestic ETF implementation is postponed.
+The old 20261127-0001 archive remains immutable and must not be confused with
+the phase-one reference run. Automation mode reference uses external ETF/index
+prices and real inverse ETF data where available. The research summary keeps
+its existing FFN columns, formats returns as percentages, and adds a separate
+year-by-year table of all strategy returns. Non-US and proxy exceptions are
+recorded in the coverage manifest; no conclusions about the research hypothesis
+are claimed until the corrected results are reviewed.

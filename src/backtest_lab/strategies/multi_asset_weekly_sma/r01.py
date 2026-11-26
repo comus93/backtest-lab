@@ -130,6 +130,7 @@ class AssetBacktest:
     ffn_stats: pd.DataFrame
     signals: pd.DataFrame
     fills: pd.DataFrame
+    yearly_performance: pd.DataFrame
 
 
 def _clean_prices(series: pd.Series, name: str) -> pd.Series:
@@ -155,7 +156,7 @@ def run_asset(
     reference = _clean_prices(item.reference_close, "reference")
     reference = reference.loc[reference.index < pd.Timestamp(end)]
     signals = weekly_sma_signals(reference, weeks)
-    # Limit to local Korean ETF trading dates. Missing dates are never ffilled.
+    # Limit to execution instrument trading dates. Missing dates are never ffilled.
     long = _clean_prices(item.long_close, item.long_symbol)
     long = long.loc[(long.index >= pd.Timestamp(start)) & (long.index < pd.Timestamp(end))]
     if len(long) < 25:
@@ -226,8 +227,17 @@ def run_asset(
         for mode_name, records in decisions if records
     ], ignore_index=True) if any(records for _, records in decisions) else pd.DataFrame()
     curves = pd.concat([r.performance.rename(name) for name, r in runs.items()], axis=1)
+    yearly_rows = []
+    for name, result in runs.items():
+        # Include first trade costs via the Runtime's pre-start anchor.
+        # Assign each close-to-close return to its ending calendar year.
+        returns = result.performance.pct_change().dropna()
+        for year, group in returns.groupby(returns.index.year):
+            yearly_rows.append({"strategy": name, "year": int(year),
+                                "return": float((1.0 + group).prod() - 1.0)})
+    yearly = pd.DataFrame(yearly_rows, columns=["strategy", "year", "return"])
     return AssetBacktest(item.asset_id, item.display_name, curves, summary_df, stats, signals_out,
-                         pd.DataFrame(fills))
+                         pd.DataFrame(fills), yearly)
 
 
 def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[str, Path]:
@@ -241,6 +251,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     paths: dict[str, Path] = {}
     summary_rows = []
     manifest_rows = []
+    yearly_rows = []
     for result in results:
         manifest_rows.append({"asset_id": result.asset_id, "display_name": result.display_name})
         path = root / "assets" / result.asset_id
@@ -251,6 +262,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
             "equity_curves.csv": result.curves.reset_index(names="timestamp"),
             "weekly_signals.csv": result.signals,
             "fills.csv": result.fills,
+            "yearly_performance.csv": result.yearly_performance,
         }
         for filename, table in tables.items():
             dest = path / filename
@@ -259,6 +271,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
         main = result.performance_summary.loc[result.performance_summary["strategy"] == "Long/Cash"].copy()
         main["strategy"] = result.display_name
         summary_rows.append(main)
+        yearly_rows.append(result.yearly_performance.assign(asset_id=result.asset_id, asset=result.display_name))
     if not summary_rows:
         raise ValueError("No successful asset backtests.")
     combined = pd.concat(summary_rows, ignore_index=True).loc[:, SUMMARY_COLUMNS]
@@ -268,6 +281,9 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     output = root / "performance_summary.csv"
     combined.to_csv(output, index=False)
     paths["performance_summary.csv"] = output
+    yearly_path = root / "yearly_performance.csv"
+    pd.concat(yearly_rows, ignore_index=True).loc[:, ["asset_id", "asset", "strategy", "year", "return"]].to_csv(yearly_path, index=False)
+    paths["yearly_performance.csv"] = yearly_path
     return paths
 
 
@@ -313,6 +329,7 @@ def run_pilot(
     start: str = START,
     end: str = END,
     config: RuntimeConfig | None = None,
+    *, reference_only: bool = False,
 ) -> MultiAssetOutputs:
     """Run ALL 18 independent underlying-asset studies from saved price data.
 
@@ -320,14 +337,15 @@ def run_pilot(
     research ranking. Comparisons involving inverse ETF periods show each
     strategy's original start/end and must not be called common-window tests.
     """
-    from .data import ASSETS, extract_assets
+    from .data import ASSETS, REFERENCE_ASSETS, extract_assets, reference_metadata
 
-    inputs = extract_assets(prices)
-    if len(inputs) != len(ASSETS):
+    mappings = REFERENCE_ASSETS if reference_only else ASSETS
+    inputs = extract_assets(prices, reference_only=reference_only)
+    if len(inputs) != len(mappings):
         raise ValueError("Incomplete research universe")
     results = []
     coverage = []
-    for item, spec in zip(inputs, ASSETS, strict=True):
+    for item, spec in zip(inputs, mappings, strict=True):
         if item.asset_id != spec.asset_id:
             raise ValueError("Asset order does not match source registry")
         result = run_asset(item, start=start, end=end, config=config)
@@ -342,6 +360,8 @@ def run_pilot(
             "long_etf": spec.long_etf,
             "inverse_etf": spec.inverse_etf or "",
             "proxy_note": spec.proxy_note,
+            "study_basis": "reference" if reference_only else "domestic",
+            **(reference_metadata(item.asset_id) if reference_only else {}),
             "reference_start": item.reference_close.index.min().date(),
             "reference_end": item.reference_close.index.max().date(),
             "long_start": item.long_close.index.min().date(),

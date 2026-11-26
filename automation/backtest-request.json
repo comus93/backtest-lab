@@ -1,8 +1,8 @@
 {
-  "request_id": "20261127T071219+0900",
+  "request_id": "20261127T081056+0900",
   "strategy_id": "multi_asset_weekly_sma",
   "revision": "r01",
-  "mode": "baseline",
+  "mode": "reference",
   "start": "2016-11-21",
   "end": "2026-11-21"
 }

@@ -57,3 +57,15 @@ def test_missing_manifest_fails_clearly(prepared_run, tmp_path):
     (prepared_run / "asset_manifest.csv").unlink()
     with pytest.raises(FileNotFoundError):
         render_summary(prepared_run, tmp_path / "index.html")
+
+
+def test_annual_return_tables_reuse_saved_returns(prepared_run, tmp_path):
+    html = render_summary(prepared_run, tmp_path / "annual.html").read_text(encoding="utf-8")
+    assert "Calendar-year return" in html
+    assert "2016*" in html
+    yearly = pd.read_csv(prepared_run / "yearly_performance.csv")
+    gold = yearly.loc[(yearly.asset_id == "gold") & (yearly.strategy == "Buy & Hold")]
+    assert len(gold) > 0
+    assert f"{float(gold.iloc[0]['return'])*100:+.2f}%" in html
+    path = render_detail(prepared_run, "gold", tmp_path / "gold.html")
+    assert "Calendar-year return" in path.read_text(encoding="utf-8")

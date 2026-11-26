@@ -61,6 +61,45 @@ ASSETS: tuple[AssetMapping, ...] = (
 )
 assert len(ASSETS) == len({x.asset_id for x in ASSETS}) == 18
 
+# Stage one: reference instrument itself is both signal and execution basis.
+# The original ASSETS table remains the domestic eligibility / phase-two map.
+_REFERENCE_OVERRIDES = {
+    "sp500": ("SPY", "SH", "USD", -1, ""),
+    "nasdaq100": ("QQQ", "PSQ", "USD", -1, ""),
+    "russell2000": ("IWM", "RWM", "USD", -1, ""),
+    "kospi200": ("KS200", None, "KRW index", None, "KOSPI 200 price index; non-tradable benchmark, not a Korean ETF"),
+    "msci_korea": ("EWY", None, "USD", None, "MSCI Korea 25/50 benchmark proxy"),
+    "nikkei225": ("1329.T", "1571.T", "JPY", -1, "Japan-listed Nikkei 225 ETF and inverse; no matching US ETF with ten-year data"),
+    "topix": ("1306.T", "1569.T", "JPY", -1, "Japan-listed TOPIX ETF and inverse; local-currency performance"),
+    "csi300": ("ASHR", None, "USD", None, "CSI 300 ETF; matching US inverse CHAD liquidated in 2023"),
+    "nifty50": ("INDY", None, "USD", None, "US-listed Nifty 50 ETF"),
+    "emerging": ("EEM", "EUM", "USD", -1, ""),
+    "eurostoxx50": ("FEZ", None, "USD", None, ""),
+    "gold": ("GLD", "GLL", "USD", -2, "GLD physical gold; GLL daily -2x gold futures, not a symmetric spot short"),
+    "silver": ("SLV", "ZSL", "USD", -2, "SLV physical silver; ZSL daily -2x silver futures"),
+    "copper": ("CPER", None, "USD", None, "Copper futures fund"),
+    "wti": ("USO", "SCO", "USD", -2, "Different futures roll benchmarks; SCO daily -2x"),
+    "grains": ("TAGS", None, "USD", None, "Approximate proxy only: corn, wheat, soybeans AND sugar; exact grains index data unavailable"),
+    "soybeans": ("SOYB", None, "USD", None, ""),
+    "agriculture": ("DBA", None, "USD", None, "Broad agriculture futures basket"),
+}
+
+REFERENCE_ASSETS = tuple(
+    AssetMapping(a.asset_id, a.display_name,
+                 _REFERENCE_OVERRIDES[a.asset_id][0],
+                 "fdr" if a.asset_id == "kospi200" else "yahoo",
+                 _REFERENCE_OVERRIDES[a.asset_id][0],
+                 _REFERENCE_OVERRIDES[a.asset_id][1],
+                 _REFERENCE_OVERRIDES[a.asset_id][4])
+    for a in ASSETS
+)
+
+def reference_metadata(asset_id: str) -> dict:
+    _, _, currency, inverse_multiple, _ = _REFERENCE_OVERRIDES[asset_id]
+    return {"currency": currency, "inverse_daily_multiple": inverse_multiple,
+            "domestic_eligibility_etf": next(a.long_etf for a in ASSETS if a.asset_id == asset_id)}
+
+
 
 def _fdr_history(ticker: str, start: str, end: str) -> pd.Series:
     import FinanceDataReader as fdr
@@ -98,6 +137,7 @@ def load_price_snapshot(
     end: str = END,
     yahoo_reader: Callable[[str, str, str], pd.Series] = _yahoo_history,
     fdr_reader: Callable[[str, str, str], pd.Series] = _fdr_history,
+    *, reference_only: bool = False,
 ) -> pd.DataFrame:
     """Load each approved instrument explicitly; missing data fail loudly.
 
@@ -117,12 +157,12 @@ def load_price_snapshot(
             cache[key] = loader(ticker, start, end)
         return cache[key]
 
-    for item in ASSETS:
+    for item in (REFERENCE_ASSETS if reference_only else ASSETS):
         ref_source = "fdr" if item.reference_source == "domestic" else item.reference_source
         series[f"{item.asset_id}__reference"] = read(ref_source, item.reference_ticker)
-        series[f"{item.asset_id}__long"] = read("fdr", item.long_etf)
+        series[f"{item.asset_id}__long"] = read(ref_source if reference_only else "fdr", item.long_etf)
         if item.inverse_etf:
-            series[f"{item.asset_id}__inverse"] = read("fdr", item.inverse_etf)
+            series[f"{item.asset_id}__inverse"] = read("yahoo" if reference_only else "fdr", item.inverse_etf)
     prices = pd.concat(series, axis=1).sort_index()
     prices.index.name = "timestamp"
     if prices.index.has_duplicates or prices.empty:
@@ -130,9 +170,9 @@ def load_price_snapshot(
     return prices
 
 
-def extract_assets(prices: pd.DataFrame) -> list[AssetInput]:
+def extract_assets(prices: pd.DataFrame, *, reference_only: bool = False) -> list[AssetInput]:
     items = []
-    for row in ASSETS:
+    for row in (REFERENCE_ASSETS if reference_only else ASSETS):
         required = [f"{row.asset_id}__reference", f"{row.asset_id}__long"]
         if row.inverse_etf:
             required.append(f"{row.asset_id}__inverse")
