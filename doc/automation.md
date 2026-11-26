@@ -250,3 +250,8 @@ the baseline domestic execution mode but does not fetch domestic ETF prices
 in phase one (KS200 is a price index). Both modes now produce archived
 yearly_performance.csv. The newest successful archived run is used by the
 existing Pages publisher; previous run directories remain immutable.
+
+
+The SMA study additionally produces monthly_performance.csv at run-root
+and per-asset locations, with complete strategy calendar-month returns.
+This is computed in the backtest and not by the Pages renderer.

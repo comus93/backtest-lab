@@ -65,3 +65,12 @@ its existing FFN columns, formats returns as percentages, and adds a separate
 year-by-year table of all strategy returns. Non-US and proxy exceptions are
 recorded in the coverage manifest; no conclusions about the research hypothesis
 are claimed until the corrected results are reviewed.
+
+
+## 2026-11-27 reporting refinement: monthly matrix
+
+The user set strategy order to Long/Cash, Long/Inverse, Buy & Hold
+(benchmark last). Each asset-specific annual table is followed immediately
+by a monthly matrix with YYYY-MM rows and the three strategy columns.
+The matrix uses the persisted monthly_performance.csv and does not alter
+the existing FFN statistics or 18-asset overview table.

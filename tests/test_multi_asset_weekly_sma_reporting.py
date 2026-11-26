@@ -69,3 +69,40 @@ def test_annual_return_tables_reuse_saved_returns(prepared_run, tmp_path):
     assert f"{float(gold.iloc[0]['return'])*100:+.2f}%" in html
     path = render_detail(prepared_run, "gold", tmp_path / "gold.html")
     assert "Calendar-year return" in path.read_text(encoding="utf-8")
+
+
+def test_monthly_matrix_uses_archived_returns_and_exact_order(prepared_run, tmp_path):
+    from backtest_lab.reporting.adapters.multi_asset_weekly_sma import _monthly_matrix
+    root = prepared_run / "assets" / "gold"
+    source = root / "monthly_performance.csv"
+    saved = pd.read_csv(source)
+    month = "2017-01"
+    hold_return = saved.loc[(saved["month"] == month)
+                            & (saved["strategy"] == "Buy & Hold"), "return"].iloc[0]
+    matrix = _monthly_matrix(source)
+    assert "Year-Month Return" in matrix
+    assert matrix.index(">Long/Cash</th>") < matrix.index(">Long/Inverse</th>") < matrix.index(">Buy &amp; Hold</th>")
+    assert month in matrix
+    assert f"{hold_return * 100:+.2f}%" in matrix
+    detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
+    assert detail.index("Calendar-year return") < detail.index("Year-Month Return")
+    assert "2017-01" in detail
+    saved_summary = pd.read_csv(root / "performance_summary.csv")
+    assert saved_summary.columns.tolist() == list(SUMMARY_COLUMNS)
+
+
+def test_matrix_with_no_inverse_uses_missing_not_zero(prepared_run, tmp_path):
+    from backtest_lab.reporting.adapters.multi_asset_weekly_sma import _monthly_matrix
+    source = prepared_run / "assets" / "silver" / "monthly_performance.csv"
+    matrix = _monthly_matrix(source)
+    assert "Long/Inverse" in matrix
+    assert "—" in matrix
+    detail = render_detail(prepared_run, "silver", tmp_path / "silver.html").read_text(encoding="utf-8")
+    assert "Year-Month Return" in detail
+
+
+def test_legacy_archive_without_monthly_file_is_still_renderable(prepared_run, tmp_path):
+    (prepared_run / "assets" / "gold" / "monthly_performance.csv").unlink()
+    detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
+    assert "Calendar-year return" in detail
+    assert "Year-Month Return" not in detail

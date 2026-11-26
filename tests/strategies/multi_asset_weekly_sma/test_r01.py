@@ -84,3 +84,38 @@ def test_short_window_fails_instead_of_inventing_returns():
     with pytest.raises(ValueError, match="insufficient domestic"):
         run_asset(AssetInput("a", "A", ref, domestic, "LONG"),
                   start="2019-01-01", end="2020-01-01")
+
+
+def test_monthly_returns_and_benchmark_last():
+    """Months reproduce annual FFN returns and the full-period total."""
+    _, reference, domestic, inverse = sample()
+    result = run_asset(AssetInput("gold", "금", reference, domestic, "GLD",
+                                  inverse, "GLL"),
+                       start="2016-01-01", end="2018-01-01")
+    expected = ["Long/Cash", "Long/Inverse", "Buy & Hold"]
+    assert result.performance_summary["strategy"].tolist() == expected
+    assert result.curves.columns.tolist() == expected
+    assert result.ffn_stats.columns.tolist() == expected
+    assert result.yearly_performance["strategy"].drop_duplicates().tolist() == expected
+    assert result.monthly_performance["strategy"].drop_duplicates().tolist() == expected
+    assert result.monthly_performance.columns.tolist() == ["strategy", "month", "return"]
+    for strategy in expected:
+        months = result.monthly_performance.loc[result.monthly_performance["strategy"] == strategy]
+        assert months["month"].is_unique
+        assert months["month"].is_monotonic_increasing
+        total = result.performance_summary.set_index("strategy").loc[strategy, "total_return"]
+        assert float((1 + months["return"]).prod() - 1) == pytest.approx(total)
+        years = result.yearly_performance.loc[result.yearly_performance["strategy"] == strategy]
+        for _, year in years.iterrows():
+            selected = months.loc[months["month"].str[:4] == str(int(year["year"]))]
+            assert float((1 + selected["return"]).prod() - 1) == pytest.approx(year["return"])
+
+
+def test_no_inverse_benchmark_still_last():
+    _, ref, domestic, _ = sample()
+    result = run_asset(AssetInput("silver", "은", ref, domestic, "SLV"),
+                       start="2016-01-01", end="2018-01-01")
+    assert result.performance_summary["strategy"].tolist() == ["Long/Cash", "Buy & Hold"]
+    assert result.monthly_performance["strategy"].drop_duplicates().tolist() == [
+        "Long/Cash", "Buy & Hold"
+    ]

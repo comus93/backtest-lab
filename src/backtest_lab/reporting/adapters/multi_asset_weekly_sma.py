@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 from backtest_lab.reporting.tables import tabular_html
+from backtest_lab.strategies.multi_asset_weekly_sma.r01 import STRATEGY_ORDER
 
 # Must agree with the existing weekly_trend performance-summary contract.
 SUMMARY_COLUMNS = (
@@ -77,7 +78,15 @@ def _annual_table(path: Path, summary: bool = False) -> str:
     if yearly.duplicated([*keys, "year"]).any():
         raise ValueError(f"{path}: duplicate annual return")
     years = sorted(yearly["year"].unique())
-    order = yearly[keys].drop_duplicates()
+    order = yearly[keys].drop_duplicates().copy()
+    order["_rank"] = order["strategy"].map({name: i for i, name in enumerate(STRATEGY_ORDER)})
+    if order["_rank"].isna().any():
+        raise ValueError(f"{path}: unknown strategy in annual returns")
+    sort_keys = ["_rank"]
+    if summary:
+        order["_asset_rank"] = pd.factorize(order["asset"], sort=False)[0]
+        sort_keys.insert(0, "_asset_rank")
+    order = order.sort_values(sort_keys, kind="stable").loc[:, keys]
     frame = (order.merge(yearly.pivot(index=keys, columns="year", values="return").reset_index(),
                          on=keys, how="left").loc[:, [*keys, *years]])
     labels = {year: f"{year}*" if year in (2016, 2026) else str(year) for year in years}
@@ -87,6 +96,35 @@ def _annual_table(path: Path, summary: bool = False) -> str:
         '<p style="color:#64748b">* 2016년은 11월 21일 이후, 2026년은 11월 20일까지의 부분 수익률. '
         '빈 칸은 해당 기간 데이터 없음. 연율 환산하지 않음.</p>'
         + tabular_html(frame, percent_cols=set(labels.values()))
+    )
+
+
+def _monthly_matrix(path: Path) -> str:
+    """One month per row, three strategy columns; read archived returns only."""
+    if not path.exists():  # historical runs predate the monthly-output contract
+        return ""
+    monthly = pd.read_csv(path, dtype={"month": str})
+    required = {"strategy", "month", "return"}
+    if not required <= set(monthly.columns):
+        raise ValueError(f"{path}: monthly return columns missing")
+    if monthly.duplicated(["month", "strategy"]).any():
+        raise ValueError(f"{path}: duplicate monthly strategy observation")
+    if not monthly["strategy"].isin(STRATEGY_ORDER).all():
+        raise ValueError(f"{path}: unrecognized strategy")
+    if not monthly["month"].str.fullmatch(r"\d{4}-(0[1-9]|1[0-2])").all():
+        raise ValueError(f"{path}: invalid YYYY-MM month")
+    matrix = (monthly.pivot(index="month", columns="strategy", values="return")
+              .reindex(columns=STRATEGY_ORDER)
+              .sort_index()
+              .rename_axis(index="연월", columns=None)
+              .reset_index())
+    return (
+        '<h2 style="font-size:17px">월별 수익률 매트릭스 (Year-Month Return)</h2>'
+        '<p style="color:#64748b">각 월의 첫 거래일부터 마지막 거래일까지 계산된 전략별 수익률이야. '
+        '2016-11, 2026-11은 부분 월이며, 인버스 상품이 없는 전략의 빈칸(—)은 수익률 0%가 아니라 해당 전략 없음이야.</p>'
+        '<div style="max-height:550px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:6px">'
+        + tabular_html(matrix, percent_cols=set(STRATEGY_ORDER))
+        + '</div>'
     )
 
 
@@ -154,12 +192,18 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     instrument_note = _instrument_note(matches.iloc[0]) if len(matches) == 1 else ""
     folder = run / "assets" / asset_id
     summary = _read_summary(folder / "performance_summary.csv")
+    summary = (summary.assign(_order=summary["strategy"].map(
+        {name: i for i, name in enumerate(STRATEGY_ORDER)}))
+        .sort_values("_order", kind="stable").drop(columns="_order"))
     raw = pd.read_csv(folder / "ffn_stats.csv")
     curves = pd.read_csv(folder / "equity_curves.csv", parse_dates=["timestamp"])
     if "metric" not in raw.columns or "timestamp" not in curves.columns:
         raise ValueError("Missing required raw data columns")
     if len(curves) == 0:
         raise ValueError("Empty curve data")
+    present = [name for name in STRATEGY_ORDER if name in curves.columns]
+    curves = curves.loc[:, ["timestamp", *present]]
+    raw = raw.loc[:, ["metric", *(name for name in STRATEGY_ORDER if name in raw.columns)]]
 
     title = escape(name)
     header = Div(text=(
@@ -172,6 +216,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
         + '<h2 style="font-size:17px">Performance summary</h2>'
         + tabular_html(summary, percent_cols=PERCENT_COLUMNS)
         + _annual_table(folder / "yearly_performance.csv")
+        + _monthly_matrix(folder / "monthly_performance.csv")
         + '<p style="color:#64748b">인버스 전략이 있는 경우 진입 가능일·실제 가격 시계열의 '
           '시작일이 다를 수 있으니 각각의 start_date/end_date를 확인해.</p>'
         + '</div>'

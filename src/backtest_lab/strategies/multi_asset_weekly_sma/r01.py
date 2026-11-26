@@ -19,6 +19,7 @@ START = "2016-11-21"
 END = "2026-11-21"  # exclusive; last fully completed week is 2026-11-20
 SMA_WEEKS = 21
 INITIAL_CASH = 1_000_000.0
+STRATEGY_ORDER = ("Long/Cash", "Long/Inverse", "Buy & Hold")
 SUMMARY_COLUMNS = (
     "strategy", "start_date", "end_date", "total_return", "cagr",
     "volatility", "sharpe", "max_drawdown", "avg_monthly_turnover", "avg_exposure",
@@ -131,6 +132,7 @@ class AssetBacktest:
     signals: pd.DataFrame
     fills: pd.DataFrame
     yearly_performance: pd.DataFrame
+    monthly_performance: pd.DataFrame
 
 
 def _clean_prices(series: pd.Series, name: str) -> pd.Series:
@@ -183,6 +185,10 @@ def run_asset(
             runs["Long/Inverse"] = Runtime(inverse_mode, INITIAL_CASH, config).run(both)
             decisions.append(("Long/Inverse", inverse_mode.decisions))
 
+    # Keep the benchmark Buy & Hold last in every archived strategy table,
+    # equity curve and Bokeh legend, even when an inverse ETF is unavailable.
+    runs = {name: runs[name] for name in STRATEGY_ORDER if name in runs}
+    decisions = sorted(decisions, key=lambda pair: STRATEGY_ORDER.index(pair[0]))
     stats, raw = ffn_stats_table(runs)
     summary = []
     fills = []
@@ -228,6 +234,7 @@ def run_asset(
     ], ignore_index=True) if any(records for _, records in decisions) else pd.DataFrame()
     curves = pd.concat([r.performance.rename(name) for name, r in runs.items()], axis=1)
     yearly_rows = []
+    monthly_rows = []
     for name, result in runs.items():
         # Include first trade costs via the Runtime's pre-start anchor.
         # Assign each close-to-close return to its ending calendar year.
@@ -235,9 +242,13 @@ def run_asset(
         for year, group in returns.groupby(returns.index.year):
             yearly_rows.append({"strategy": name, "year": int(year),
                                 "return": float((1.0 + group).prod() - 1.0)})
+        for month, group in returns.groupby(returns.index.to_period("M")):
+            monthly_rows.append({"strategy": name, "month": str(month),
+                                 "return": float((1.0 + group).prod() - 1.0)})
     yearly = pd.DataFrame(yearly_rows, columns=["strategy", "year", "return"])
+    monthly = pd.DataFrame(monthly_rows, columns=["strategy", "month", "return"])
     return AssetBacktest(item.asset_id, item.display_name, curves, summary_df, stats, signals_out,
-                         pd.DataFrame(fills), yearly)
+                         pd.DataFrame(fills), yearly, monthly)
 
 
 def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[str, Path]:
@@ -252,6 +263,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     summary_rows = []
     manifest_rows = []
     yearly_rows = []
+    monthly_rows = []
     for result in results:
         manifest_rows.append({"asset_id": result.asset_id, "display_name": result.display_name})
         path = root / "assets" / result.asset_id
@@ -263,6 +275,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
             "weekly_signals.csv": result.signals,
             "fills.csv": result.fills,
             "yearly_performance.csv": result.yearly_performance,
+            "monthly_performance.csv": result.monthly_performance,
         }
         for filename, table in tables.items():
             dest = path / filename
@@ -272,6 +285,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
         main["strategy"] = result.display_name
         summary_rows.append(main)
         yearly_rows.append(result.yearly_performance.assign(asset_id=result.asset_id, asset=result.display_name))
+        monthly_rows.append(result.monthly_performance.assign(asset_id=result.asset_id, asset=result.display_name))
     if not summary_rows:
         raise ValueError("No successful asset backtests.")
     combined = pd.concat(summary_rows, ignore_index=True).loc[:, SUMMARY_COLUMNS]
@@ -284,6 +298,9 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     yearly_path = root / "yearly_performance.csv"
     pd.concat(yearly_rows, ignore_index=True).loc[:, ["asset_id", "asset", "strategy", "year", "return"]].to_csv(yearly_path, index=False)
     paths["yearly_performance.csv"] = yearly_path
+    monthly_path = root / "monthly_performance.csv"
+    pd.concat(monthly_rows, ignore_index=True).loc[:, ["asset_id", "asset", "strategy", "month", "return"]].to_csv(monthly_path, index=False)
+    paths["monthly_performance.csv"] = monthly_path
     return paths
 
 

@@ -154,3 +154,29 @@ summary unchanged, display return/volatility/drawdown/turnover/exposure as perce
 and add a separate annual table for all strategies in the summary and each asset detail.
 2016 and 2026 are partial years, not annualized. Store yearly_performance.csv
 in each asset folder and combined at the run root.
+
+
+## 11. Monthly strategy return matrix and benchmark ordering (2026-11-27)
+
+For every individual asset, report strategies in this fixed order:
+Long/Cash -> Long/Inverse -> Buy & Hold, with Buy & Hold last as
+the benchmark. When there is no inverse instrument, omit the strategy
+from performance statistics and annual rows, but keep its monthly matrix
+column as a missing observation, not as zero return.
+
+The upstream Runtime-performance pipeline now saves monthly_performance.csv
+per asset (strategy,month,return) and at the run root
+(asset_id,asset,strategy,month,return). Month is YYYY-MM and return is a
+fractional compounded return from daily Runtime performance increments.
+The pre-first-fill anchor preserves initial transaction costs. Compounding
+monthly returns by year must reproduce annual returns, and compounding
+all months must reproduce total return. The existing FFN summary metrics,
+their raw values and column order are unchanged.
+
+The individual-asset report renders a chronological calendar month matrix
+immediately below the year-by-year return table. Months are rows, and
+Long/Cash, Long/Inverse, Buy & Hold are columns, with percentage values
+to two decimals. 2016-11 and 2026-11 are partial months, not annualized.
+Missing inverse is displayed as a dash. Archived historical runs are not
+modified. The multi-asset overview remains focused on the existing one-row
+per asset summary and its separate annual table.
