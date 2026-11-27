@@ -1,9 +1,144 @@
-# Multi-Asset Weekly SMA Trend Research r01 (Implementation Pilot)
+# Multi-Asset Trend Research r01 (SMA105 / Daily 3-Line Break)
 
 - Strategy ID: `multi_asset_weekly_sma`
 - Revision: `r01` (new strategy, not a revision of `weekly_trend`)
 - Revision date: `2026-11-27`
-- Status: **implemented and locally verified; main-branch Actions and Pages publication pending**
+- Status: **implemented, verified, and published** (reference-mode run 20261127-0008; current reporting)
+
+## 0. Current authoritative specification (2026-11-27)
+
+This section defines the current implemented r01. It supersedes conflicting
+rules in the historical research notes below. The strategy ID and revision
+remain unchanged for compatibility with archived runs.
+
+### Objective and scope
+
+Compare medium-term trend-following rules separately for each of ten
+candidate assets, not as a combined portfolio. The current reference-first
+study compares SMA105 and daily 3-Line Break, including long/cash,
+inverse/cash and long/inverse alternatives against Buy & Hold. Domestic
+ETF execution is a separate validation phase, not the current result.
+
+### Active universe and actual reference-mode instruments
+
+| Asset ID | Underlying | Signal and long instrument | Inverse instrument | Currency |
+| --- | --- | --- | --- | --- |
+| sp500 | S&P 500 | SPY | SH (-1x daily) | USD |
+| nasdaq100 | Nasdaq 100 | QQQ | PSQ (-1x daily) | USD |
+| kospi200 | KOSPI 200 | KS200 (price index, non-tradable proxy) | — | KRW index |
+| nikkei225 | Nikkei 225 | 1329.T | 1571.T (-1x daily) | JPY |
+| topix | TOPIX | 1306.T | 1569.T (-1x daily) | JPY |
+| nifty50 | India equity / Nifty 50 exposure proxy | INDY | — | USD |
+| emerging | Emerging markets | EEM | EUM (-1x daily) | USD |
+| eurostoxx50 | EURO STOXX 50 | FEZ | — | USD |
+| gold | Gold | GLD | GLL (-2x daily) | USD |
+| silver | Silver | SLV | ZSL (-2x daily) | USD |
+
+Eight previous candidates (Russell 2000, EWY, CSI300, WTI, grains
+basket, soybeans, broad agriculture, copper) are excluded from new runs.
+KOSPI200 remains. The original mapping and 18-asset historical runs remain
+available. Seven current candidates support real inverse ETFs; the other
+three do not. Inverse ETFs use their observed price paths, including daily
+reset effects, rather than synthetic negative returns.
+
+### Input data and execution
+
+- Evaluation: 2016-11-21 through 2026-11-20 (end-exclusive 2026-11-21).
+  Warm-up price history begins in January 2016. Actual strategy coverage is
+  recorded in the run's summary and instrument coverage files.
+- Yahoo Finance adjusted daily Close for listed reference ETFs;
+  FinanceDataReader daily KOSPI200 price index. Only Close is archived,
+  not Open/High/Low/Volume. Do not reconstruct synthetic candles.
+- No cross-currency conversion or pooled allocation. Each asset and each
+  strategy start independently with 1,000,000 units of the study currency.
+- Observe only completed daily reference closes. Use the latest confirmed
+  signal strictly earlier than the execution date. Changes execute at the
+  next eligible session Close, not on the signal close.
+- Long-only paths use actual long trading dates. Inverse-capable paths
+  require the common long/inverse price calendar. Do not forward-fill
+  missing trading prices to invent executable sessions.
+- Rotate the entire position: sell the existing holding, then buy the
+  target with available capital, or retain cash. No duplicate order when
+  the target is unchanged. Runtime handles fills and fees; the default
+  fee rate is 0.015% per side and default slippage is 0 bps (environment
+  overrides are possible). No invented cash yield or forced terminal sale.
+- These are research assumptions, including next-close fill approximation
+  and the non-tradable KS200 proxy, not Korean ETF realized performance.
+
+### Signal definitions
+
+**SMA105 (daily):** arithmetic mean of the most recent 105 observed
+reference closes including the signal day. Close above the mean is
+bullish; close below is bearish. Equality or insufficient warm-up is
+neutral (cash). Evaluate every observed trading day.
+
+**3-Line Break (daily):** use confirmed reference closes and the last
+three formed line ranges, not the last three calendar days. The first
+close initializes the baseline; a different close establishes the initial
+direction. A higher close beyond the last bullish line close extends an
+uptrend; a lower close beyond the last bearish line close extends a
+downtrend. Reverse only below the minimum low of the preceding three
+formed lines (up to down), or above their maximum high (down to up).
+Use available formed lines before three exist. Equality does not create
+a line. A day without a new line retains the last confirmed direction.
+Before a line exists the state is neutral. See the deterministic builder
+in line_break.py; chart-provider data and aggregation differences may
+produce different line dates.
+
+### Strategy matrix and report order
+
+| Order | Strategy | Signal | Bullish | Bearish | Neutral |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Long/Cash | SMA105 | Long | Cash | Cash |
+| 2 | Inverse/Cash | SMA105 | Cash | Inverse | Cash |
+| 3 | Long/Inverse | SMA105 | Long | Inverse | Cash |
+| 4 | LineBreak Long/Cash | 3-Line Break | Long | Cash | Cash |
+| 5 | LineBreak Long/Inverse | 3-Line Break | Long | Inverse | Cash |
+| 6 | Buy & Hold | None | Long | Long | Long |
+
+Buy & Hold enters once at the first eligible session and remains invested.
+For both trend indicators, the initial active position follows the last
+confirmed pre-start state. There are 51 valid asset/strategy combinations:
+six per each of seven inverse-capable assets and three per each of the
+other three assets. Unsupported strategies are absent, not zero returns.
+
+### Outputs, acceptance and dashboard
+
+- Runtime/FFN remain the source of truth for performance; preserve the
+  existing ten-column performance summary and the raw FFN matrix.
+- Archive actual prices, coverage, daily decisions, Line Break states,
+  fills, equity curves, yearly and monthly returns in immutable run folders.
+  The aggregate overview selector supports all six strategies; each asset
+  has its own detailed report. Monthly return headers remain fixed.
+- Detail charts follow the PSAR-style four-panel reporting contract:
+  selected strategy vs Buy & Hold performance, realized fee-net trade P/L,
+  strategy drawdown, and execution dates on the archived daily long Close.
+  A single selector switches all panels together while retaining the common
+  time range. Actual fills and holding intervals are shown; open positions
+  have no invented realized P/L. Inverse fill prices are separately labeled
+  from the plotted long-price axis. The report is read-only.
+- Validation: compare monthly/yearly compounding to archived performance,
+  ensure strictly earlier signal dates than fills, reject mismatched
+  completed trade pairs, keep unsupported inverse cells missing, and
+  preserve the PSAR Golden Master.
+
+Implementation: [r01.py](../../src/backtest_lab/strategies/multi_asset_weekly_sma/r01.py),
+[Line Break](../../src/backtest_lab/strategies/multi_asset_weekly_sma/line_break.py),
+[instrument registry](../../src/backtest_lab/strategies/multi_asset_weekly_sma/data.py).
+
+Reporting contract: [specifications](../reporting/specifications.md),
+[architecture](../reporting/architecture.md).
+Research history: [strategy report](reports/multi_asset_weekly_sma.md).
+
+Latest verified reference run for this specification:
+[20261127-0008](../../runs/multi_asset_weekly_sma/r01/20261127-0008/).
+[Published dashboard](https://comus93.github.io/backtest-lab/research/multi_asset_weekly_sma/).
+
+---
+
+**Historical research and implementation notes follow.** Earlier candidate
+counts, weekly signal definitions, strategy orders and pilot status below
+describe prior phases, not the current operative specification.
 
 ## 1. Purpose / hypotheses
 
