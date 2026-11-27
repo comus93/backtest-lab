@@ -142,3 +142,8 @@ The fixed-run dashboard is regenerated from this specific archived run,
 not the latest-run pointer. Future presentation improvements may change its
 HTML, but not the underlying archived prices, signals, fills or FFN results.
 The multi-asset series remains active and independent of gold-only research.
+
+
+## Active research reporting migration (2026-11-27)
+
+User confirmed this remains an ongoing independent research series. Both the latest and pinned baseline dashboards use the canonical ChartComposer, with linked reference signal and actual execution charts, extended 3LB, archived SMA layers, and shared performance panels. Existing raw runs, metrics and rules are unchanged. The PSAR legacy renderer is not the target for new research.

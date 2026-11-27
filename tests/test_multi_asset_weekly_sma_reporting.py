@@ -191,3 +191,28 @@ def test_monthly_sticky_header_has_one_scroll_container(prepared_run):
     assert 'overflow-x:auto' not in html
     assert html.count('position:sticky;top:0;z-index:2;background:#f1f5f9;') == 7
     assert 'border-collapse:separate;border-spacing:0;' in html
+
+def test_active_archive_uses_composable_native_chart():
+    from pathlib import Path
+    from backtest_lab.reporting.adapters.multi_asset_weekly_sma import build_asset_charts
+    run = Path("runs/multi_asset_weekly_sma/r01/20261127-0008")
+    for asset in ("gold","kospi200","nikkei225"):
+        layout = build_asset_charts(run,asset)
+        selector, controls, price, signal, perf, pnl, dd = layout.children
+        assert all(p.x_range is price.x_range for p in (signal,perf,pnl,dd))
+        assert price.xaxis.visible and signal.xaxis.visible
+        assert signal.window_axis=="x"
+        control=layout.select_one({"name":"multi-asset-chart-layers"})
+        assert control.labels==["Reference close","SMA105","3LB extended","Execution / holding"]
+        assert control.active==[0,1,3]
+        assert signal.select_one({"name":"lb:1"}).glyph.line_dash
+        assert not any(type(r.glyph).__name__=="VBar" and r.name!="lb:0"
+                       for r in signal.renderers if hasattr(r,"glyph"))
+        saved=pd.read_csv(run/"assets"/asset/"daily_signals.csv")
+        expected=saved.loc[saved.strategy=="Long/Cash",["signal_date","sma105"]].dropna()
+        start=pd.read_csv(run/"assets"/asset/"performance_summary.csv").start_date.min()
+        expected=expected.loc[expected.signal_date>=start]
+        src=signal.select_one({"name":"sma:0"}).data_source.data
+        assert src["value"]==pytest.approx(expected.sma105.tolist())
+        if asset=="kospi200":
+            assert "Long/Inverse" not in selector.options

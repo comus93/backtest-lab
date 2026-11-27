@@ -7,7 +7,7 @@ Canonical path for new experiments: archived Runtime/FFN and indicator traces ->
 - composer.py owns generic ChartComposer, Layer, Glyph, line_layer, candle_layer and line_break_layer. It composes compatible renderers on a supplied shared datetime range, validates unit/identity/column lengths, manages visible-layer auto-ranging and optional independent visibility controls.
 - Strategy adapters own provenance, data mapping, indicator calculation upstream, layer defaults and trade-coordinate projection. The renderer is not a trading DSL, portfolio engine or indicator library.
 - Gold Trend Research is the first consumer, combining raw Close/candles, SMA105, extended 3LB, HA and execution layers on shared dates. New indicators can use existing generic glyphs without modifying the composer; add helpers only when useful across cases.
-- New experiments must use this composition contract and shared performance panels. Existing PSAR and multi-asset archived report paths are retained for compatibility; PSAR v1 is deprecated for new development. No automatic migration of historical runs or removal of regression tests.
+- New experiments must use this composition contract and shared performance panels. Multi-Asset Weekly SMA is an active second consumer of the canonical composer, including its fixed-run dashboard. PSAR v1 alone remains deprecated for new development; historical URLs and raw runs remain intact.
 
 ## Legacy and historical architecture (v1)
 

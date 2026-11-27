@@ -2,7 +2,7 @@
 
 ## Current authoritative contract: composable renderer (v2)
 
-Effective 2026-11-27, the user designated the layer-based Bokeh ChartComposer as the canonical renderer for new backtest-lab experiments. Gold Trend Research is the first consumer. PSAR-specific ReportData/ReportConfig, charts.py and render_report are deprecated for new work, retained for historical reproduction and existing URLs. Older requirements below describe legacy reports, not restrictions on v2.
+Effective 2026-11-27, the user designated the layer-based Bokeh ChartComposer as the canonical renderer for new backtest-lab experiments. Gold Trend Research is the first consumer; Multi-Asset Weekly SMA is the second active consumer. PSAR-specific ReportData/ReportConfig, charts.py and render_report are deprecated for new work, retained for historical reproduction and existing URLs. Older requirements below describe legacy reports, not restrictions on v2.
 
 ### Canonical chart contract
 
@@ -15,6 +15,18 @@ Effective 2026-11-27, the user designated the layer-based Bokeh ChartComposer as
 - The strategy selector chooses default layer visibility and existing performance/P&L/drawdown data. Independent checkboxes allow any available compatible layer combination without changing strategy or results; changing strategy restores its default layers.
 - The existing selectable performance, realized P/L and drawdown panels are reusable. Future adapters should compose with ChartComposer rather than implement strategy-specific rendering engines. Missing indicators are not invented; Close-only data supports lines, not fabricated candles.
 - Reports remain standalone Bokeh HTML. Existing runs are immutable. Validate composition, units, causal bridge geometry, selector behavior and shared time axes; legacy tests remain for retained historical compatibility, not as a design constraint for v2.
+
+### Multi-Asset Weekly SMA migration
+
+The active series and pinned 20261127-0008 dashboard use the canonical composer.
+The native signal chart uses archived reference Close, archived SMA observations
+on their signal dates and extended Line Break blocks. The actual long instrument
+execution chart stays separate, preserving reference/long units in legacy domestic
+runs. Both charts display dates and share X with performance, P/L and drawdown.
+Layers can be selected independently. Only archived data are rendered: no
+synthetic OHLC, no recalculated missing SMA values, no additional HA strategy.
+Incomplete historical archives without input prices or instrument metadata retain
+their original equity-only fallback. No change to strategy or run files.
 
 ## Legacy and historical specifications (v1)
 

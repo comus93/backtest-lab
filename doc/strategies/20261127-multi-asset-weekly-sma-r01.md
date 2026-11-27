@@ -467,3 +467,8 @@ rules are unchanged. Seven assets have actual inverse products in
 reference mode. Historical 18-asset runs through 20261127-0007
 remain immutable; the next run and current dashboard contain only
 these ten candidates.
+
+
+## Reporting v2 migration (presentation only)
+
+The active reference-mode report and pinned baseline use the canonical ChartComposer. The five panels share a real datetime X range; reference Close, archived SMA105 and extended 3LB layers can be combined independently. The execution panel uses actual long prices and fill metadata. Close-only input remains unchanged, and SMA observations not present in the archive are not reconstructed. No revision or backtest result change.

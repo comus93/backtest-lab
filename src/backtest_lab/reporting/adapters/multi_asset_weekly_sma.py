@@ -233,6 +233,128 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
     )
 
 
+def build_asset_charts(run: str | Path, asset_id: str):
+    """Compose native signal layers from archived reference data.
+
+    Execution prices remain in the original long-instrument panel. A
+    legacy domestic run can have a different reference instrument/unit.
+    The signal panel never overlays its reference SMA on execution prices.
+    """
+    from bokeh.layouts import column
+    from bokeh.models import Div, CustomJS
+    from ..composer import ChartComposer, Layer, Glyph, line_layer, line_break_layer
+    from ..palette import DEFAULT_PALETTE
+    from ..selectable_charts import build_selectable_charts
+    from .multi_asset_trade_charts import prepare_trade_charts
+
+    run=Path(run)
+    folder=run/"assets"/asset_id
+    coverage=_coverage(run)
+    instrument=coverage.loc[coverage.asset_id==asset_id].iloc[0]
+    summary=_read_summary(folder/"performance_summary.csv")
+    curves=pd.read_csv(folder/"equity_curves.csv",parse_dates=["timestamp"])
+    curves=curves.loc[:,["timestamp",*[n for n in STRATEGY_ORDER if n in curves]]]
+    snapshot=pd.read_csv(run/"input_prices.csv",parse_dates=["timestamp"]).set_index("timestamp")
+    long=snapshot[f"{asset_id}__long"].dropna()
+    reference=snapshot[f"{asset_id}__reference"].dropna()
+    fills=pd.read_csv(folder/"fills.csv",parse_dates=["timestamp"])
+    signal_path=folder/"daily_signals.csv"
+    if not signal_path.exists():
+        signal_path=folder/"weekly_signals.csv"
+    signals=(pd.read_csv(signal_path,parse_dates=["signal_date","execution_date"])
+             if signal_path.exists() else pd.DataFrame())
+    display,benchmark,strategies=prepare_trade_charts(long,curves,fills,signals,summary,
+        instrument["long_etf"],instrument.get("inverse_etf",""))
+    layout=build_selectable_charts(display,benchmark,strategies,
+        display_symbol=instrument["long_etf"],currency=instrument.get("currency",""))
+    selector,note,perf,pnl,dd,price=layout.children
+    start,end=pd.to_datetime(summary.start_date).min(),pd.to_datetime(summary.end_date).max()
+    reference=reference.loc[start:end]
+    ref_symbol=instrument.get("reference_ticker") or "Reference"
+    unit=(instrument.get("currency") or "Price") if instrument.get("study_basis")=="reference" else f"{ref_symbol} price units"
+    composer=ChartComposer("Strategy chart | "+selector.value,price.x_range,unit=unit,
+        name="multi-asset-signal-chart")
+    signal=composer.figure
+    signal.yaxis.axis_label=f"{ref_symbol} ({unit})"
+    composer.add(line_layer("raw-line","Reference close",reference,unit=unit,
+        basis=f"Archived {ref_symbol} reference Close"))
+    keys=["raw-line"]
+    # Decisions contain only the reference signals actually observed by
+    # the strategy. Do not recalculate missing SMA observations (including
+    # the final unexecuted signal day) in Reporting.
+    sma_name="SMA105" if str(instrument.get("sma_days",""))=="105" else "21-week SMA"
+    sma_column="sma105" if "sma105" in signals else "sma21"
+    if sma_column in signals and "strategy" in signals:
+        sma=signals.loc[signals.strategy=="Long/Cash",["signal_date",sma_column]].dropna()
+        sma=sma.set_index("signal_date")[sma_column].sort_index().loc[start:end]
+        if not sma.empty:
+            composer.add(line_layer("sma",sma_name,sma,unit=unit,
+                basis=f"Archived {ref_symbol} {sma_name} signal values",color="#b98a42",width=1.6))
+            keys.append("sma")
+    lb_path=folder/"line_break_signals.csv"
+    lb=None
+    if lb_path.exists():
+        lb=pd.read_csv(lb_path,parse_dates=["signal_date"]).set_index("signal_date").sort_index().loc[start:end]
+        if not lb.empty:
+            composer.add(line_break_layer("lb","3LB extended",lb,unit=unit,
+                basis=f"Archived {ref_symbol} confirmed Close blocks"),visible=False)
+            keys.append("lb")
+    # Project execution timestamps onto the selected signal price series,
+    # using only the most recent observed reference value if calendars differ.
+    # Actual fill instrument and price stay visible in the tooltip.
+    def project(series, dates):
+        idx=pd.to_datetime(dates,unit="ms")
+        return series.reindex(series.index.union(idx)).sort_index().ffill().reindex(idx).tolist()
+
+    visuals={}
+    defaults={}
+    for name,data in strategies.items():
+        use_lb=name.startswith("LineBreak") and "lb" in keys
+        series=lb.line_close if use_lb else reference
+        buys=dict(data["buys"],y=project(series,data["buys"]["date"]))
+        sells=dict(data["sells"],y=project(series,data["sells"]["date"]))
+        holds=dict(data["holds"],y0=project(series,data["holds"]["entry_date"]),
+                   y1=project(series,data["holds"]["exit_date"]))
+        visuals[name]=dict(buys=buys,sells=sells,holds=holds)
+        defaults[name]=["lb"] if use_lb else ["raw-line",*(["sma"] if "sma" in keys and name!="Buy & Hold" and not name.startswith("LineBreak") else [])]
+    initial=visuals[selector.value]
+    trade=Layer("execution","Execution / holding",unit,"Actual fills; projected on native strategy prices",(
+        Glyph("segment",initial["holds"],dict(x0="entry_date",y0="y0",x1="exit_date",y1="y1",
+            line_color="color",line_width=3,line_dash="dashed",line_alpha=.75),
+            (("Entry","@entry_date{%F}"),("End","@exit_date{%F}"),("Instrument","@symbol"),
+             ("Status","@status"),("Realized P/L","@result")),("entry_date","exit_date"),False),
+        *tuple(Glyph("scatter",initial[key],dict(x="date",y="y",marker=marker,size=10,color=color),
+            (("Execution","@date{%F}"),("Signal","@signal_date"),("Instrument","@symbol"),
+             ("Actual fill","@fill_price{0.0000}"),("Projected","@y{0.0000}")),auto_range=False)
+            for key,marker,color in (("buys","triangle",DEFAULT_PALETTE.buy),
+                                     ("sells","inverted_triangle",DEFAULT_PALETTE.sell))),
+    ))
+    span,buy,sell=composer.add(trade)
+    keys.append("execution")
+    defaults={name:[keys.index(k) for k in [*ls,"execution"]] for name,ls in defaults.items()}
+    control=composer.visibility_control(keys,[keys[i] for i in defaults[selector.value]],name="multi-asset-chart-layers")
+    selector.js_on_change("value",CustomJS(args=dict(payload=visuals,defaults=defaults,control=control,
+        buys=buy.data_source,sells=sell.data_source,holds=span.data_source,signal=signal),code="""
+        const v=payload[cb_obj.value];
+        control.active=defaults[cb_obj.value];
+        buys.data=v.buys; sells.data=v.sells; holds.data=v.holds;
+        buys.change.emit(); sells.change.emit(); holds.change.emit();
+        signal.title.text="Strategy chart | "+cb_obj.value;
+    """))
+    for plot in (price,signal,perf,pnl,dd):
+        plot.min_border_left=95
+        plot.min_border_right=10
+        plot.xaxis.visible=plot in (price,signal,dd)
+    price.xaxis.axis_label="Trading date"
+    signal.xaxis.axis_label="Trading date"
+    dd.xaxis.axis_label="Trading date · X linked · independent adaptive Y"
+    price.title.text="Execution Date | "+selector.value
+    return column(selector,column(note,Div(text="Strategy layers: compatible archived reference data only. "
+        "Close-only archive: no synthetic OHLC. SMA uses saved signal dates; unavailable values are omitted. "
+        "Markers on the strategy chart are projections; actual fills are shown on hover."),control,
+        sizing_mode="stretch_width"),price,signal,perf,pnl,dd,sizing_mode="stretch_width")
+
+
 def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     """Existing metric tables + self-contained Bokeh equity charts.
 
@@ -291,23 +413,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     # They remain renderable without pretending execution prices exist.
     source_path = run / "input_prices.csv"
     if source_path.is_file() and len(matches) == 1 and matches.iloc[0].get("long_etf", ""):
-        from ..selectable_charts import build_selectable_charts
-        from .multi_asset_trade_charts import prepare_trade_charts
-        instrument = matches.iloc[0]
-        price_frame = pd.read_csv(source_path, usecols=["timestamp", f"{asset_id}__long"],
-                                  parse_dates=["timestamp"]).set_index("timestamp")
-        fills = pd.read_csv(folder / "fills.csv", parse_dates=["timestamp"])
-        signal_path = folder / "daily_signals.csv"
-        if not signal_path.exists():
-            signal_path = folder / "weekly_signals.csv"
-        signals = (pd.read_csv(signal_path, parse_dates=["signal_date", "execution_date"])
-                   if signal_path.exists() else pd.DataFrame())
-        display, benchmark, strategies = prepare_trade_charts(
-            price_frame[f"{asset_id}__long"], curves, fills, signals, summary,
-            instrument["long_etf"], instrument.get("inverse_etf", ""))
-        fig = build_selectable_charts(display, benchmark, strategies,
-                                     display_symbol=instrument["long_etf"],
-                                     currency=instrument.get("currency", ""))
+        fig = build_asset_charts(run,asset_id)
     else:
         # Retain original equity-only rendering for incomplete legacy archives.
         fig = figure(title=f"{name} | 누적 성과 (기준 100)", height=350,
