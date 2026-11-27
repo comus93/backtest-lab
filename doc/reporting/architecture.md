@@ -40,3 +40,18 @@ Golden Master: `tests/fixtures/reporting/psar_golden_master.json` generated from
 A second strategy implements its own adapter returning `ReportData` and `ReportConfig`. It must not import `adapters.psar`. `charts.py` must not refer to QQQ, QLD, PSAR or fixed date windows. Add new generic chart types only for demonstrated repeat needs.
 
 To change the renderer: update this architecture and the reporting specifications, modify the common implementation, extend tests and confirm the PSAR Golden Master. Change trade semantics in the adapter or accounting layer, not the chart constructor.
+
+
+## Shared selectable four-panel chart extension
+
+The common selectable_charts.py builder follows the PSAR panel order,
+shared range, palette and execution/holding visualization. It consumes
+display-ready column arrays from an adapter and switches the six active
+data sources through Bokeh Select/CustomJS, rather than duplicating
+figures per strategy. The multi_asset_trade_charts adapter reads archived
+performance and sequential full-position fills, validates symbol/quantity
+pairing, maps actual execution dates onto recorded long closes, and derives
+visual drawdown and fee-net closed-trade P/L from the archived inputs.
+No Runtime accounting or FFN summary is recomputed. Open positions are
+separate from realized P/L. This does not alter existing OHLC-based
+ReportData validation or the PSAR renderer/Golden Master.

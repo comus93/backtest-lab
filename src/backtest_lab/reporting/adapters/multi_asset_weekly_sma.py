@@ -275,7 +275,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     header = Div(text=(
         '<div style="font-family:system-ui;color:#172033">'
         '<p><a href="../index.html">전체 자산 성과표로 돌아가기</a></p>'
-        f'<h1 style="font-size:24px">{title}: 105일 SMA 추세추종</h1>'
+        f'<h1 style="font-size:24px">{title}: {signal_label}{label_suffix} 추세추종</h1>'
         + f'<p>{escape(_basis_note(coverage))}</p>'
         + f'<p>{escape(instrument_note)}</p>'
         + '<p>FFN 원본 성과값과 누적 performance index를 그대로 표시해.</p>'
@@ -287,19 +287,44 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
           '시작일이 다를 수 있으니 각각의 start_date/end_date를 확인해.</p>'
         + '</div>'
     ), sizing_mode="stretch_width")
-    fig = figure(title=f"{name} | 누적 성과 (기준 100)", height=350,
-                 sizing_mode="stretch_width", x_axis_type="datetime",
-                 tools="xpan,xwheel_zoom,box_zoom,reset,save", active_scroll="xwheel_zoom")
-    palette = dict(zip(STRATEGY_ORDER, ("#2563eb", "#a855f7", "#ea580c", "#64748b", "#0d9488", "#db2777"), strict=True))
-    for strategy in [str(c) for c in curves.columns if c != "timestamp"]:
-        line = fig.line(curves["timestamp"], curves[strategy], legend_label=strategy,
-                        line_width=2, color=palette[strategy])
-        fig.add_tools(HoverTool(renderers=[line], tooltips=[
-            ("Date", "@x{%F}"), (strategy, "@y{0.00}")
-        ], formatters={"@x": "datetime"}))
-    fig.legend.click_policy = "hide"
-    fig.xaxis.axis_label = "Date"
-    fig.yaxis.axis_label = "Performance index"
+    # Older incomplete archives/test fixtures can lack a price snapshot.
+    # They remain renderable without pretending execution prices exist.
+    source_path = run / "input_prices.csv"
+    if source_path.is_file() and len(matches) == 1 and matches.iloc[0].get("long_etf", ""):
+        from ..selectable_charts import build_selectable_charts
+        from .multi_asset_trade_charts import prepare_trade_charts
+        instrument = matches.iloc[0]
+        price_frame = pd.read_csv(source_path, usecols=["timestamp", f"{asset_id}__long"],
+                                  parse_dates=["timestamp"]).set_index("timestamp")
+        fills = pd.read_csv(folder / "fills.csv", parse_dates=["timestamp"])
+        signal_path = folder / "daily_signals.csv"
+        if not signal_path.exists():
+            signal_path = folder / "weekly_signals.csv"
+        signals = (pd.read_csv(signal_path, parse_dates=["signal_date", "execution_date"])
+                   if signal_path.exists() else pd.DataFrame())
+        display, benchmark, strategies = prepare_trade_charts(
+            price_frame[f"{asset_id}__long"], curves, fills, signals, summary,
+            instrument["long_etf"], instrument.get("inverse_etf", ""))
+        fig = build_selectable_charts(display, benchmark, strategies,
+                                     display_symbol=instrument["long_etf"],
+                                     currency=instrument.get("currency", ""))
+    else:
+        # Retain original equity-only rendering for incomplete legacy archives.
+        fig = figure(title=f"{name} | 누적 성과 (기준 100)", height=350,
+                     sizing_mode="stretch_width", x_axis_type="datetime",
+                     tools="xpan,xwheel_zoom,box_zoom,reset,save", active_scroll="xwheel_zoom")
+        palette = dict(zip(STRATEGY_ORDER, ("#2563eb", "#a855f7", "#ea580c", "#64748b", "#0d9488", "#db2777"), strict=True))
+        for strategy in [str(c) for c in curves.columns if c != "timestamp"]:
+            line = fig.line(curves["timestamp"], curves[strategy], legend_label=strategy,
+                            line_width=2, color=palette[strategy])
+            fig.add_tools(HoverTool(renderers=[line], tooltips=[
+                ("Date", "@x{%F}"), (strategy, "@y{0.00}")
+            ], formatters={"@x": "datetime"}))
+        fig.legend.click_policy = "hide"
+        fig.xaxis.axis_label = "Date"
+        fig.yaxis.axis_label = "Performance index"
+        fig = column(Div(text="Archived prices or instrument metadata unavailable; execution analysis omitted."),
+                     fig, sizing_mode="stretch_width")
     footer = Div(text=(
         '<div style="font-family:system-ui">'
         '<h2 style="font-size:17px">FFN 원본 성과표</h2>'

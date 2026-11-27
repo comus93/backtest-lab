@@ -130,3 +130,25 @@ The latest multi-asset run uses the ten user-selected candidates.
 Report links, selector coverage and annual tables follow the archived
 asset manifest, not a hardcoded count. The six-strategy order and sticky
 monthly headers are unchanged. Historical run reports remain renderable.
+
+
+## Selectable PSAR-style trade analysis
+
+For each asset with archived closes and instrument coverage, render one
+strategy selector and exactly four linked figures: Performance (selected
+strategy and Buy & Hold, no duplicate benchmark), realized fee-net
+trade P/L, Strategy Drawdown from the archived performance path, and
+Execution Date on actual archived daily long closes. For reference-mode
+studies the long ticker is the reference ticker. For domestic-mode
+archives use and label the actual long execution instrument as the display
+axis. Never synthesize OHLC. Source switches preserve the shared date range.
+Buy/sell markers use actual fill dates; tooltips distinguish decision
+dates, actual instrument and fill price from projected display close.
+Trade spans indicate actual holding intervals and fee-net outcome; the
+open position extends only to the strategy's last active day and has no
+realized P/L point. Cash gaps are uninvested intervals within the active
+strategy dates. Use calendar holding days. Same-day rotations may overlap
+markers; both fills remain recorded. Only available strategies are selectable.
+Read all archived data without changing the run or FFN values. Legacy
+incomplete archives may render the original equity-only plot with an
+explicit note. Preserve annual/monthly tables and sticky headers.
