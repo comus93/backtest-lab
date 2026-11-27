@@ -93,8 +93,8 @@ jobs:
         run: |
           if test -d runs/gold_trend_research/r01; then
             latest=$(find runs/gold_trend_research/r01 -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
-            if test -n "$latest" && test -f "$latest/performance_summary.csv"; then
-              python -m backtest_lab.reporting.gold_trend_research_report --run "$latest" --output _site/research/gold_trend_research/index.html
+            if test -n "$latest" && { test -f "$latest/performance_summary.csv" || test -f "$latest/assets/gold/performance_summary.csv"; }; then
+              python -m backtest_lab.reporting.gold_trend_research_report --run "$latest" --output _site/research/gold_trend_research --site
               test -s _site/research/gold_trend_research/index.html
             fi
           fi

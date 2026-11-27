@@ -55,3 +55,30 @@ def test_gold_run_and_native_visuals(tmp_path):
         pd.read_csv(tmp_path/"sma_signals.csv").loc[lambda x:x.signal_date.between(s.start_date.min(),s.end_date.max()),"sma105"].tolist())
 
     assert render(tmp_path, tmp_path/"gold.html").stat().st_size > 10000
+
+def test_expanded_asset_native_report(tmp_path):
+    from backtest_lab.strategies.gold_trend_research.r01 import load_assets, run_trend_asset
+    from backtest_lab.reporting.gold_trend_research_report import publish_assets
+    assets=load_assets()
+    assert [a["id"] for a in assets]==["gold","sp500","nikkei225"]
+    dates=pd.bdate_range("2016-01-04",periods=360)
+    close=100+10*np.sin(np.arange(len(dates))/13)+np.arange(len(dates))*.03
+    for a in assets:
+        raw=pd.DataFrame({"Open":close-.3,"High":close+1,"Low":close-1,
+            "Close":close,a["inverse"]+"_Close":2000/close},index=dates)
+        folder=tmp_path/"run"/"assets"/a["id"]
+        out=run_trend_asset(raw,a,start="2016-11-21",end="2017-07-01")
+        out.write_csv(folder)
+        raw.to_csv(folder/"input_prices.csv",index_label="timestamp")
+        assert set(out.tables["fills.csv"].symbol)=={a["long"],a["inverse"]}
+        assert len(out.tables["performance_summary.csv"])==8
+    site=tmp_path/"site"
+    publish_assets(tmp_path/"run",site)
+    import json
+    assert json.loads((site/"assets.json").read_text(encoding="utf-8"))==assets
+    assert (site/"navigation.js").is_file()
+    for a in assets:
+        html=(site/a["page"]).read_text(encoding="utf-8")
+        assert "navigation.js" in html and a["long"] in html
+        assert "Trend Research r01" in html
+    assert (site/"index.html").is_file()

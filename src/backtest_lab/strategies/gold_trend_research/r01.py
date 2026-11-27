@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
@@ -48,7 +49,20 @@ def heikin_ashi(frame):
     }, index=raw.index.rename("signal_date"))
 
 
-def load_gold_prices(start="2016-01-01", end=END):
+def load_assets():
+    """Manually maintained universe and navigation manifest; never generated."""
+    assets=json.loads(Path(__file__).with_name("assets.json").read_text(encoding="utf-8"))
+    if len({a["id"] for a in assets}) != len(assets):
+        raise ValueError("Duplicate trend asset id")
+    for a in assets:
+        if not a["id"].replace("_","").isalnum() or a["page"] != f'assets/{a["id"]}.html':
+            raise ValueError("Invalid trend asset page")
+        if not a["long"] or not a["inverse"] or a["long"]==a["inverse"]:
+            raise ValueError("Invalid trend asset instruments")
+    return assets
+
+
+def load_trend_prices(asset, start="2016-01-01", end=END):
     import yfinance as yf
     def download(symbol):
         frame = yf.download(symbol, start=start, end=end, auto_adjust=True,
@@ -57,11 +71,26 @@ def load_gold_prices(start="2016-01-01", end=END):
             frame = frame.xs(symbol, axis=1, level=-1)
         frame.index = pd.to_datetime(frame.index).tz_localize(None)
         return validate_ohlc(frame)
-    long, inverse = download("GLD"), download("GLL")
-    # No forward fill. The inverse calendar can be narrower.
-    out = long.join(inverse.add_prefix("GLL_"), how="left")
+    long, inverse = download(asset["long"]), download(asset["inverse"])
+    out = long.join(inverse.add_prefix(asset["inverse"]+"_"), how="left")
     out.index.name = "timestamp"
     return out
+
+
+def load_gold_prices(start="2016-01-01", end=END):
+    return load_trend_prices(next(a for a in load_assets() if a['id']=='gold'),start,end)
+
+
+def load_expanded_prices(start="2016-01-01",end=END):
+    frames=[]
+    for a in load_assets():
+        if a["id"]=="gold":
+            raw=pd.read_csv("runs/gold_trend_research/r01/20261127-0001/input_prices.csv",
+                            parse_dates=["timestamp"]).set_index("timestamp")
+        else:
+            raw=load_trend_prices(a,start,end)
+        frames.append(raw.add_prefix(a["id"]+"__"))
+    return pd.concat(frames,axis=1).sort_index().rename_axis("timestamp")
 
 
 @dataclass
@@ -73,33 +102,35 @@ class GoldOutputs:
         paths = {}
         for name, frame in self.tables.items():
             path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
             frame.to_csv(path, index=False)
             paths[name] = path
         return paths
 
 
-def run_gold(prices, start=START, end=END, config=None):
+def run_trend_asset(prices, asset, start=START, end=END, config=None):
+    long_symbol, inverse_symbol = asset['long'], asset['inverse']
     config = config or RuntimeConfig(fee_rate=.00015)
     raw = validate_ohlc(prices.loc[prices.index < pd.Timestamp(end)])
-    inv = prices["GLL_Close"].dropna().astype(float)
+    inv = prices[inverse_symbol+"_Close"].dropna().astype(float)
     if inv.empty or inv.index.has_duplicates or not np.isfinite(inv).all() or (inv <= 0).any():
-        raise ValueError("GLL actual prices required")
-    controls = run_asset(AssetInput("gold", "Gold", raw.Close, raw.Close, "GLD", inv, "GLL"),
+        raise ValueError(f"{inverse_symbol} actual prices required")
+    controls = run_asset(AssetInput(asset["id"], asset["label"], raw.Close, raw.Close, long_symbol, inv, inverse_symbol),
                          start=start, end=end, config=config)
     ha = heikin_ashi(raw)
     sma = daily_sma_signals(raw.Close)
-    active = raw.Close.loc[raw.index >= pd.Timestamp(start)].rename("GLD").to_frame()
-    common = active.join(inv.rename("GLL"), how="inner")
+    active = raw.Close.loc[raw.index >= pd.Timestamp(start)].rename(long_symbol).to_frame()
+    common = active.join(inv.rename(inverse_symbol), how="inner")
     if len(common) < 25:
-        raise ValueError("Insufficient GLL common calendar")
+        raise ValueError(f"Insufficient {inverse_symbol} common calendar")
     cases = {}
     extra_decisions = []
     extra_fills = []
     summary = []
     yearly = []
     monthly = []
-    for name, calendar, inverse in ((HA_NAMES[0], active, None), (HA_NAMES[1], common, "GLL")):
-        strategy = SMARegimeStrategy(ha, "GLD", inverse)
+    for name, calendar, inverse in ((HA_NAMES[0], active, None), (HA_NAMES[1], common, inverse_symbol)):
+        strategy = SMARegimeStrategy(ha, long_symbol, inverse)
         result = Runtime(strategy, INITIAL_CASH, config).run(calendar)
         cases[name] = result
         extra_decisions.append(pd.DataFrame(strategy.decisions).assign(strategy=name))
@@ -107,7 +138,7 @@ def run_gold(prices, start=START, end=END, config=None):
         fills_by_date = {}
         for fill in result.fills:
             fills_by_date.setdefault(pd.Timestamp(fill.timestamp), []).append(fill)
-            extra_fills.append(dict(asset="gold", strategy=name, timestamp=fill.timestamp,
+            extra_fills.append(dict(asset=asset["id"], strategy=name, timestamp=fill.timestamp,
                 symbol=fill.symbol, side=fill.side, quantity=fill.quantity,
                 reference_price=fill.reference_price, fill_price=fill.fill_price, fee=fill.fee))
         exposure = []
@@ -146,3 +177,21 @@ def run_gold(prices, start=START, end=END, config=None):
         "sma_signals.csv": sma.reset_index(),
         "heikin_ashi_signals.csv": ha.reset_index(),
     })
+
+
+def run_gold(prices, start=START, end=END, config=None):
+    return run_trend_asset(prices,next(a for a in load_assets() if a['id']=='gold'),start,end,config)
+
+
+def run_expanded(prices, start=START, end=END, config=None):
+    tables={}
+    for a in load_assets():
+        prefix=a["id"]+"__"
+        frame=prices.loc[:,prices.columns.str.startswith(prefix)].copy()
+        frame.columns=frame.columns.str.removeprefix(prefix)
+        frame=frame.dropna(subset=OHLC)
+        result=run_trend_asset(frame,a,start,end,config)
+        root=f'assets/{a["id"]}/'
+        tables.update({root+k:v for k,v in result.tables.items()})
+        tables[root+"input_prices.csv"]=frame.reset_index(names="timestamp")
+    return GoldOutputs(tables)

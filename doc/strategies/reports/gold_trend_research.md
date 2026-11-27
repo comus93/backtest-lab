@@ -74,3 +74,8 @@ rules enter r01. No new run or performance claim is made here.
 ## r01 visualization experiment (2026-11-27)
 
 User prioritized native strategy visualization using genuine OHLC, linked raw-price and strategy panels, visible actual execution/holding intervals, plus existing performance and P/L. Heikin Ashi is the first new indicator. See [r01 specification](../20261127-gold-trend-research-r01.md). Initial HA direction and position variants are implementation choices, not an optimized strategy or a confirmed finding.
+
+
+## Limited multi-asset extension
+
+The user approved SPY and Nikkei225 alongside GLD, independent asset HTML pages, a manually maintained assets.json and shared navigation preserving strategy selection. Display name is Trend Research; internal ID and historical Gold archive remain unchanged. See the current r01 specification for the asset list and maintenance rules.
