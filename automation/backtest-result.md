@@ -1,14 +1,14 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20261127T090648+0900
+request_id: 20261127T095354+0900
 strategy_id: multi_asset_weekly_sma
 revision: r01
 mode: reference
-run_id: 20261127-0004
+run_id: 20261127-0005
 
 output_directory:
-`runs/multi_asset_weekly_sma/r01/20261127-0004/`
+`runs/multi_asset_weekly_sma/r01/20261127-0005/`
 
 default_outputs:
 - `input_prices.csv`
