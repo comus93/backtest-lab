@@ -1,4 +1,22 @@
-# Reporting Subsystem Specifications (v1)
+# Reporting Subsystem Specifications
+
+## Current authoritative contract: composable renderer (v2)
+
+Effective 2026-11-27, the user designated the layer-based Bokeh ChartComposer as the canonical renderer for new backtest-lab experiments. Gold Trend Research is the first consumer. PSAR-specific ReportData/ReportConfig, charts.py and render_report are deprecated for new work, retained for historical reproduction and existing URLs. Older requirements below describe legacy reports, not restrictions on v2.
+
+### Canonical chart contract
+
+- A panel uses a shared real datetime X range, a declared Y unit, and an independent viewport-based DataRange1d. Each large chart has visible date ticks; native pan/zoom/reset and aligned plot borders are retained.
+- A Layer declares a stable key, display label, unit, explicit calculation/data basis and one or more Glyph specifications. A Glyph carries display-ready columns, rendering options, hover fields, and whether it participates in Y auto-ranging. No strategy identifiers or indicator calculation parameters are interpreted by the common composer.
+- Compatible layers can coexist. Line, OHLC candles (including explicitly archived transformed OHLC), formed line-break blocks with horizontal dotted connectors, scatter, segment, step, area/band and other supported Bokeh glyphs are composable. One layer may contain multiple glyphs. A unit mismatch requires a separate panel with the same X range, not silent mixed-unit overlay.
+- Chart adapters supply archived values and explicit source basis: SMA105 on raw Close remains raw-close SMA105 even when 3LB or HA is visible. No indicator recalculation or investment changes in Reporting. Only visual geometry (body bounds, confirmed-state connectors, coordinate projection) is derived here.
+- Extended line break uses only actual formed blocks at their formation dates. Horizontal dotted connectors carry the last confirmed close until the next formation or the last available date; no fabricated new blocks, future prices, or time compression.
+- Visible data glyphs define auto-range; decorative execution/holding glyphs can opt out. Actual fills remain distinguished from projected native chart coordinates.
+- The strategy selector chooses default layer visibility and existing performance/P&L/drawdown data. Independent checkboxes allow any available compatible layer combination without changing strategy or results; changing strategy restores its default layers.
+- The existing selectable performance, realized P/L and drawdown panels are reusable. Future adapters should compose with ChartComposer rather than implement strategy-specific rendering engines. Missing indicators are not invented; Close-only data supports lines, not fabricated candles.
+- Reports remain standalone Bokeh HTML. Existing runs are immutable. Validate composition, units, causal bridge geometry, selector behavior and shared time axes; legacy tests remain for retained historical compatibility, not as a design constraint for v2.
+
+## Legacy and historical specifications (v1)
 
 ## Purpose and scope
 Reporting is a **read-only post-processing subsystem** of backtest-lab. It accepts verified backtest output, including FFN analysis results, and publishes an interactive self-contained Bokeh HTML report. It must not execute a Strategy, mutate archived runs, recompute investment returns, or change Runtime/Portfolio accounting.

@@ -19,6 +19,7 @@ on:
       - 'tests/strategies/gold_trend_research/**'
       - 'tests/test_multi_asset_weekly_sma_reporting.py'
       - 'tests/test_selectable_trade_charts.py'
+      - 'tests/test_chart_composer.py'
       - '.github/workflows/publish-psar-report.yml'
   workflow_dispatch:
 
@@ -52,7 +53,7 @@ jobs:
         run: python -m pytest -q tests/strategies/multi_asset_weekly_sma tests/test_multi_asset_weekly_sma_reporting.py tests/test_selectable_trade_charts.py
 
       - name: Validate gold-only research
-        run: python -m pytest -q tests/strategies/gold_trend_research
+        run: python -m pytest -q tests/strategies/gold_trend_research tests/test_chart_composer.py
 
       - name: Build standalone static HTML
         run: |

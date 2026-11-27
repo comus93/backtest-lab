@@ -108,7 +108,7 @@ Analysis는 다음을 수행하지 않는다.
 
 ### Reporting
 
-`backtest_lab.reporting`은 Runtime/Analysis/FFN 결과를 읽기 전용으로 받아 상호작용형 HTML로 표시한다. 공통 계약은 `ReportData`(가격·성과·체결·거래·지표)와 `ReportConfig`(차트·표·팔레트·오버레이 옵션)다. Strategy별 어댑터가 자료를 변환하며 공통 렌더러에는 QQQ/QLD/PSAR 같은 특정 상품·지표 규칙을 넣지 않는다.
+ `backtest_lab.reporting`은 Runtime/Analysis/FFN 결과를 읽기 전용으로 시각화한다. 신규 실험의 정식 엔진은 `ChartComposer`와 `Layer`/`Glyph` 합성 계약 및 공통 selectable 성과 패널이다. 전략 어댑터가 데이터 출처와 표시 구성을 정의하고 공통 엔진은 특정 종목 및 전략 규칙을 알지 않는다. PSAR v1의 ReportData/ReportConfig는 기존 기록 재현용 deprecated 인터페이스다.
 
 요구사항과 책임 분리는 [`doc/reporting/specifications.md`](reporting/specifications.md), [`doc/reporting/architecture.md`](reporting/architecture.md)를 우선한다. 최초 Golden Master는 PSAR 2026-11-03 사례이며 백테스트 결과는 바꾸지 않는다.
 

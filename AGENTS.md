@@ -31,8 +31,8 @@
 
 - Reporting 계약은 `doc/reporting/specifications.md`, 설계는 `doc/reporting/architecture.md`를 따른다.
 - Reporting은 이미 계산된 Runtime/FFN 결과를 읽기 전용으로 시각화하며, 매매·회계·성과 지표를 재계산하지 않는다.
-- 공통 `ReportData`/`ReportConfig`와 차트/테이블/팔레트에는 전략별 종목이나 지표 이름을 하드코딩하지 않는다.
-- 전략 특수 로직은 `reporting/adapters/`에 둔다. 공통화 변경 시 PSAR Golden Master 검증을 통과해야 한다.
+- 신규 실험은 `reporting/composer.py`의 ChartComposer/Layer/Glyph 합성 계약 및 공통 selectable 성과 패널을 사용한다. 데이터 계산 기준과 렌더링은 분리하고 공통 엔진에는 전략/종목/지표별 조건을 하드코딩하지 않는다.
+- 전략 특수 데이터 매핑은 reporting adapter가 담당한다. PSAR v1 렌더러는 신규 개발에서 deprecated이며 기존 기록 재현용으로 보존한다. 신규 엔진은 레이어 합성, 단위, 공유 시간축, 표시 범위, archived 결과 불변성을 검증한다. 기존 PSAR 회귀 테스트는 호환성 유지용이다.
 
 ## Strategy management
 

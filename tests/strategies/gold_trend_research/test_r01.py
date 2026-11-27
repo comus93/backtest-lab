@@ -47,5 +47,11 @@ def test_gold_run_and_native_visuals(tmp_path):
     assert {"Line","VBar","Segment"} <= {type(r.glyph).__name__ for r in signal.renderers if hasattr(r,"glyph")}
     assert len(selector.js_property_callbacks["change:value"])==2
     assert "Heikin Ashi Long/Cash" in selector.options
+    control=layout.select_one({"name":"gold-chart-layers"})
+    assert control.labels==["Raw close","Raw candles","SMA105","3LB extended","Heikin Ashi","Execution / holding"]
+    assert control.active==[0,2,5]
+    assert signal.select_one({"name":"lb:1"}).glyph.line_dash
+    assert signal.select_one({"name":"sma:0"}).data_source.data["value"] == pytest.approx(
+        pd.read_csv(tmp_path/"sma_signals.csv").loc[lambda x:x.signal_date.between(s.start_date.min(),s.end_date.max()),"sma105"].tolist())
 
     assert render(tmp_path, tmp_path/"gold.html").stat().st_size > 10000

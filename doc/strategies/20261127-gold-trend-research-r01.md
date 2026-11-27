@@ -81,3 +81,8 @@ Test HA recursion, causality, execution on real prices only, strategy
 ordering, same linked X range, native chart glyphs, and existing PSAR
 regressions. Run through the registered GitHub Actions dispatcher.
 Publish the gold series separately at research/gold_trend_research/.
+
+
+## Reporting v2 migration
+
+The native strategy panel uses the canonical ChartComposer. Extended 3LB connects each last confirmed Close with horizontal dotted segments until the next block (or final date). SMA105 and other compatible archived layers can be independently enabled over 3LB or HA without altering strategy decisions. The strategy selector restores native defaults; execution marker projection remains tied to the selected strategy, with actual fills on the raw chart.

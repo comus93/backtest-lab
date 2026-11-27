@@ -1,4 +1,15 @@
-# Reporting Subsystem Architecture (v1)
+# Reporting Subsystem Architecture
+
+## Current authoritative architecture (v2)
+
+Canonical path for new experiments: archived Runtime/FFN and indicator traces -> strategy adapter -> typed Layer/Glyph descriptions -> ChartComposer -> Bokeh Figure -> standalone report. The shared selectable_charts.py builder supplies the existing performance, P/L and drawdown views and execution selector.
+
+- composer.py owns generic ChartComposer, Layer, Glyph, line_layer, candle_layer and line_break_layer. It composes compatible renderers on a supplied shared datetime range, validates unit/identity/column lengths, manages visible-layer auto-ranging and optional independent visibility controls.
+- Strategy adapters own provenance, data mapping, indicator calculation upstream, layer defaults and trade-coordinate projection. The renderer is not a trading DSL, portfolio engine or indicator library.
+- Gold Trend Research is the first consumer, combining raw Close/candles, SMA105, extended 3LB, HA and execution layers on shared dates. New indicators can use existing generic glyphs without modifying the composer; add helpers only when useful across cases.
+- New experiments must use this composition contract and shared performance panels. Existing PSAR and multi-asset archived report paths are retained for compatibility; PSAR v1 is deprecated for new development. No automatic migration of historical runs or removal of regression tests.
+
+## Legacy and historical architecture (v1)
 
 ## Module boundary
 
