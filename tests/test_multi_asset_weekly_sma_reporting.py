@@ -32,7 +32,7 @@ def prepared_run(tmp_path):
 def test_summary_exact_existing_columns_and_one_row_per_asset(prepared_run, tmp_path):
     output = render_summary(prepared_run, tmp_path / "site" / "index.html")
     html = output.read_text(encoding="utf-8")
-    assert html.count('<a href="assets/') == 3
+    assert html.count('<a href="assets/') == 15  # 3 assets x 5 selectable panels
     for label in ("금", "은", "구리"):
         assert f">{escape(label)}</a></td>" in html
     summary = pd.read_csv(prepared_run / "performance_summary.csv")
@@ -156,3 +156,36 @@ def test_inverse_cash_in_annual_detail_and_monthly_report(tmp_path):
     assert monthly.index(">Inverse/Cash</th>") < monthly.index(">Long/Inverse</th>") < monthly.index(">LineBreak Long/Inverse</th>") < monthly.index(">Buy &amp; Hold</th>")
     assert "Inverse/Cash" in pd.read_csv(root / "ffn_stats.csv").columns
     assert "LineBreak Long/Inverse" in pd.read_csv(root / "ffn_stats.csv").columns
+
+
+def test_strategy_selector_reads_archived_metrics_and_preserves_missing_assets(prepared_run, tmp_path):
+    import re
+    path = prepared_run / "assets" / "gold" / "performance_summary.csv"
+    stats = pd.read_csv(path)
+    inverse = stats.iloc[0].copy()
+    inverse["strategy"] = "Inverse/Cash"
+    inverse["total_return"] = 0.123456
+    pd.concat([stats, inverse.to_frame().T], ignore_index=True).to_csv(path, index=False)
+    html = render_summary(prepared_run, tmp_path / "index.html").read_text(encoding="utf-8")
+    assert re.findall(r'<option value="[^"]+">([^<]+)</option>', html) == [
+        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy &amp; Hold"
+    ]
+    panels = re.findall(r'<section id="strategy-summary-\d+"[^>]*>.*?</section>', html)
+    assert len(panels) == 5
+    assert ' hidden' not in panels[0].split('>')[0]
+    assert all(' hidden' in panel.split('>')[0] for panel in panels[1:])
+    assert all(panel.count('<a href="assets/') == 3 for panel in panels)
+    assert "+12.35%" in panels[1]
+    assert "1/3" in panels[1]
+    assert panels[1].count("—</td>") >= 18
+    assert "+12.35%" not in panels[0]
+    assert 'select.addEventListener("change",update)' in html
+
+
+def test_monthly_sticky_header_has_one_scroll_container(prepared_run):
+    from backtest_lab.reporting.adapters.multi_asset_weekly_sma import _monthly_matrix
+    html = _monthly_matrix(prepared_run / "assets" / "gold" / "monthly_performance.csv")
+    assert html.count('overflow:auto') == 1
+    assert 'overflow-x:auto' not in html
+    assert html.count('position:sticky;top:0;z-index:2;background:#f1f5f9;') == 6
+    assert 'border-collapse:separate;border-spacing:0;' in html

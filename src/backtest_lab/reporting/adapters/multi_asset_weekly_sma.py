@@ -128,13 +128,22 @@ def _monthly_matrix(path: Path) -> str:
               .sort_index()
               .rename_axis(index="연월", columns=None)
               .reset_index())
+    table = tabular_html(matrix, percent_cols=set(STRATEGY_ORDER))
+    table = table.replace(
+        '<div style="overflow-x:auto">',
+        '<div class="monthly-matrix-scroll" style="max-height:550px;overflow:auto;'
+        'border:1px solid #e2e8f0;border-radius:6px">',
+        1,
+    ).replace("border-collapse:collapse;", "border-collapse:separate;border-spacing:0;", 1)
+    table = table.replace(
+        '<th style="',
+        '<th style="position:sticky;top:0;z-index:2;background:#f1f5f9;',
+    )
     return (
         '<h2 style="font-size:17px">월별 수익률 매트릭스 (Year-Month Return)</h2>'
         '<p style="color:#64748b">각 월의 첫 거래일부터 마지막 거래일까지 계산된 전략별 수익률이야. '
         '2016-11, 2026-11은 부분 월이며, 인버스 상품이 없는 전략의 빈칸(—)은 수익률 0%가 아니라 해당 전략 없음이야.</p>'
-        '<div style="max-height:550px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:6px">'
-        + tabular_html(matrix, percent_cols=set(STRATEGY_ORDER))
-        + '</div>'
+        + table
     )
 
 
@@ -150,24 +159,67 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
     coverage = _coverage(run)
     signal_label = _signal_label(coverage)
     label_suffix = " · 3-Line Break" if "line_break_lines" in coverage.columns else ""
-    html_table = tabular_html(summary, percent_cols=PERCENT_COLUMNS)
+    # Read the archived per-asset FFN rows once. Switching strategies only
+    # changes the visible table; it never runs a strategy or recalculates metrics.
+    asset_stats = {}
+    asset_links = {}
     for row in manifest.itertuples(index=False):
         asset_id = str(row.asset_id)
         label = str(row.display_name)
-        # URL is derived from a validated directory identifier, not user content.
         if not asset_id.replace("_", "").isalnum() or not (run / "assets" / asset_id).is_dir():
             raise ValueError(f"Invalid/missing asset directory: {asset_id!r}")
-        old = f">{escape(label)}</td>"
+        detail = _read_summary(run / "assets" / asset_id / "performance_summary.csv")
+        if detail["strategy"].duplicated().any():
+            raise ValueError(f"Duplicate strategy rows for {asset_id}")
+        asset_stats[label] = detail.set_index("strategy")
         instrument = ""
         if not coverage.empty:
             matches = coverage.loc[coverage["asset_id"] == asset_id]
             if len(matches) == 1:
                 instrument = str(matches.iloc[0]["long_etf"])
         link_label = f"{label} ({instrument})" if instrument else label
-        new = f'><a href="assets/{escape(asset_id, quote=True)}.html">{escape(link_label)}</a></td>'
-        if html_table.count(old) != 1:
-            raise ValueError(f"Expected one summary row for {label}")
-        html_table = html_table.replace(old, new, 1)
+        asset_links[label] = f'<a href="assets/{escape(asset_id, quote=True)}.html">{escape(link_label)}</a>'
+
+    panels = []
+    options = []
+    for i, strategy in enumerate(STRATEGY_ORDER):
+        rows = []
+        available = 0
+        for label in manifest["display_name"]:
+            stats = asset_stats[label]
+            if strategy in stats.index:
+                row = stats.loc[strategy].to_dict()
+                available += 1
+            else:
+                row = {column: None for column in SUMMARY_COLUMNS[1:]}
+            rows.append({"strategy": label, **row})
+        frame = pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
+        table = tabular_html(frame, percent_cols=PERCENT_COLUMNS)
+        for label, link in asset_links.items():
+            old = f">{escape(label)}</td>"
+            if table.count(old) != 1:
+                raise ValueError(f"Expected one summary row for {label}")
+            table = table.replace(old, f">{link}</td>", 1)
+        panel_id = f"strategy-summary-{i}"
+        hidden = "" if i == 0 else " hidden"
+        options.append(f'<option value="{panel_id}">{escape(strategy)}</option>')
+        panels.append(
+            f'<section id="{panel_id}" class="strategy-summary-panel"{hidden}>'
+            f'<p class="note">{escape(strategy)} · 성과 데이터 {available}/{len(manifest)}개 자산</p>'
+            + table + '</section>'
+        )
+    selector = (
+        '<h2>Performance Summary</h2>'
+        '<label for="strategy-summary-select">전략 선택</label> '
+        '<select id="strategy-summary-select" style="font:inherit;max-width:100%;padding:8px;'
+        'border:1px solid #94a3b8;border-radius:6px">'
+        + "".join(options) + '</select>'
+        + "".join(panels)
+        + '<script>(function(){const select=document.getElementById("strategy-summary-select");'
+          'const panels=document.querySelectorAll(".strategy-summary-panel");'
+          'function update(){panels.forEach(panel=>{panel.hidden=panel.id!==select.value;});}'
+          'select.addEventListener("change",update);update();})();</script>'
+    )
     return _write_html(
         Path(output), f"{signal_label}{label_suffix} | 자산별 성과",
         f'<h1>{signal_label}{label_suffix} 추세추종 · 자산별 비교</h1>'
@@ -175,8 +227,8 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
         + f'<p class="note">{escape(_basis_note(coverage))}</p>'
         + '<p class="note">성과 컬럼과 FFN 계산은 기존 BTLab 정의를 그대로 사용해. '
         '서로 다른 실측 데이터 기간은 start_date/end_date로 확인해. '
-        '이 표는 독립 자산별 롱·현금 성과이지 하나의 포트폴리오 성과가 아니야.</p>'
-        + html_table
+        '선택한 전략의 독립 자산별 성과이며 하나의 포트폴리오 성과가 아니야. —는 해당 전략 결과 없음.</p>'
+        + selector
         + _annual_table(run / "yearly_performance.csv", summary=True),
     )
 

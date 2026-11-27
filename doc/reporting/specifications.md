@@ -98,3 +98,18 @@ rather than zero when inverse tickers are absent. Yearly tables
 and FFN only show executed strategies. The Line Break signal is
 computed in the strategy, not Bokeh/shared FFN tables.
 Older archived results and PSAR Golden Master remain untouched.
+
+
+## Multi-asset summary selector and monthly sticky headers (2026-11-27)
+
+The overview Performance Summary offers a strategy selector in the
+canonical five-strategy order, defaulting to Long/Cash. Every selected
+view retains one row and detail link per asset, the existing ten FFN
+columns, and archived per-asset metric values. Unavailable strategy
+metrics are shown as missing, never zero. Show coverage counts and
+switch views client-side without recomputing returns or fetching data.
+The annual overview remains a comparison of all strategies.
+The per-asset monthly matrix uses a single horizontal/vertical scroll
+container with sticky opaque header cells, so column labels stay
+visible during internal vertical scrolling. These changes are confined
+to the multi-asset reporting adapter; archived runs and PSAR are unchanged.
