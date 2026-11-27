@@ -203,3 +203,8 @@ This is presentation only; PSAR renderer and archived runs are unchanged.
 Gold report composes the shared selectable renderer with a native signal panel. Raw GLD Close is default, real OHLC optional. SMA price/average, calendar-aligned formed 3LB blocks and archived HA candles switch with the selected strategy. All five panels share calendar X and independent viewport Y ranges. Execution prices remain actual instrument prices; synthetic signal chart marker coordinates are only projections. PSAR and existing multi-asset views are unchanged.
 
 The raw price and native strategy charts each show their own date ticks on the shared X range, while retaining aligned plot borders. Each retains its native Bokeh Reset tool for zoom/pan reset; no custom reset callback is introduced.
+
+
+## Research index
+
+GitHub Pages root is the static research catalog, built after published reports from strategy specifications, living reports, and archived run directories. New series are discovered automatically. Active status is explicit; unspecified series are not deemed retired. Link only to existing generated dashboards, and otherwise link repository documents and run records. The legacy PSAR report is published at research/psar_segment_duration/. No run mutation or backtest execution.

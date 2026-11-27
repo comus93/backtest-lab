@@ -20,6 +20,9 @@ on:
       - 'tests/test_multi_asset_weekly_sma_reporting.py'
       - 'tests/test_selectable_trade_charts.py'
       - 'tests/test_chart_composer.py'
+      - 'tests/test_research_index.py'
+      - 'doc/strategies/**'
+      - 'runs/**'
       - '.github/workflows/publish-psar-report.yml'
   workflow_dispatch:
 
@@ -53,19 +56,19 @@ jobs:
         run: python -m pytest -q tests/strategies/multi_asset_weekly_sma tests/test_multi_asset_weekly_sma_reporting.py tests/test_selectable_trade_charts.py
 
       - name: Validate gold-only research
-        run: python -m pytest -q tests/strategies/gold_trend_research tests/test_chart_composer.py
+        run: python -m pytest -q tests/strategies/gold_trend_research tests/test_chart_composer.py tests/test_research_index.py
 
       - name: Build standalone static HTML
         run: |
           python -m backtest_lab.reporting.psar_report \
             --run runs/psar_segment_duration/r01/20261103-0002 \
-            --output _site/index.html
-          test -s _site/index.html
+            --output _site/research/psar_segment_duration/index.html
+          test -s _site/research/psar_segment_duration/index.html
 
       - name: Build multi-asset report if a successful run is archived
         shell: bash
         run: |
-          # Keep the existing PSAR root /index.html unchanged.
+          # The root is generated as the research index after all reports.
           if test -d runs/multi_asset_weekly_sma/r01; then
             latest=$(find runs/multi_asset_weekly_sma/r01 -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
             if test -n "$latest" && test -f "$latest/asset_manifest.csv"; then
@@ -95,6 +98,9 @@ jobs:
               test -s _site/research/gold_trend_research/index.html
             fi
           fi
+
+      - name: Build research index
+        run: python -m backtest_lab.reporting.research_index --repo . --site _site
 
       - name: Upload HTML preview artifact
         uses: actions/upload-artifact@v4

@@ -2,6 +2,10 @@
 
 LLM이 자연어 투자 아이디어를 자유로운 Python 전략 코드로 구현하고, 이를 작고 예측 가능한 런타임에서 백테스트하기 위한 경량 연구 프로젝트다.
 
+## Research Index
+
+[연구 대시보드 및 전체 연구 목록](https://comus93.github.io/backtest-lab/)
+
 ## Goal
 
 - Strategy는 자유로운 Python 코드로 작성한다.

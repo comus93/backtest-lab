@@ -34,6 +34,8 @@
 - 신규 실험은 `reporting/composer.py`의 ChartComposer/Layer/Glyph 합성 계약 및 공통 selectable 성과 패널을 사용한다. 데이터 계산 기준과 렌더링은 분리하고 공통 엔진에는 전략/종목/지표별 조건을 하드코딩하지 않는다.
 - 전략 특수 데이터 매핑은 reporting adapter가 담당한다. PSAR v1 렌더러는 신규 개발에서 deprecated이며 기존 기록 재현용으로 보존한다. 신규 엔진은 레이어 합성, 단위, 공유 시간축, 표시 범위, archived 결과 불변성을 검증한다. 기존 PSAR 회귀 테스트는 호환성 유지용이다.
 
+- GitHub Pages 루트는 공통 Research Index다. 명세 및 Run에서 연구를 자동 발견하며 실제 게시된 리포트에만 대시보드 링크를 제공한다. 신규 연구의 lifecycle과 설명은 `reporting/research_index.py`에서 사용자 합의에 따라 관리한다. 연구 추가 시 게시 경로가 `research/<strategy_id>/index.html`이면 자동 연결된다.
+
 ## Strategy management
 
 전략 명세는 `doc/strategies/YYYYMMDD-<strategy-name>-rNN.md`로 관리한다.
