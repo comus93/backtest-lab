@@ -54,3 +54,23 @@ def test_selectable_charts_four_figures_one_range():
     assert len(plots)==4
     assert all(p.x_range is plots[0].x_range for p in plots)
     assert len(selector.js_property_callbacks["change:value"])==1
+
+def test_selectable_charts_windowed_y_ranges_and_manual_tools():
+    from bokeh.models import DataRange1d, PanTool, WheelZoomTool, BoxZoomTool
+    prices, benchmark, strategies = prepare_trade_charts(*inputs(), "L", "I")
+    layout = build_selectable_charts(prices, benchmark, strategies, display_symbol="L")
+    perf, pnl, dd, price = layout.children[2:]
+    assert len({p.y_range.id for p in (perf, pnl, dd, price)}) == 4
+    for plot in (perf, pnl, dd, price):
+        assert plot.window_axis == "x"
+        assert isinstance(plot.y_range, DataRange1d)
+        assert plot.y_range.only_visible
+        assert {t.dimensions for t in plot.tools if isinstance(t, PanTool)} == {"width", "height"}
+        assert {t.dimensions for t in plot.tools if isinstance(t, WheelZoomTool)} == {"width", "height"}
+        assert plot.toolbar.active_drag.dimensions == "width"
+        assert plot.toolbar.active_scroll.dimensions == "width"
+        assert all(t.dimensions == "width" for t in plot.tools if isinstance(t, BoxZoomTool))
+    assert [type(r.glyph).__name__ for r in perf.y_range.renderers] == ["Line", "Line"]
+    assert [type(r.glyph).__name__ for r in pnl.y_range.renderers] == ["Scatter"]
+    assert [type(r.glyph).__name__ for r in dd.y_range.renderers] == ["Line"]
+    assert [type(r.glyph).__name__ for r in price.y_range.renderers] == ["Line"]

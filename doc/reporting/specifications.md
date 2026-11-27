@@ -152,3 +152,17 @@ markers; both fills remain recorded. Only available strategies are selectable.
 Read all archived data without changing the run or FFN values. Legacy
 incomplete archives may render the original equity-only plot with an
 explicit note. Preserve annual/monthly tables and sticky headers.
+
+## Selectable chart viewport Y scaling
+
+All four selectable detail panels use independent Bokeh DataRange1d
+ranges with window_axis="x": visible-window data min/max with native
+padding, not full-history limits. Use visible performance curves,
+realized P/L points, drawdown values and daily display closes respectively.
+Decorative zero-fill and holding spans do not influence ranges; execution
+markers already lie on daily display closes. No special forced zero bound.
+For empty windows Bokeh uses its native fallback; flat ranges use its
+default span. Horizontal pan, wheel and box zoom retain the shared X
+range; vertical pan/wheel zoom are optional per-panel toolbar tools.
+Native Reset restores auto-ranging and resets the selected time window.
+This is presentation only; PSAR renderer and archived runs are unchanged.

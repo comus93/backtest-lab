@@ -55,3 +55,8 @@ visual drawdown and fee-net closed-trade P/L from the archived inputs.
 No Runtime accounting or FFN summary is recomputed. Open positions are
 separate from realized P/L. This does not alter existing OHLC-based
 ReportData validation or the PSAR renderer/Golden Master.
+
+The selectable builder enables Bokeh native windowed Y auto-ranging on
+each figure and explicitly selects data renderers for its range. It uses
+native horizontal and vertical navigation tools; no extra client-side
+range engine or dependency is needed.

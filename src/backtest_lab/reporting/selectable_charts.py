@@ -11,7 +11,7 @@ from .palette import DEFAULT_PALETTE
 def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, currency=""):
     from bokeh.layouts import column
     from bokeh.models import (ColumnDataSource, CrosshairTool, CustomJS, HoverTool,
-                              Range1d, Select, Div, Legend, LegendItem)
+                              Range1d, DataRange1d, Select, Div, Legend, LegendItem)
     from bokeh.plotting import figure
 
     if not strategies or not prices["date"]:
@@ -29,8 +29,9 @@ def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, cu
     def panel(title, height, bottom=False, name=""):
         f = figure(title=title, height=height, sizing_mode="stretch_width",
                    x_axis_type="datetime", x_range=xr, name=name,
-                   tools="xpan,xwheel_zoom,box_zoom,reset,save",
-                   active_scroll="xwheel_zoom", toolbar_location="right",
+                   y_range=DataRange1d(only_visible=True), window_axis="x",
+                   tools="xpan,xwheel_zoom,ypan,ywheel_zoom,xbox_zoom,reset,save",
+                   active_drag="xpan", active_scroll="xwheel_zoom", toolbar_location="right",
                    output_backend="canvas")
         f.add_tools(CrosshairTool(dimensions="height", line_alpha=.4))
         f.grid.grid_line_color = palette.grid
@@ -57,6 +58,7 @@ def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, cu
           date_fields=("date",), mode="vline")
     hover(perf, benchmark_line, [("Date","@date{%F}"),("Buy & Hold","@value{0.00}")],
           date_fields=("date",), mode="vline")
+    perf.y_range.renderers = [selected_line, benchmark_line]
     perf.yaxis.axis_label = "Performance (start 100)"
 
     pnl = panel("Profit / Loss | "+names[0], 110, name="trade-panel-pnl")
@@ -66,6 +68,7 @@ def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, cu
                     ("Instrument","@symbol"),("Net P/L","@return_pct{+0.00}%"),
                     ("Net amount"+(f" ({currency})" if currency else ""), "@pnl{0,0.00}"),
                     ("Holding days","@days")], date_fields=("date","entry_date"))
+    pnl.y_range.renderers = [pl]
     pnl.yaxis.axis_label = "%"
 
     dd = panel("Strategy Drawdown | "+names[0], 125, name="trade-panel-drawdown")
@@ -73,6 +76,8 @@ def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, cu
     dd.varea(x="date",y1=0,y2="value",source=sources["drawdown"],color=palette.sell,fill_alpha=.10)
     hover(dd, dd_line, [("Date","@date{%F}"),("Drawdown","@value{0.00}%")],
           date_fields=("date",),mode="vline")
+    # The zero-fill is decorative; it must not force the Y range to zero.
+    dd.y_range.renderers = [dd_line]
     dd.yaxis.axis_label = "%"
 
     price = panel("Execution Date | "+names[0], 430, True, name="trade-panel-execution")
@@ -98,10 +103,12 @@ def build_selectable_charts(prices, benchmark, strategies, *, display_symbol, cu
                            ("Fill price","@fill_price{0,0.0000}"),("Quantity","@quantity{0,0.0000}"),
                            ("Fee","@fee{0,0.00}"),(f"{display_symbol} close","@display_price{0,0.0000}")],
               date_fields=("date",))
+    # Execution markers use the same closes; holding spans are decorative.
+    price.y_range.renderers = [close_line]
     price.legend.location="top_left"
     price.legend.click_policy="hide"
     price.yaxis.axis_label=f"{display_symbol} close"+(f" ({currency})" if currency else "")
-    price.xaxis.axis_label="Trading date · zoom and pan synchronized"
+    price.xaxis.axis_label="Trading date · X linked · Y auto-fit / manual tools · Reset restores auto"
     selector = Select(title="Strategy Analysis · 전략 선택",value=names[0],
                       options=names,sizing_mode="stretch_width",name="trade-strategy-select")
     note = Div(text=initial["note"],sizing_mode="stretch_width",name="trade-chart-note")
