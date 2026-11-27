@@ -137,6 +137,11 @@ def build_gold_charts(run):
         p.min_border_left=95
         p.min_border_right=10
         p.xaxis.visible=False
+    # Both large charts need their own date ticks when viewed separately.
+    price.xaxis.visible=True
+    sig.xaxis.visible=True
+    price.xaxis.axis_label="Trading date"
+    sig.xaxis.axis_label="Trading date"
     dd.xaxis.visible=True
     dd.xaxis.axis_label="Trading date · X linked · independent adaptive Y"
     return column(selector,row(note,toggle,sizing_mode="stretch_width"),price,sig,perf,pnl,dd,

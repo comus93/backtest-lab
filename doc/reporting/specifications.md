@@ -171,3 +171,5 @@ This is presentation only; PSAR renderer and archived runs are unchanged.
 ## Gold native strategy visualization
 
 Gold report composes the shared selectable renderer with a native signal panel. Raw GLD Close is default, real OHLC optional. SMA price/average, calendar-aligned formed 3LB blocks and archived HA candles switch with the selected strategy. All five panels share calendar X and independent viewport Y ranges. Execution prices remain actual instrument prices; synthetic signal chart marker coordinates are only projections. PSAR and existing multi-asset views are unchanged.
+
+The raw price and native strategy charts each show their own date ticks on the shared X range, while retaining aligned plot borders. Each retains its native Bokeh Reset tool for zoom/pan reset; no custom reset callback is introduced.

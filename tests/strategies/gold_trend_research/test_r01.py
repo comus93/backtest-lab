@@ -38,6 +38,11 @@ def test_gold_run_and_native_visuals(tmp_path):
     layout = build_gold_charts(tmp_path)
     selector, note, price, signal, perf, pnl, dd = layout.children
     assert all(p.x_range is price.x_range for p in (signal,perf,pnl,dd))
+    from bokeh.models import ResetTool
+    assert price.xaxis.visible and signal.xaxis.visible
+    assert all(any(isinstance(t, ResetTool) for t in p.tools) for p in (price,signal))
+    assert price.min_border_left == signal.min_border_left
+    assert price.min_border_right == signal.min_border_right
     assert all(p.window_axis=="x" for p in (price,signal,perf,pnl,dd))
     assert {"Line","VBar","Segment"} <= {type(r.glyph).__name__ for r in signal.renderers if hasattr(r,"glyph")}
     assert len(selector.js_property_callbacks["change:value"])==2
