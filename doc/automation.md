@@ -281,9 +281,6 @@ study comparator, keeping Buy & Hold last. Prior archived runs
 are immutable; latest completed archive is published by Pages.
 
 
-New multi_asset_weekly_sma runs use the ten active candidate IDs from the
-strategy data registry. Historical 18-asset runs are not rewritten.
-
 
 The active multi-asset trend research universe is ten candidates from
 2026-11-27 onward (see strategy specification section 16). New

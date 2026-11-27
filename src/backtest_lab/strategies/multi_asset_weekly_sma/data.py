@@ -30,10 +30,15 @@ HISTORICAL_ASSETS: tuple[AssetMapping, ...] = (
                  "US equity index ETF vs KR futures-hedged ETF; not identical return series"),
     AssetMapping("nasdaq100", "미국 나스닥100", "QQQ", "yahoo", "304940", "409810",
                  "US equity ETF vs KR futures-hedged ETF"),
+    AssetMapping("russell2000", "미국 러셀2000", "IWM", "yahoo", "280930"),
     AssetMapping("kospi200", "한국 코스피200", "KS200", "fdr", "069500", "114800"),
+    AssetMapping("msci_korea", "한국 MSCI", "EWY", "yahoo", "310970", None,
+                 "EWY benchmark variant differs from TIGER MSCI Korea TR; proxy only"),
     AssetMapping("nikkei225", "일본 니케이225", "^N225", "yahoo", "241180"),
     AssetMapping("topix", "일본 TOPIX", "1306.T", "yahoo", "195920", "205720",
                  "1306.T is a Japanese TOPIX ETF proxy, not the index itself"),
+    AssetMapping("csi300", "중국 CSI300", "ASHR", "yahoo", "283580", "217780",
+                 "ASHR is a US-listed CSI300 ETF proxy, not the raw index"),
     AssetMapping("nifty50", "인도 Nifty50", "^NSEI", "yahoo", "453810"),
     AssetMapping("emerging", "신흥국 MSCI", "EEM", "yahoo", "195980", None,
                  "Check MSCI benchmark and currency hedge variant"),
@@ -43,9 +48,19 @@ HISTORICAL_ASSETS: tuple[AssetMapping, ...] = (
                  "GLD holds physical gold; Korea-listed ETF uses gold futures, with roll costs"),
     AssetMapping("silver", "은", "SLV", "yahoo", "144600", None,
                  "SLV physical silver vs KR silver futures ETF"),
+    AssetMapping("copper", "구리", "CPER", "yahoo", "138910", None,
+                 "Copper futures fund methodologies may differ"),
+    AssetMapping("wti", "WTI 원유", "USO", "yahoo", "261220", "271050",
+                 "Both are futures funds; their roll methodologies can differ"),
+    AssetMapping("grains", "3대 농산물", "271060", "domestic", "271060", None,
+                 "No verified overseas matching index feed; interim domestic ETF signal"),
+    AssetMapping("soybeans", "대두", "SOYB", "yahoo", "138920", None,
+                 "SOYB vs Korea futures roll methodologies may differ"),
+    AssetMapping("agriculture", "농산물 종합", "DBA", "yahoo", "137610", None,
+                 "DBA broad agriculture basket is only an approximate benchmark"),
 )
-# The original 18-asset mapping is retained for historical traceability.
-# User-selected active research candidates, 2026-11-27.
+assert len(HISTORICAL_ASSETS) == len({x.asset_id for x in HISTORICAL_ASSETS}) == 18
+# User-selected active candidates; retain the old mapping for traceability.
 ACTIVE_ASSET_IDS = (
     "sp500", "nasdaq100", "kospi200", "nikkei225", "topix",
     "nifty50", "emerging", "eurostoxx50", "gold", "silver",
@@ -54,18 +69,26 @@ ASSETS = tuple(a for a in HISTORICAL_ASSETS if a.asset_id in ACTIVE_ASSET_IDS)
 assert tuple(a.asset_id for a in ASSETS) == ACTIVE_ASSET_IDS
 
 # Stage one: reference instrument itself is both signal and execution basis.
-# ASSETS is the active domestic eligibility / phase-two map for the same 10 candidates.
+# ASSETS is the active domestic eligibility / phase-two map.
 _REFERENCE_OVERRIDES = {
     "sp500": ("SPY", "SH", "USD", -1, ""),
     "nasdaq100": ("QQQ", "PSQ", "USD", -1, ""),
+    "russell2000": ("IWM", "RWM", "USD", -1, ""),
     "kospi200": ("KS200", None, "KRW index", None, "KOSPI 200 price index; non-tradable benchmark, not a Korean ETF"),
+    "msci_korea": ("EWY", None, "USD", None, "MSCI Korea 25/50 benchmark proxy"),
     "nikkei225": ("1329.T", "1571.T", "JPY", -1, "Japan-listed Nikkei 225 ETF and inverse; no matching US ETF with ten-year data"),
     "topix": ("1306.T", "1569.T", "JPY", -1, "Japan-listed TOPIX ETF and inverse; local-currency performance"),
+    "csi300": ("ASHR", None, "USD", None, "CSI 300 ETF; matching US inverse CHAD liquidated in 2023"),
     "nifty50": ("INDY", None, "USD", None, "US-listed Nifty 50 ETF"),
     "emerging": ("EEM", "EUM", "USD", -1, ""),
     "eurostoxx50": ("FEZ", None, "USD", None, ""),
     "gold": ("GLD", "GLL", "USD", -2, "GLD physical gold; GLL daily -2x gold futures, not a symmetric spot short"),
     "silver": ("SLV", "ZSL", "USD", -2, "SLV physical silver; ZSL daily -2x silver futures"),
+    "copper": ("CPER", None, "USD", None, "Copper futures fund"),
+    "wti": ("USO", "SCO", "USD", -2, "Different futures roll benchmarks; SCO daily -2x"),
+    "grains": ("TAGS", None, "USD", None, "Approximate proxy only: corn, wheat, soybeans AND sugar; exact grains index data unavailable"),
+    "soybeans": ("SOYB", None, "USD", None, ""),
+    "agriculture": ("DBA", None, "USD", None, "Broad agriculture futures basket"),
 }
 
 REFERENCE_ASSETS = tuple(

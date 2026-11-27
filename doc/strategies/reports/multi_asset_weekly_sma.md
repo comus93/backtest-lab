@@ -116,14 +116,6 @@ indicator and next-session Close execution assumption. Do not infer
 superiority before inspecting the archived metrics.
 
 
-## Candidate universe refinement
-
-The user narrowed the candidate set from 18 to 10, retaining eight equity
-market exposures and gold/silver. Russell2000, EWY, CSI300, crude oil,
-three-grain proxy, soybeans, broad agriculture and copper are excluded
-from subsequent runs. Historical results remain available.
-
-
 ## Candidate pruning (2026-11-27)
 
 The user reduced the active candidate set to ten assets. Excluded:

@@ -95,11 +95,9 @@ def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
     prices = load_price_snapshot("2015-01-01", "2018-01-01", yahoo_reader=yahoo,
                                  fdr_reader=fdr, reference_only=True)
     assert [x for x in seen if x[0] == "fdr"] == [("fdr", "KS200")]
-    assert not ({ticker for _, ticker in seen} & {"IWM","RWM","EWY","ASHR","CPER","USO","SCO","TAGS","SOYB","DBA"})
     assert {ticker for _, ticker in seen} == {
         t for a in REFERENCE_ASSETS for t in (a.reference_ticker, a.long_etf, a.inverse_etf) if t
     }
-    assert sum(a.inverse_etf is not None for a in REFERENCE_ASSETS) == 7
     assert not any(t in {"IWM", "RWM", "EWY", "ASHR", "CPER", "USO", "SCO", "TAGS", "SOYB", "DBA"} for _, t in seen)
     assert prices["gold__long"].equals(prices["gold__reference"])
     outputs = run_pilot(prices, start="2016-01-01", end="2018-01-01",

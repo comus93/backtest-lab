@@ -319,18 +319,6 @@ long-only calendar without requiring inverse data. Keep the five previous
 strategies unchanged and the Buy & Hold benchmark last.
 
 
-## 16. Active universe reduced to ten candidates (2026-11-27)
-
-User removed Russell 2000, MSCI Korea (EWY), CSI300, WTI crude oil,
-three-grain/agricultural proxy (TAGS), soybeans, broad agriculture and copper.
-The active universe for both reference and domestic study modes is now
-S&P500, Nasdaq100, KOSPI200, Nikkei225, TOPIX, Nifty50, MSCI Emerging,
-Euro STOXX 50, gold and silver. Historical 18-asset registry and archived
-runs remain intact. All existing strategy rules and dates are unchanged.
-Reference mode supports seven real inverse pairs; long-only strategies
-and Buy & Hold cover all ten.
-
-
 ## 16. Active candidate universe narrowed (2026-11-27)
 
 User excluded Russell 2000, EWY, China CSI300, WTI, three-grain
