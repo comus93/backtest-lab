@@ -110,7 +110,7 @@ def _annual_table(path: Path, summary: bool = False) -> str:
 
 
 def _monthly_matrix(path: Path) -> str:
-    """One month per row, four strategy columns; read archived returns only."""
+    """One month per row, strategy columns; read archived returns only."""
     if not path.exists():  # historical runs predate the monthly-output contract
         return ""
     monthly = pd.read_csv(path, dtype={"month": str})
@@ -149,6 +149,7 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
         raise ValueError("Summary and manifest asset labels differ")
     coverage = _coverage(run)
     signal_label = _signal_label(coverage)
+    label_suffix = " · 3-Line Break" if "line_break_lines" in coverage.columns else ""
     html_table = tabular_html(summary, percent_cols=PERCENT_COLUMNS)
     for row in manifest.itertuples(index=False):
         asset_id = str(row.asset_id)
@@ -200,6 +201,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     name = str(selected.iloc[0]["display_name"])
     coverage = _coverage(run)
     signal_label = _signal_label(coverage)
+    label_suffix = " · 3-Line Break" if "line_break_lines" in coverage.columns else ""
     matches = coverage.loc[coverage["asset_id"] == asset_id] if not coverage.empty else pd.DataFrame()
     instrument_note = _instrument_note(matches.iloc[0]) if len(matches) == 1 else ""
     folder = run / "assets" / asset_id
@@ -236,7 +238,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     fig = figure(title=f"{name} | 누적 성과 (기준 100)", height=350,
                  sizing_mode="stretch_width", x_axis_type="datetime",
                  tools="xpan,xwheel_zoom,box_zoom,reset,save", active_scroll="xwheel_zoom")
-    palette = ("#2563eb", "#a855f7", "#ea580c", "#0d9488")
+    palette = ("#2563eb", "#a855f7", "#ea580c", "#0d9488", "#db2777")
     for i, strategy in enumerate([str(c) for c in curves.columns if c != "timestamp"]):
         line = fig.line(curves["timestamp"], curves[strategy], legend_label=strategy,
                         line_width=2, color=palette[i % len(palette)])
@@ -255,7 +257,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
         + '</div>'
     ), sizing_mode="stretch_width")
     html = file_html(column(header, fig, footer, sizing_mode="stretch_width"),
-                     INLINE, title=f"{name} | {signal_label}")
+                     INLINE, title=f"{name} | {signal_label}{label_suffix}")
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(html, encoding="utf-8")

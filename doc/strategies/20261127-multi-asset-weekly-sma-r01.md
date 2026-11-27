@@ -245,3 +245,62 @@ top-level summary are unchanged. Individual asset FFN summaries,
 equity curves, yearly tables, monthly matrices, fills and signal
 logs use the fixed four-strategy order above. Prior archived runs
 are immutable.
+
+
+## 14. Daily confirmed 3-Line Break alternative strategy (2026-11-27)
+
+The user requested moving Inverse/Cash to second position and adding a
+separate daily 3-Line Break direction strategy to compare against
+daily SMA105. Previous cases remain immutable.
+
+Fixed presentation order in all per-asset results, equity charts,
+annual returns and monthly return matrix:
+
+1. Long/Cash (SMA105)
+2. Inverse/Cash (SMA105)
+3. Long/Inverse (SMA105)
+4. LineBreak Long/Inverse (3-Line Break, daily)
+5. Buy & Hold (long benchmark, always last)
+
+LineBreak Long/Inverse is independent of SMA105 signals: each reference
+ticker's daily confirmed closing prices construct traditional price-only
+Line Break lines, using the latest three FORMED CONFIRMED lines, NOT the
+latest three trading days.
+
+- The initial first reference close is the construction baseline.
+  The first different subsequent close confirms the initial directional line.
+- If the most recent confirmed line is UP, a close above that line's close
+  creates a continuation line. Only a close strictly below the lowest low
+  of the last 3 confirmed lines creates a DOWN reversal.
+- If the last confirmed line is DOWN, a close below its close creates a
+  new down line. Only a close strictly above the highest high of the last
+  3 confirmed lines creates an UP reversal.
+- Before 3 lines exist, available confirmed lines set the reversal bound.
+  Equality does not create new lines.
+- Days without new confirmed lines hold the prior line direction, and
+  projected or unconfirmed lines are not used.
+- Bullish state holds the long ETF, bearish state the actual inverse ETF.
+  Before the first line, hold cash.
+- Signals only become available after the daily close. Orders change
+  positions at the next eligible trading-session Close at the earliest,
+  using the original price-only execution approximation.
+- LineBreak Long/Inverse uses the same overlapping real product dates
+  as the existing Long/Inverse and Inverse/Cash strategies. Missing
+  actual inverse data means this strategy is ABSENT (not synthetic).
+- Keep existing FFN summary column definitions, one-row-per-asset
+  overview, monthly/annual returns and Buy & Hold benchmark.
+
+Audit output: line_break_signals.csv in each asset folder and run root
+records signal_date, reference_close, direction, line_formed, reversal,
+line_open, line_close, prior_line_high/low, and confirmed_lines.
+Coverage metadata records line_break_lines=3, and the separate trade
+decision log carries the LineBreak Long/Inverse entries. Reports read
+the stored data; the reporting layer cannot recalculate signals.
+
+TradingView comparison caveat: this is deterministic daily adjusted
+Close line-break construction. TradingView chart may process different
+intraday/OHLC bars or price adjustment settings, so verify it on the
+1D Line Break chart, Number of Lines=3, rather than assuming bars
+are identical without comparing source inputs.
+Official TradingView specification:
+https://www.tradingview.com/support/solutions/43000502273-introduction-to-line-break-charts/

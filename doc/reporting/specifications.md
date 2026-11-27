@@ -86,3 +86,15 @@ in the same order: Long/Cash, Long/Inverse, Inverse/Cash, Buy & Hold.
 Inverse/Cash is missing rather than zero when no eligible inverse
 product exists. The combined asset-level FFN summary remains unchanged.
 Reporting reads stored results, never calculates inverse gains.
+
+
+## Reference study Line Break and order (2026-11-27)
+
+All per-asset read-only reporting sequences use:
+Long/Cash -> Inverse/Cash -> Long/Inverse ->
+LineBreak Long/Inverse -> Buy & Hold (benchmark).
+The monthly matrix shows five column positions, with missing values
+rather than zero when inverse tickers are absent. Yearly tables
+and FFN only show executed strategies. The Line Break signal is
+computed in the strategy, not Bokeh/shared FFN tables.
+Older archived results and PSAR Golden Master remain untouched.

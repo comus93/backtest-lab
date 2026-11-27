@@ -14,6 +14,7 @@ import pandas as pd
 
 from backtest_lab.analysis import average_monthly_turnover, ffn_stats_table
 from backtest_lab.core import BacktestResult, Order, Runtime, RuntimeConfig, StrategyContext
+from .line_break import DEFAULT_REVERSAL_LINES, daily_line_break_signals
 
 STRATEGY_ID = "multi_asset_weekly_sma"
 REVISION = "r01"
@@ -21,7 +22,7 @@ START = "2016-11-21"
 END = "2026-11-21"  # exclusive; last fully completed trading day is 2026-11-20
 SMA_DAYS = 105
 INITIAL_CASH = 1_000_000.0
-STRATEGY_ORDER = ("Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold")
+STRATEGY_ORDER = ("Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold")
 SUMMARY_COLUMNS = (
     "strategy", "start_date", "end_date", "total_return", "cagr",
     "volatility", "sharpe", "max_drawdown", "avg_monthly_turnover", "avg_exposure",
@@ -97,13 +98,20 @@ class SMARegimeStrategy:
             else None
         )
         orders = _positions_to_orders(context, held)
-        self.decisions.append({
+        record = {
             "signal_date": signal_date, "execution_date": context.timestamp,
             "reference_close": float(state["reference_close"]),
-            "sma105": float(state["sma105"]) if pd.notna(state["sma105"]) else float("nan"),
+            "sma105": float(state["sma105"]) if "sma105" in state and pd.notna(state["sma105"]) else float("nan"),
             "direction": direction, "held_etf": held or "CASH",
             "changed_position": bool(orders),
-        })
+        }
+        if "line_formed" in state:
+            record.update({
+                "line_formed": bool(state["line_formed"]),
+                "line_break_reversal": bool(state["reversal"]),
+                "line_break_close": float(state["line_close"]) if pd.notna(state["line_close"]) else float("nan"),
+            })
+        self.decisions.append(record)
         return orders
 
 
@@ -145,6 +153,7 @@ class AssetBacktest:
     fills: pd.DataFrame
     yearly_performance: pd.DataFrame
     monthly_performance: pd.DataFrame
+    line_break_signals: pd.DataFrame
 
 
 def _clean_prices(series: pd.Series, name: str) -> pd.Series:
@@ -170,6 +179,7 @@ def run_asset(
     reference = _clean_prices(item.reference_close, "reference")
     reference = reference.loc[reference.index < pd.Timestamp(end)]
     signals = daily_sma_signals(reference, days)
+    line_break = daily_line_break_signals(reference, DEFAULT_REVERSAL_LINES)
     # Limit to execution instrument trading dates. Missing dates are never ffilled.
     long = _clean_prices(item.long_close, item.long_symbol)
     long = long.loc[(long.index >= pd.Timestamp(start)) & (long.index < pd.Timestamp(end))]
@@ -200,6 +210,9 @@ def run_asset(
             )
             runs["Inverse/Cash"] = Runtime(inverse_cash_mode, INITIAL_CASH, config).run(both)
             decisions.append(("Inverse/Cash", inverse_cash_mode.decisions))
+            line_break_mode = SMARegimeStrategy(line_break, item.long_symbol, item.inverse_symbol)
+            runs["LineBreak Long/Inverse"] = Runtime(line_break_mode, INITIAL_CASH, config).run(both)
+            decisions.append(("LineBreak Long/Inverse", line_break_mode.decisions))
 
     # Keep the benchmark Buy & Hold last in every archived strategy table,
     # equity curve and Bokeh legend, even when an inverse ETF is unavailable.
@@ -223,7 +236,7 @@ def run_asset(
                 "reference_price": fill.reference_price, "fill_price": fill.fill_price,
                 "fee": fill.fee,
             })
-        current_prices = both if name in ("Long/Inverse", "Inverse/Cash") else prices
+        current_prices = both if name in ("Long/Inverse", "Inverse/Cash", "LineBreak Long/Inverse") else prices
         for ts, row in current_prices.iterrows():
             for fill in by_date.get(pd.Timestamp(ts), []):
                 position_qty[fill.symbol] = position_qty.get(fill.symbol, 0.0) + (
@@ -264,7 +277,7 @@ def run_asset(
     yearly = pd.DataFrame(yearly_rows, columns=["strategy", "year", "return"])
     monthly = pd.DataFrame(monthly_rows, columns=["strategy", "month", "return"])
     return AssetBacktest(item.asset_id, item.display_name, curves, summary_df, stats, signals_out,
-                         pd.DataFrame(fills), yearly, monthly)
+                         pd.DataFrame(fills), yearly, monthly, line_break)
 
 
 def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[str, Path]:
@@ -280,6 +293,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     manifest_rows = []
     yearly_rows = []
     monthly_rows = []
+    break_rows = []
     for result in results:
         manifest_rows.append({"asset_id": result.asset_id, "display_name": result.display_name})
         path = root / "assets" / result.asset_id
@@ -289,6 +303,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
             "ffn_stats.csv": result.ffn_stats.reset_index(names="metric"),
             "equity_curves.csv": result.curves.reset_index(names="timestamp"),
             "daily_signals.csv": result.signals,
+            "line_break_signals.csv": result.line_break_signals.reset_index(),
             "fills.csv": result.fills,
             "yearly_performance.csv": result.yearly_performance,
             "monthly_performance.csv": result.monthly_performance,
@@ -302,6 +317,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
         summary_rows.append(main)
         yearly_rows.append(result.yearly_performance.assign(asset_id=result.asset_id, asset=result.display_name))
         monthly_rows.append(result.monthly_performance.assign(asset_id=result.asset_id, asset=result.display_name))
+        break_rows.append(result.line_break_signals.reset_index().assign(asset_id=result.asset_id))
     if not summary_rows:
         raise ValueError("No successful asset backtests.")
     combined = pd.concat(summary_rows, ignore_index=True).loc[:, SUMMARY_COLUMNS]
@@ -317,6 +333,9 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
     monthly_path = root / "monthly_performance.csv"
     pd.concat(monthly_rows, ignore_index=True).loc[:, ["asset_id", "asset", "strategy", "month", "return"]].to_csv(monthly_path, index=False)
     paths["monthly_performance.csv"] = monthly_path
+    break_path = root / "line_break_signals.csv"
+    pd.concat(break_rows, ignore_index=True).to_csv(break_path, index=False)
+    paths["line_break_signals.csv"] = break_path
     return paths
 
 
@@ -396,6 +415,8 @@ def run_pilot(
             "study_basis": "reference" if reference_only else "domestic",
             "signal_frequency": "daily",
             "sma_days": SMA_DAYS,
+            "line_break_lines": DEFAULT_REVERSAL_LINES,
+            "line_break_source": "confirmed daily reference close",
             "signal_evaluation": "confirmed daily close vs SMA105 inclusive",
             "fill_assumption": "following trading session Close; fee/slippage from Runtime",
             **(reference_metadata(item.asset_id) if reference_only else {}),

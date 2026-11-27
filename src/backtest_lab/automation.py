@@ -92,7 +92,7 @@ SMA_OUTPUT_FILES = (
     "input_prices.csv", "asset_manifest.csv", "performance_summary.csv",
     "ffn_stats.csv", "equity_curves.csv", "daily_signals.csv",
     "fills.csv", "instrument_coverage.csv", "yearly_performance.csv",
-    "monthly_performance.csv",
+    "monthly_performance.csv", "line_break_signals.csv",
 )
 
 PSAR_OUTPUT_FILES = (

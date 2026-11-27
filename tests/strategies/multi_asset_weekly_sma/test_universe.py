@@ -94,6 +94,9 @@ def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
     assert set(gold.fills.symbol) <= {"GLD", "GLL"}
     assert "Long/Inverse" in gold.performance_summary.strategy.values
     assert "Inverse/Cash" in gold.performance_summary.strategy.values
+    assert "LineBreak Long/Inverse" in gold.performance_summary.strategy.values
+    assert gold.line_break_signals["line_formed"].any()
+    assert set(gold.fills.loc[gold.fills.strategy == "LineBreak Long/Inverse","symbol"]) <= {"GLD", "GLL"}
     assert set(gold.fills.loc[gold.fills.strategy == "Inverse/Cash", "symbol"]) <= {"GLL"}
     p = prices.loc[prices.index >= pd.Timestamp("2016-01-01"), "gold__long"].dropna()
     expected = p.iloc[-1] / p.iloc[0] / 1.00015 - 1.0

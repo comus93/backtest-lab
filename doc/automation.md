@@ -270,3 +270,12 @@ price data, shares the overlap window with Long/Inverse, and logs
 only inverse ETF fills. The archived result files and FFN metric schema
 are unchanged, but per-asset strategy rows can now contain four
 distinct strategies including benchmark Buy & Hold last.
+
+
+The reference-first multi-asset runner now also creates
+line_break_signals.csv at run root and each asset's folder.
+The 3-Line Break signal is built from confirmed reference daily
+adjusted closes and uses actual inverse product returns where
+available. This contributes LineBreak Long/Inverse as the fourth
+study comparator, keeping Buy & Hold last. Prior archived runs
+are immutable; latest completed archive is published by Pages.

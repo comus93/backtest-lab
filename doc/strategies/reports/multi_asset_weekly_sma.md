@@ -95,3 +95,14 @@ of Long/Inverse. Detail output order is now Long/Cash,
 Long/Inverse, Inverse/Cash, Buy & Hold (benchmark last).
 No inverse means no investment-test series for the new strategy.
 Existing returns are not rewritten.
+
+
+## 3-Line Break daily long/inverse alternative
+
+An independent daily 3-Line Break (3 confirmed-line reversal) long/
+inverse strategy was added alongside SMA105. Per-asset display order is
+Long/Cash, Inverse/Cash, Long/Inverse, LineBreak Long/Inverse, Buy & Hold.
+The last remains benchmark. No inverse mapped means no inverse strategy
+rows. Previously computed SMA105 strategy metrics remain unchanged.
+The new strategy uses actual overseas ETF and inverse ETF prices
+and archives a daily Line Break construction and decision trace.
