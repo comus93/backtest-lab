@@ -119,6 +119,7 @@ def test_new_105_day_report_is_labeled_correctly(prepared_run, tmp_path):
         "display_name": ["금", "은", "구리"],
         "study_basis": ["reference"] * 3,
         "sma_days": [105] * 3,
+        "line_break_lines": [3] * 3,
         "long_etf": ["GLD", "SLV", "CPER"],
         "inverse_etf": ["GLL", "", ""],
         "currency": ["USD"] * 3,
@@ -127,6 +128,8 @@ def test_new_105_day_report_is_labeled_correctly(prepared_run, tmp_path):
     detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
     assert "105일 SMA" in summary
     assert "105일 SMA" in detail
+    assert "3-Line Break" in summary
+    assert "3-Line Break" in detail
     assert "21주 SMA" not in summary
     assert "21주 SMA" not in detail
 

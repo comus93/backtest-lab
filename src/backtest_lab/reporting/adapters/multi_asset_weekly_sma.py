@@ -169,8 +169,8 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
             raise ValueError(f"Expected one summary row for {label}")
         html_table = html_table.replace(old, new, 1)
     return _write_html(
-        Path(output), "105일 SMA | 자산별 성과",
-        f'<h1>105일 SMA 추세추종 · 자산별 비교</h1>'
+        Path(output), f"{signal_label}{label_suffix} | 자산별 성과",
+        f'<h1>{signal_label}{label_suffix} 추세추종 · 자산별 비교</h1>'
         '<p>각 자산의 장기 성과를 한 표에서 비교해. 자산명을 선택하면 상세 리포트로 이동해.</p>'
         + f'<p class="note">{escape(_basis_note(coverage))}</p>'
         + '<p class="note">성과 컬럼과 FFN 계산은 기존 BTLab 정의를 그대로 사용해. '
