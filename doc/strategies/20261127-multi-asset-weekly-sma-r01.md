@@ -304,3 +304,16 @@ intraday/OHLC bars or price adjustment settings, so verify it on the
 are identical without comparing source inputs.
 Official TradingView specification:
 https://www.tradingview.com/support/solutions/43000502273-introduction-to-line-break-charts/
+
+
+## 15. Independent daily 3-Line Break Long/Cash
+
+Add LineBreak Long/Cash immediately before LineBreak Long/Inverse.
+It uses the same existing confirmed daily 3-Line Break state (3 lines)
+but holds the long instrument on bullish state, cash on bearish/neutral
+state, and never buys an inverse ETF. No new line retains the state.
+The initial active position follows the last confirmed warm-up state;
+later changes execute at the next eligible daily Close, same fees and
+slippage as existing strategies. All 18 assets are eligible, using the
+long-only calendar without requiring inverse data. Keep the five previous
+strategies unchanged and the Buy & Hold benchmark last.

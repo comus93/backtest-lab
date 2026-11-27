@@ -106,3 +106,11 @@ The last remains benchmark. No inverse mapped means no inverse strategy
 rows. Previously computed SMA105 strategy metrics remain unchanged.
 The new strategy uses actual overseas ETF and inverse ETF prices
 and archives a daily Line Break construction and decision trace.
+
+
+## Independent 3-Line Break long/cash comparator
+
+Add a pure long/cash strategy to distinguish trend-following avoidance
+of drawdowns from inverse ETF effects, keeping the existing 3-Line Break
+indicator and next-session Close execution assumption. Do not infer
+superiority before inspecting the archived metrics.

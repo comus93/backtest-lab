@@ -95,6 +95,8 @@ def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
     assert "Long/Inverse" in gold.performance_summary.strategy.values
     assert "Inverse/Cash" in gold.performance_summary.strategy.values
     assert "LineBreak Long/Inverse" in gold.performance_summary.strategy.values
+    assert all("LineBreak Long/Cash" in asset.performance_summary.strategy.values for asset in outputs.assets)
+    assert set(gold.fills.loc[gold.fills.strategy == "LineBreak Long/Cash", "symbol"]) <= {"GLD"}
     assert gold.line_break_signals["line_formed"].any()
     assert set(gold.fills.loc[gold.fills.strategy == "LineBreak Long/Inverse","symbol"]) <= {"GLD", "GLL"}
     assert set(gold.fills.loc[gold.fills.strategy == "Inverse/Cash", "symbol"]) <= {"GLL"}

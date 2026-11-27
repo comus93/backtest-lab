@@ -92,7 +92,7 @@ def test_long_cash_and_inverse_separate_real_prices(tmp_path):
                        config=RuntimeConfig(fee_rate=0.00015))
     assert list(result.performance_summary.columns) == list(SUMMARY_COLUMNS)
     assert set(result.performance_summary["strategy"]) == {
-        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold"
+        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy & Hold"
     }
     assert result.fills["symbol"].isin(["KR_LONG", "KR_INV"]).all()
     assert not result.signals.empty
@@ -109,7 +109,7 @@ def test_missing_inverse_still_tests_asset():
     _, ref, domestic, _ = sample()
     result = run_asset(AssetInput("silver", "은", ref, domestic, "KR_LONG"),
                        start="2016-01-01", end="2018-01-01")
-    assert set(result.performance_summary["strategy"]) == {"Long/Cash", "Buy & Hold"}
+    assert set(result.performance_summary["strategy"]) == {"Long/Cash", "LineBreak Long/Cash", "Buy & Hold"}
 
 
 def test_short_window_fails_instead_of_inventing_returns():
@@ -125,7 +125,7 @@ def test_monthly_returns_and_benchmark_last():
     result = run_asset(AssetInput("gold", "금", reference, domestic, "GLD",
                                   inverse, "GLL"),
                        start="2016-01-01", end="2018-01-01")
-    expected = ["Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold"]
+    expected = ["Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy & Hold"]
     assert result.performance_summary["strategy"].tolist() == expected
     assert result.curves.columns.tolist() == expected
     assert result.ffn_stats.columns.tolist() == expected
@@ -148,9 +148,9 @@ def test_no_inverse_benchmark_still_last():
     _, ref, domestic, _ = sample()
     result = run_asset(AssetInput("silver", "은", ref, domestic, "SLV"),
                        start="2016-01-01", end="2018-01-01")
-    assert result.performance_summary["strategy"].tolist() == ["Long/Cash", "Buy & Hold"]
+    assert result.performance_summary["strategy"].tolist() == ["Long/Cash", "LineBreak Long/Cash", "Buy & Hold"]
     assert result.monthly_performance["strategy"].drop_duplicates().tolist() == [
-        "Long/Cash", "Buy & Hold"
+        "Long/Cash", "LineBreak Long/Cash", "Buy & Hold"
     ]
 
 
@@ -182,7 +182,7 @@ def test_inverse_only_monthly_and_yearly_reconcile():
     result = run_asset(AssetInput("gold", "금", ref, long, "GLD", inverse, "GLL"),
                        start="2016-01-01", end="2018-01-01")
     assert result.performance_summary.strategy.tolist() == [
-        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold"
+        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy & Hold"
     ]
     only = result.fills.loc[result.fills.strategy == "Inverse/Cash"]
     assert not only.empty

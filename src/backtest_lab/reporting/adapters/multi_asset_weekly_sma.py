@@ -290,10 +290,10 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     fig = figure(title=f"{name} | 누적 성과 (기준 100)", height=350,
                  sizing_mode="stretch_width", x_axis_type="datetime",
                  tools="xpan,xwheel_zoom,box_zoom,reset,save", active_scroll="xwheel_zoom")
-    palette = ("#2563eb", "#a855f7", "#ea580c", "#0d9488", "#db2777")
-    for i, strategy in enumerate([str(c) for c in curves.columns if c != "timestamp"]):
+    palette = dict(zip(STRATEGY_ORDER, ("#2563eb", "#a855f7", "#ea580c", "#64748b", "#0d9488", "#db2777"), strict=True))
+    for strategy in [str(c) for c in curves.columns if c != "timestamp"]:
         line = fig.line(curves["timestamp"], curves[strategy], legend_label=strategy,
-                        line_width=2, color=palette[i % len(palette)])
+                        line_width=2, color=palette[strategy])
         fig.add_tools(HoverTool(renderers=[line], tooltips=[
             ("Date", "@x{%F}"), (strategy, "@y{0.00}")
         ], formatters={"@x": "datetime"}))

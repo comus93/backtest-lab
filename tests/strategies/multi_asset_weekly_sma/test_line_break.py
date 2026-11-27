@@ -109,5 +109,22 @@ def test_line_break_only_for_real_inverse_and_ffn_monthly_reconcile(tmp_path):
 
     no_inv=run_asset(AssetInput("copper","구리",price,price,"CPER"),
                      start="2016-01-01",end="2018-01-01")
-    assert no_inv.performance_summary.strategy.tolist()==["Long/Cash","Buy & Hold"]
+    assert no_inv.performance_summary.strategy.tolist()==["Long/Cash","LineBreak Long/Cash","Buy & Hold"]
     assert "LineBreak Long/Inverse" not in no_inv.monthly_performance.strategy.to_list()
+
+
+def test_line_break_long_cash_holds_on_no_line_and_never_buys_inverse():
+    dates = pd.bdate_range("2020-01-01", periods=11)
+    close = pd.Series([100, 101, 102, 103, 102.5, 100.5, 99, 98, 99.5, 103.1, 105],
+                      index=dates, dtype=float)
+    signals = daily_line_break_signals(close)
+    mode = SMARegimeStrategy(signals, "GLD")
+    out = Runtime(mode, 100_000, RuntimeConfig()).run(close.rename("GLD").to_frame())
+    assert [(x.timestamp, x.symbol, x.side) for x in out.fills] == [
+        (dates[2], "GLD", "buy"), (dates[7], "GLD", "sell"),
+        (dates[10], "GLD", "buy"),
+    ]
+    assert all(d["signal_date"] < d["execution_date"] for d in mode.decisions)
+    assert all(d["held_etf"] == ("GLD" if d["direction"] > 0 else "CASH")
+               for d in mode.decisions)
+    assert out.equity.loc[dates[7]:dates[9]].nunique() == 1

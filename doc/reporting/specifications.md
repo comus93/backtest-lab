@@ -113,3 +113,12 @@ The per-asset monthly matrix uses a single horizontal/vertical scroll
 container with sticky opaque header cells, so column labels stay
 visible during internal vertical scrolling. These changes are confined
 to the multi-asset reporting adapter; archived runs and PSAR are unchanged.
+
+
+## LineBreak Long/Cash addition
+
+The six-strategy order is Long/Cash, Inverse/Cash, Long/Inverse,
+LineBreak Long/Cash, LineBreak Long/Inverse, Buy & Hold.
+The overview selector, individual FFN tables, curves, annual and monthly
+matrices include the new strategy. Monthly sticky headers remain enabled.
+The new long-only strategy is available even without an inverse product.

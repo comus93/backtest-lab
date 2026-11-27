@@ -22,7 +22,7 @@ START = "2016-11-21"
 END = "2026-11-21"  # exclusive; last fully completed trading day is 2026-11-20
 SMA_DAYS = 105
 INITIAL_CASH = 1_000_000.0
-STRATEGY_ORDER = ("Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold")
+STRATEGY_ORDER = ("Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy & Hold")
 SUMMARY_COLUMNS = (
     "strategy", "start_date", "end_date", "total_return", "cagr",
     "volatility", "sharpe", "max_drawdown", "avg_monthly_turnover", "avg_exposure",
@@ -197,6 +197,11 @@ def run_asset(
         "Buy & Hold": Runtime(BuyAndHold(item.long_symbol), INITIAL_CASH, config).run(prices),
     }
     decisions = [("Long/Cash", mode.decisions)]
+    # Same confirmed Line Break state as the inverse path, but the long-only
+    # trading calendar and no inverse dependency. Bearish/neutral means cash.
+    line_break_cash = SMARegimeStrategy(line_break, item.long_symbol)
+    runs["LineBreak Long/Cash"] = Runtime(line_break_cash, INITIAL_CASH, config).run(prices)
+    decisions.append(("LineBreak Long/Cash", line_break_cash.decisions))
     if item.inverse_close is not None and item.inverse_symbol is not None:
         inverse = _clean_prices(item.inverse_close, item.inverse_symbol)
         inverse = inverse.loc[(inverse.index >= pd.Timestamp(start)) & (inverse.index < pd.Timestamp(end))]

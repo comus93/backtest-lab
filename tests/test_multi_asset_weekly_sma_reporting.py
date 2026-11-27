@@ -32,7 +32,7 @@ def prepared_run(tmp_path):
 def test_summary_exact_existing_columns_and_one_row_per_asset(prepared_run, tmp_path):
     output = render_summary(prepared_run, tmp_path / "site" / "index.html")
     html = output.read_text(encoding="utf-8")
-    assert html.count('<a href="assets/') == 15  # 3 assets x 5 selectable panels
+    assert html.count('<a href="assets/') == 18  # 3 assets x 6 selectable panels
     for label in ("금", "은", "구리"):
         assert f">{escape(label)}</a></td>" in html
     summary = pd.read_csv(prepared_run / "performance_summary.csv")
@@ -83,7 +83,7 @@ def test_monthly_matrix_uses_archived_returns_and_exact_order(prepared_run, tmp_
     matrix = _monthly_matrix(source)
     assert "Year-Month Return" in matrix
     assert (matrix.index(">Long/Cash</th>") < matrix.index(">Inverse/Cash</th>")
-            < matrix.index(">Long/Inverse</th>") < matrix.index(">LineBreak Long/Inverse</th>")
+            < matrix.index(">Long/Inverse</th>") < matrix.index(">LineBreak Long/Cash</th>") < matrix.index(">LineBreak Long/Inverse</th>")
             < matrix.index(">Buy &amp; Hold</th>"))
     assert month in matrix
     assert f"{hold_return * 100:+.2f}%" in matrix
@@ -147,13 +147,13 @@ def test_inverse_cash_in_annual_detail_and_monthly_report(tmp_path):
     write_asset_results([result], run_dir)
     root = run_dir / "assets" / "gold"
     summary = pd.read_csv(root / "performance_summary.csv")
-    assert summary["strategy"].tolist() == ["Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy & Hold"]
+    assert summary["strategy"].tolist() == ["Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy & Hold"]
     detail = render_detail(run_dir, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
-    assert detail.index("Long/Cash") < detail.index("Inverse/Cash") < detail.index("Long/Inverse") < detail.index("LineBreak Long/Inverse") < detail.index("Buy &amp; Hold")
+    assert detail.index("Long/Cash") < detail.index("Inverse/Cash") < detail.index("Long/Inverse") < detail.index("LineBreak Long/Cash") < detail.index("LineBreak Long/Inverse") < detail.index("Buy &amp; Hold")
     annual = _annual_table(root / "yearly_performance.csv")
     monthly = _monthly_matrix(root / "monthly_performance.csv")
     assert "Inverse/Cash" in annual
-    assert monthly.index(">Inverse/Cash</th>") < monthly.index(">Long/Inverse</th>") < monthly.index(">LineBreak Long/Inverse</th>") < monthly.index(">Buy &amp; Hold</th>")
+    assert monthly.index(">Inverse/Cash</th>") < monthly.index(">Long/Inverse</th>") < monthly.index(">LineBreak Long/Cash</th>") < monthly.index(">LineBreak Long/Inverse</th>") < monthly.index(">Buy &amp; Hold</th>")
     assert "Inverse/Cash" in pd.read_csv(root / "ffn_stats.csv").columns
     assert "LineBreak Long/Inverse" in pd.read_csv(root / "ffn_stats.csv").columns
 
@@ -168,10 +168,10 @@ def test_strategy_selector_reads_archived_metrics_and_preserves_missing_assets(p
     pd.concat([stats, inverse.to_frame().T], ignore_index=True).to_csv(path, index=False)
     html = render_summary(prepared_run, tmp_path / "index.html").read_text(encoding="utf-8")
     assert re.findall(r'<option value="[^"]+">([^<]+)</option>', html) == [
-        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Inverse", "Buy &amp; Hold"
+        "Long/Cash", "Inverse/Cash", "Long/Inverse", "LineBreak Long/Cash", "LineBreak Long/Inverse", "Buy &amp; Hold"
     ]
     panels = re.findall(r'<section id="strategy-summary-\d+"[^>]*>.*?</section>', html)
-    assert len(panels) == 5
+    assert len(panels) == 6
     assert ' hidden' not in panels[0].split('>')[0]
     assert all(' hidden' in panel.split('>')[0] for panel in panels[1:])
     assert all(panel.count('<a href="assets/') == 3 for panel in panels)
@@ -179,6 +179,8 @@ def test_strategy_selector_reads_archived_metrics_and_preserves_missing_assets(p
     assert "1/3" in panels[1]
     assert panels[1].count("—</td>") >= 18
     assert "+12.35%" not in panels[0]
+    assert "3/3" in panels[3]  # LineBreak Long/Cash does not require inverse
+    assert "0/3" in panels[4]
     assert 'select.addEventListener("change",update)' in html
 
 
@@ -187,5 +189,5 @@ def test_monthly_sticky_header_has_one_scroll_container(prepared_run):
     html = _monthly_matrix(prepared_run / "assets" / "gold" / "monthly_performance.csv")
     assert html.count('overflow:auto') == 1
     assert 'overflow-x:auto' not in html
-    assert html.count('position:sticky;top:0;z-index:2;background:#f1f5f9;') == 6
+    assert html.count('position:sticky;top:0;z-index:2;background:#f1f5f9;') == 7
     assert 'border-collapse:separate;border-spacing:0;' in html
