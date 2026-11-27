@@ -12,7 +12,7 @@ REPO = "https://github.com/comus93/backtest-lab"
 ACTIVE = {"gold_trend_research", "multi_asset_weekly_sma"}
 LEGACY = {"psar_segment_duration"}
 DESCRIPTIONS = {
-    "gold_trend_research": "GLD, SPY, Nikkei 225에서 SMA105, 3LB, Heikin Ashi 등 전략을 독립 비교한다.",
+    "gold_trend_research": "GLD, SPY, SLV에서 SMA105, 3LB, Heikin Ashi 등 전략을 독립 비교한다.",
     "multi_asset_weekly_sma": "10개 자산에서 SMA105와 3-Line Break 추세 추종을 비교한다.",
     "psar_segment_duration": "나스닥 PSAR 방향 구간 지속 기간을 이용한 비대칭 추세 추종. 기존 렌더러 보존.",
     "market_momentum": "국가 ETF 상대 모멘텀과 기존 포트폴리오 보완 효과를 검토한다.",

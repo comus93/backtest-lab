@@ -79,3 +79,8 @@ User prioritized native strategy visualization using genuine OHLC, linked raw-pr
 ## Limited multi-asset extension
 
 The user approved SPY and Nikkei225 alongside GLD, independent asset HTML pages, a manually maintained assets.json and shared navigation preserving strategy selection. Display name is Trend Research; internal ID and historical Gold archive remain unchanged. See the current r01 specification for the asset list and maintenance rules.
+
+
+## Universe update (2026-11-28)
+
+The user confirmed the working deployed navigation and requested replacing Nikkei 225 with Silver (SLV/ZSL). Active Trend Research assets: GLD, SPY, SLV. Prior Nikkei results remain in run 20261128-0001. No strategy revision or rule change.

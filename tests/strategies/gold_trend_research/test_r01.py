@@ -60,7 +60,8 @@ def test_expanded_asset_native_report(tmp_path):
     from backtest_lab.strategies.gold_trend_research.r01 import load_assets, run_trend_asset
     from backtest_lab.reporting.gold_trend_research_report import publish_assets
     assets=load_assets()
-    assert [a["id"] for a in assets]==["gold","sp500","nikkei225"]
+    assert [a["id"] for a in assets]==["gold","sp500","silver"]
+    assert (assets[-1]["long"],assets[-1]["inverse"],assets[-1]["currency"],assets[-1]["inverse_multiple"])==("SLV","ZSL","USD",-2)
     dates=pd.bdate_range("2016-01-04",periods=360)
     close=100+10*np.sin(np.arange(len(dates))/13)+np.arange(len(dates))*.03
     for a in assets:
@@ -102,6 +103,7 @@ def test_expanded_asset_native_report(tmp_path):
         assert parser.nav==[(True,a["id"])]
         assert parser.external_scripts==[True]
     assert (site/"index.html").is_file()
+    assert not (site/"assets/nikkei225.html").exists()
 
 def test_ohlc_roundoff_tolerated_without_accepting_bad_prices():
     from backtest_lab.strategies.gold_trend_research.r01 import validate_ohlc

@@ -1,5 +1,5 @@
 [
   {"id":"gold","label":"Gold","long":"GLD","inverse":"GLL","currency":"USD","inverse_multiple":-2,"page":"assets/gold.html"},
   {"id":"sp500","label":"S&P 500","long":"SPY","inverse":"SH","currency":"USD","inverse_multiple":-1,"page":"assets/sp500.html"},
-  {"id":"nikkei225","label":"Nikkei 225","long":"1329.T","inverse":"1571.T","currency":"JPY","inverse_multiple":-1,"page":"assets/nikkei225.html"}
+  {"id":"silver","label":"Silver","long":"SLV","inverse":"ZSL","currency":"USD","inverse_multiple":-2,"page":"assets/silver.html"}
 ]

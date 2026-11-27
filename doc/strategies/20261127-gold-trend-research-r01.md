@@ -7,7 +7,7 @@
 
 ## Objective
 
-Gold was the initial research asset. The approved limited expansion compares the same independent rules on GLD, SPY and Nikkei 225 (1329.T), separately, not as a combined portfolio. The central
+Gold was the initial research asset. The approved limited expansion compares the same independent rules on GLD, SPY and Silver (SLV), separately, not as a combined portfolio. The central
 research challenge is visualizing each strategy in its native chart form
 against the actual asset price, not merely comparing aggregate returns.
 The parent run remains immutable and separately accessible.
@@ -98,7 +98,7 @@ Trend Research. Explicit asset list and navigation source of truth:
 | --- | --- | --- | --- |
 | Gold | GLD | GLL (-2x daily) | USD |
 | S&P 500 | SPY | SH (-1x daily) | USD |
-| Nikkei 225 | 1329.T | 1571.T (-1x daily) | JPY |
+| Silver | SLV | ZSL (-2x daily) | USD |
 
 The same eight rules, evaluation dates, warm-up and execution semantics apply
 independently in local currency. Expanded mode uses the original Gold input
@@ -113,7 +113,7 @@ with its corresponding parent 0008 controls.
 
 The existing research/gold_trend_research/ URL is the lightweight entry page.
 Independent Bokeh HTML pages are assets/gold.html, assets/sp500.html and
-assets/nikkei225.html. Common navigation.js reads the shared assets.json
+assets/silver.html. Common navigation.js reads the shared assets.json
 at runtime and preserves the selected strategy via a URL query parameter
 when available in the destination. A missing page is shown as pending.
 The manifest is **manually maintained**, copied verbatim during publication,
@@ -126,3 +126,7 @@ the current Pages build regenerates report pages from the selected archived Run.
 ### Adjusted OHLC precision validation
 
 Yahoo adjusted OHLC may differ by floating-point roundoff at equal candle endpoints. Validate positive finite prices and reject geometry violations larger than eight float64 machine epsilons (relative). Canonicalize only roundoff-level High/Low endpoints to enclose the original Open/Close; do not change Open or Close. This is not a strategy revision.
+
+### Universe change (2026-11-28)
+
+User approved replacing Nikkei 225 with Silver (SLV/ZSL). The active universe is GLD, SPY and SLV. Strategy rules, revision r01 and evaluation window remain unchanged. The prior expanded run 20261128-0001, including Nikkei 225, remains immutable. The new run uses the existing expanded-mode data-loading policy; Silver and SPY are downloaded as adjusted OHLC and Gold uses the original archived input.
