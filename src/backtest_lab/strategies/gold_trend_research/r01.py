@@ -27,9 +27,18 @@ def validate_ohlc(frame):
         raise ValueError("Gold requires unique daily OHLC dates")
     if not np.isfinite(raw.to_numpy()).all() or (raw <= 0).any().any():
         raise ValueError("Gold OHLC must be finite and positive")
-    if ((raw.High < raw[["Open", "Close", "Low"]].max(axis=1)) |
-        (raw.Low > raw[["Open", "Close", "High"]].min(axis=1))).any():
+    # Adjusted OHLC can differ by a few floating-point ULPs when a
+    # close equals the session high or low. Reject meaningful violations,
+    # then canonicalize only roundoff-level wick endpoints.
+    high_bound = raw[["Open", "Close", "Low"]].max(axis=1)
+    low_bound = raw[["Open", "Close", "High"]].min(axis=1)
+    tolerance = 8 * np.finfo(float).eps
+    bad_high = (raw.High < high_bound) & ~np.isclose(raw.High, high_bound, rtol=tolerance, atol=0)
+    bad_low = (raw.Low > low_bound) & ~np.isclose(raw.Low, low_bound, rtol=tolerance, atol=0)
+    if (bad_high | bad_low).any():
         raise ValueError("Invalid OHLC geometry")
+    raw["High"] = np.maximum(raw.High, high_bound)
+    raw["Low"] = np.minimum(raw.Low, low_bound)
     return raw
 
 

@@ -82,3 +82,18 @@ def test_expanded_asset_native_report(tmp_path):
         assert "navigation.js" in html and a["long"] in html
         assert "Trend Research r01" in html
     assert (site/"index.html").is_file()
+
+def test_ohlc_roundoff_tolerated_without_accepting_bad_prices():
+    from backtest_lab.strategies.gold_trend_research.r01 import validate_ohlc
+    dates=pd.date_range("2024-01-01",periods=2)
+    raw=pd.DataFrame({"Open":[100.,200.],"High":[np.nextafter(100.,0),201.],
+        "Low":[99.,np.nextafter(200.,np.inf)],"Close":[100.,200.]},index=dates)
+    cleaned=validate_ohlc(raw)
+    assert cleaned.High.iloc[0]==100.
+    assert cleaned.Low.iloc[1]==200.
+    pd.testing.assert_series_equal(cleaned.Close,raw.Close)
+    for col,row,value in [("High",0,99.9),("Low",1,200.1)]:
+        bad=raw.copy()
+        bad.iloc[row,bad.columns.get_loc(col)]=value
+        with pytest.raises(ValueError,match="Invalid OHLC geometry"):
+            validate_ohlc(bad)

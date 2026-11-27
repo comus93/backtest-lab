@@ -122,3 +122,7 @@ assets.json after agreement, running the approved experiment and publishing
 its page. Do not generalize this navigation to other research series yet.
 Existing HTML pages do not need changes merely to display a new manifest entry;
 the current Pages build regenerates report pages from the selected archived Run.
+
+### Adjusted OHLC precision validation
+
+Yahoo adjusted OHLC may differ by floating-point roundoff at equal candle endpoints. Validate positive finite prices and reject geometry violations larger than eight float64 machine epsilons (relative). Canonicalize only roundoff-level High/Low endpoints to enclose the original Open/Close; do not change Open or Close. This is not a strategy revision.
