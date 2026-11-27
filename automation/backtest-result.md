@@ -1,14 +1,14 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20261128T002202+0900
+request_id: 20261128T004905+0900
 strategy_id: gold_trend_research
 revision: r01
 mode: expanded
-run_id: 20261128-0001
+run_id: 20261128-0002
 
 output_directory:
-`runs/gold_trend_research/r01/20261128-0001/`
+`runs/gold_trend_research/r01/20261128-0002/`
 
 default_outputs:
 - `input_prices.csv`
@@ -24,18 +24,18 @@ default_outputs:
 - `assets/gold/performance_summary.csv`
 - `assets/gold/sma_signals.csv`
 - `assets/gold/yearly_performance.csv`
-- `assets/nikkei225/daily_signals.csv`
-- `assets/nikkei225/equity_curves.csv`
-- `assets/nikkei225/ffn_stats.csv`
-- `assets/nikkei225/fills.csv`
-- `assets/nikkei225/heikin_ashi_signals.csv`
-- `assets/nikkei225/input_prices.csv`
-- `assets/nikkei225/line_break_signals.csv`
-- `assets/nikkei225/monthly_performance.csv`
-- `assets/nikkei225/parent_control_comparison.csv`
-- `assets/nikkei225/performance_summary.csv`
-- `assets/nikkei225/sma_signals.csv`
-- `assets/nikkei225/yearly_performance.csv`
+- `assets/silver/daily_signals.csv`
+- `assets/silver/equity_curves.csv`
+- `assets/silver/ffn_stats.csv`
+- `assets/silver/fills.csv`
+- `assets/silver/heikin_ashi_signals.csv`
+- `assets/silver/input_prices.csv`
+- `assets/silver/line_break_signals.csv`
+- `assets/silver/monthly_performance.csv`
+- `assets/silver/parent_control_comparison.csv`
+- `assets/silver/performance_summary.csv`
+- `assets/silver/sma_signals.csv`
+- `assets/silver/yearly_performance.csv`
 - `assets/sp500/daily_signals.csv`
 - `assets/sp500/equity_curves.csv`
 - `assets/sp500/ffn_stats.csv`
