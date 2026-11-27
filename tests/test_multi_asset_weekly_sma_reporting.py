@@ -49,6 +49,7 @@ def test_detail_bokeh_and_existing_metrics(prepared_run, tmp_path):
     assert "Buy &amp; Hold" in html or "Buy & Hold" in html
     assert "../index.html" in html
     assert "bokeh" in html.lower()
+    assert "21주 SMA" in html
     # Read-only reporting must not touch archived source CSVs.
     assert (prepared_run / "assets" / "gold" / "ffn_stats.csv").is_file()
 
@@ -106,3 +107,21 @@ def test_legacy_archive_without_monthly_file_is_still_renderable(prepared_run, t
     detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
     assert "Calendar-year return" in detail
     assert "Year-Month Return" not in detail
+
+
+def test_new_105_day_report_is_labeled_correctly(prepared_run, tmp_path):
+    pd.DataFrame({
+        "asset_id": ["gold", "silver", "copper"],
+        "display_name": ["금", "은", "구리"],
+        "study_basis": ["reference"] * 3,
+        "sma_days": [105] * 3,
+        "long_etf": ["GLD", "SLV", "CPER"],
+        "inverse_etf": ["GLL", "", ""],
+        "currency": ["USD"] * 3,
+    }).to_csv(prepared_run / "instrument_coverage.csv", index=False)
+    summary = render_summary(prepared_run, tmp_path / "latest.html").read_text(encoding="utf-8")
+    detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
+    assert "105일 SMA" in summary
+    assert "105일 SMA" in detail
+    assert "21주 SMA" not in summary
+    assert "21주 SMA" not in detail

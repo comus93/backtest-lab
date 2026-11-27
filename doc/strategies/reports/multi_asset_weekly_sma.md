@@ -74,3 +74,13 @@ The user set strategy order to Long/Cash, Long/Inverse, Buy & Hold
 by a monthly matrix with YYYY-MM rows and the three strategy columns.
 The matrix uses the persisted monthly_performance.csv and does not alter
 the existing FFN statistics or 18-asset overview table.
+
+
+## Research assumption updated: 105-day SMA with daily monitoring
+
+The user selected daily signal evaluation (Option B): 105 completed
+trading-day SMA, daily confirmed closing price and next-eligible-trading-
+session Close execution approximation. The former 21 completed-week
+signal refreshed only once a week and did not match intended daily
+monitoring. Prior 21-week runs remain immutable and are not comparable
+as if their signal rules were identical.

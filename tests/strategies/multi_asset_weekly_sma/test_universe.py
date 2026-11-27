@@ -89,6 +89,8 @@ def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
     outputs = run_pilot(prices, start="2016-01-01", end="2018-01-01",
                         config=RuntimeConfig(fee_rate=0.00015), reference_only=True)
     gold = next(x for x in outputs.assets if x.asset_id == "gold")
+    assert gold.signals["sma105"].notna().any()
+    assert "sma21" not in gold.signals.columns
     assert set(gold.fills.symbol) <= {"GLD", "GLL"}
     assert "Long/Inverse" in gold.performance_summary.strategy.values
     p = prices.loc[prices.index >= pd.Timestamp("2016-01-01"), "gold__long"].dropna()

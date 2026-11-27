@@ -255,3 +255,10 @@ existing Pages publisher; previous run directories remain immutable.
 The SMA study additionally produces monthly_performance.csv at run-root
 and per-asset locations, with complete strategy calendar-month returns.
 This is computed in the backtest and not by the Pages renderer.
+
+
+Current SMA105 reference-mode research compares every daily confirmed
+Close with 105 daily trading closes, and trades no earlier than next
+session Close. New runs save daily_signals.csv, not weekly_signals.csv.
+instrument_coverage.csv records SMA length, signal frequency and execution
+assumptions. Older archived weekly result files remain unchanged.

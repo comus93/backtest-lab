@@ -8,7 +8,7 @@ import pytest
 from backtest_lab.core import RuntimeConfig
 from backtest_lab.strategies.multi_asset_weekly_sma.r01 import (
     AssetInput, SMARegimeStrategy, START, SUMMARY_COLUMNS, run_asset,
-    weekly_sma_signals, write_asset_results,
+    daily_sma_signals, write_asset_results,
 )
 
 
@@ -20,19 +20,52 @@ def sample(days=450):
     return idx, reference, domestic, inverse
 
 
-def test_21_completed_weeks_before_first_signal():
+def test_105_completed_daily_closes_before_first_signal():
     _, ref, _, _ = sample()
-    signals = weekly_sma_signals(ref)
-    assert len(signals) > 21
-    assert (signals["direction"].iloc[:20] == 0).all()
-    assert signals["sma21"].iloc[:20].isna().all()
-    assert signals["sma21"].iloc[20:].notna().all()
-    assert (signals["direction"].iloc[20:] == 1).all()
+    signals = daily_sma_signals(ref)
+    assert len(signals) == len(ref)
+    assert (signals["direction"].iloc[:104] == 0).all()
+    assert signals["sma105"].iloc[:104].isna().all()
+    assert signals["sma105"].iloc[104:].notna().all()
+    assert (signals["direction"].iloc[104:] == 1).all()
+    assert signals["sma105"].iloc[104] == pytest.approx(ref.iloc[:105].mean())
+    assert signals["sma105"].iloc[105] == pytest.approx(ref.iloc[1:106].mean())
+
+
+def test_intrawweek_cross_detected_daily_and_filled_next_session():
+    from backtest_lab.core import Runtime
+    dates = pd.bdate_range("2020-01-02", periods=115)
+    values = np.full(115, 100.0)
+    values[105:108] = [110.0, 90.0, 115.0]
+    reference = pd.Series(values, index=dates)
+    signals = daily_sma_signals(reference)
+    assert signals["direction"].iloc[105:108].tolist() == [1, -1, 1]
+    strategy = SMARegimeStrategy(signals, "GLD")
+    actual = Runtime(strategy, 10000, RuntimeConfig()).run(
+        reference.rename("GLD").to_frame()
+    )
+    # Three consecutive daily crosses (including midweek) cause three fills.
+    early = actual.fills
+    assert [(x.timestamp, x.side) for x in early[:3]] == [
+        (dates[106], "buy"), (dates[107], "sell"), (dates[108], "buy")
+    ]
+    assert all(x["signal_date"] < x["execution_date"] for x in strategy.decisions)
+
+
+def test_sma_uses_trade_count_not_calendar_days():
+    dates = pd.bdate_range("2020-01-01", periods=130)
+    dates = dates.delete([25, 26, 44, 67])  # holidays without synthetic prices
+    prices = pd.Series(np.arange(100, 100 + len(dates)), index=dates, dtype=float)
+    signals = daily_sma_signals(prices)
+    assert signals["sma105"].first_valid_index() == dates[104]
+    assert signals["sma105"].iloc[104] == pytest.approx(prices.iloc[:105].mean())
+    with pytest.raises(ValueError, match="days must"):
+        daily_sma_signals(prices, days=1)
 
 
 def test_no_execution_day_lookahead():
     _, ref, domestic, _ = sample()
-    signal = weekly_sma_signals(ref)
+    signal = daily_sma_signals(ref)
     dates = domestic.index
     strategy = SMARegimeStrategy(signal, "KR_LONG")
     # Run via the actual Runtime, whose context contains current + historical ETF prices.
@@ -41,7 +74,7 @@ def test_no_execution_day_lookahead():
     assert result.fills
     for decision in strategy.decisions:
         assert decision["signal_date"] < decision["execution_date"]
-    # Changing a Monday domestic execution price cannot change Friday signal.
+    # Changing the execution price does not alter the separate prior-day reference signal.
     edited = domestic.copy()
     mondays = dates[dates.weekday == 0]
     edited.loc[mondays] *= 1.2

@@ -67,3 +67,12 @@ values without recalculation. One summary HTML links to separate detail HTMLs.
 The current data snapshot contains daily Close only: the adapter uses
 Bokeh equity lines instead of inventing OHLC price candles or misplacing
 foreign reference instrument prices on a KRW domestic ETF axis.
+
+
+## Multi-asset daily SMA105 report update (2026-11-27)
+
+New reference-first reports identify 105 trading-day SMA, daily signal
+monitoring and next-session Close execution estimate. Legacy archives
+without the sma_days metadata remain identifiable as historic 21-week
+reports. Existing FFN metric definitions, year/month report matrix and
+PSAR Golden Master remain unchanged.

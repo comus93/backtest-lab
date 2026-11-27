@@ -180,3 +180,35 @@ to two decimals. 2016-11 and 2026-11 are partial months, not annualized.
 Missing inverse is displayed as a dash. Archived historical runs are not
 modified. The multi-asset overview remains focused on the existing one-row
 per asset summary and its separate annual table.
+
+
+## 12. Superseding signal resolution: daily 105-SMA (2026-11-27)
+
+The user confirmed Option B after examining the 2017-03 GLD weekly
+whipsaw: retain the roughly 21-week trend horizon but monitor daily.
+For the next reference-first research run, 21 weeks x five sessions/week
+is implemented as SMA over 105 actual daily trading closes, not a
+weekly 21-close SMA, not a 105-calendar-day average. Weekly and daily
+averages are not identical statistics; the studies must be separated.
+
+- At close of reference market trading session t, evaluate daily Close[t]
+  versus mean of Close[t-104..t], including t (105 closes).
+- If close > SMA105: bullish; close < SMA105: bearish;
+  equality/missing/warm-up: neutral cash.
+- New signals are evaluated every trading day, not weekly.
+- Earliest execution is on the next eligible trading session after t,
+  priced at its Close under the Close-only historical input approximation;
+  never assume closing price of t can be traded using its completed signal.
+- Holidays are not filled. The first valid SMA requires 105 observed closes;
+  pre-active history is warm-up only.
+- Reference-first uses overseas ETF/index price series and actual
+  inverse ETF prices, retaining documented Japan/KOSPI exceptions.
+- Archive daily_signals.csv at root and in each asset folder, including
+  sma105, signal_date and later execution_date. Coverage documents resolution.
+- Keep existing FFN metrics, independent outputs, benchmark-last strategy
+  ordering, annual and monthly tables.
+- Archives 20261127-0001 through 0003 remain immutable prior weekly
+  signal experiments. New reports show SMA105 without overwriting old runs.
+- To reproduce in TradingView: 1D chart, SMA length 105, match provider
+  adjusted-close versus unadjusted-close settings. The next-session Close
+  execution estimate differs from TradingView next-session Open execution.

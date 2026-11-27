@@ -1,7 +1,9 @@
-"""Independent 21-completed-week SMA tests. No shared-portfolio allocation.
+"""Independent daily 105-trading-day SMA tests. No multi-asset allocation.
 
-Signals use the reference instrument; fills use the Korea-listed ETF price.
-All positions are long ETF positions (including inverse ETF), never naked shorts.
+Daily close signals use the reference instrument; fills use the separate
+execution instrument next session. Reference-first mode trades reference ETFs
+(or the documented price-index proxy); inverse positions hold actual inverse
+ETFs, never a mathematically assumed short.
 """
 from __future__ import annotations
 
@@ -16,8 +18,8 @@ from backtest_lab.core import BacktestResult, Order, Runtime, RuntimeConfig, Str
 STRATEGY_ID = "multi_asset_weekly_sma"
 REVISION = "r01"
 START = "2016-11-21"
-END = "2026-11-21"  # exclusive; last fully completed week is 2026-11-20
-SMA_WEEKS = 21
+END = "2026-11-21"  # exclusive; last fully completed trading day is 2026-11-20
+SMA_DAYS = 105
 INITIAL_CASH = 1_000_000.0
 STRATEGY_ORDER = ("Long/Cash", "Long/Inverse", "Buy & Hold")
 SUMMARY_COLUMNS = (
@@ -26,26 +28,26 @@ SUMMARY_COLUMNS = (
 )
 
 
-def weekly_sma_signals(reference_close: pd.Series, weeks: int = SMA_WEEKS) -> pd.DataFrame:
-    """Last observed close in each week; only completed bars are usable.
+def daily_sma_signals(reference_close: pd.Series, days: int = SMA_DAYS) -> pd.DataFrame:
+    """Daily close / moving average over 105 actual completed trading closes.
 
-    No synthetic holiday prices. The caller's cutoff must exclude the
-    unfinished current week; execution always requires date > signal_date.
+    The last 105 *available trading closes* are used, including signal day t.
+    Holidays are not filled. All signals are evaluated only AFTER closing;
+    any resulting order is executed on the next eligible session's Close.
     """
-    if weeks < 2:
-        raise ValueError("weeks must be >= 2")
+    if days < 2:
+        raise ValueError("days must be >= 2")
     s = reference_close.dropna().sort_index().astype(float)
     if not isinstance(s.index, pd.DatetimeIndex) or s.index.has_duplicates:
         raise ValueError("reference_close requires unique DatetimeIndex")
     if (s <= 0).any():
         raise ValueError("reference close must be positive")
-    weekly = s.groupby(s.index.to_period("W-FRI")).tail(1)
-    sma = weekly.rolling(weeks, min_periods=weeks).mean()
-    result = pd.DataFrame({"reference_close": weekly, "sma21": sma})
+    sma = s.rolling(days, min_periods=days).mean()
+    result = pd.DataFrame({"reference_close": s, "sma105": sma})
     result.index.name = "signal_date"
     result["direction"] = pd.Series(0, index=result.index, dtype=int)
-    result.loc[weekly > sma, "direction"] = 1
-    result.loc[weekly < sma, "direction"] = -1
+    result.loc[s > sma, "direction"] = 1
+    result.loc[s < sma, "direction"] = -1
     result["direction"] = result["direction"].where(sma.notna(), 0)
     return result
 
@@ -70,12 +72,13 @@ class SMARegimeStrategy:
     _last_signal_date: pd.Timestamp | None = None
 
     def on_step(self, context: StrategyContext) -> list[Order]:
-        # Strictly earlier than the domestic execution day. For US Friday
-        # closes, a Korean Monday execution is safely after US Friday close.
-        eligible = self.signals.index[self.signals.index < context.timestamp]
-        if len(eligible) == 0:
+        # Prior session's COMPLETED close only: never inspect today's close
+        # or SMA to decide today's fill. searchsorted also keeps daily
+        # per-asset execution O(N log N), not O(N^2).
+        latest = self.signals.index.searchsorted(context.timestamp, side="left") - 1
+        if latest < 0:
             return []
-        signal_date = pd.Timestamp(eligible[-1])
+        signal_date = pd.Timestamp(self.signals.index[latest])
         if self._last_signal_date == signal_date:
             return []
         self._last_signal_date = signal_date
@@ -88,7 +91,7 @@ class SMARegimeStrategy:
         self.decisions.append({
             "signal_date": signal_date, "execution_date": context.timestamp,
             "reference_close": float(state["reference_close"]),
-            "sma21": float(state["sma21"]) if pd.notna(state["sma21"]) else float("nan"),
+            "sma105": float(state["sma105"]) if pd.notna(state["sma105"]) else float("nan"),
             "direction": direction, "held_etf": held or "CASH",
             "changed_position": bool(orders),
         })
@@ -150,24 +153,23 @@ def run_asset(
     start: str = START,
     end: str = END,
     config: RuntimeConfig | None = None,
-    weeks: int = SMA_WEEKS,
+    days: int = SMA_DAYS,
 ) -> AssetBacktest:
     if not item.asset_id or not item.long_symbol:
         raise ValueError("asset_id and long_symbol are required")
     config = config or RuntimeConfig(fee_rate=0.00015)
     reference = _clean_prices(item.reference_close, "reference")
     reference = reference.loc[reference.index < pd.Timestamp(end)]
-    signals = weekly_sma_signals(reference, weeks)
+    signals = daily_sma_signals(reference, days)
     # Limit to execution instrument trading dates. Missing dates are never ffilled.
     long = _clean_prices(item.long_close, item.long_symbol)
     long = long.loc[(long.index >= pd.Timestamp(start)) & (long.index < pd.Timestamp(end))]
     if len(long) < 25:
         raise ValueError(f"{item.asset_id}: insufficient domestic ETF observations")
-    # Late-inception domestic products may not have a 21-week pre-inception
-    # reference (e.g. the domestic fund itself as documented fallback).
-    # Hold cash until the first eligible completed 21-week SMA signal.
-    if not ((signals["sma21"].notna()) & (signals.index < long.index[-1])).any():
-        raise ValueError(f"{item.asset_id}: fewer than 21 reference weeks before last execution")
+    # If history before ETF inception is unavailable, remain cash until
+    # 105 actual reference trading closes exist. No synthetic warm-up.
+    if not ((signals["sma105"].notna()) & (signals.index < long.index[-1])).any():
+        raise ValueError(f"{item.asset_id}: fewer than 105 reference trading days before last execution")
 
     prices = long.to_frame()
     mode = SMARegimeStrategy(signals, item.long_symbol)
@@ -272,7 +274,7 @@ def write_asset_results(results: list[AssetBacktest], root: str | Path) -> dict[
             "performance_summary.csv": result.performance_summary,
             "ffn_stats.csv": result.ffn_stats.reset_index(names="metric"),
             "equity_curves.csv": result.curves.reset_index(names="timestamp"),
-            "weekly_signals.csv": result.signals,
+            "daily_signals.csv": result.signals,
             "fills.csv": result.fills,
             "yearly_performance.csv": result.yearly_performance,
             "monthly_performance.csv": result.monthly_performance,
@@ -329,7 +331,7 @@ class MultiAssetOutputs:
         tables = {
             "ffn_stats.csv": combined_stats.reset_index(names="metric"),
             "equity_curves.csv": combined_curves.reset_index(names="timestamp"),
-            "weekly_signals.csv": pd.concat(signal_frames, ignore_index=True)
+            "daily_signals.csv": pd.concat(signal_frames, ignore_index=True)
             if signal_frames else pd.DataFrame(),
             "fills.csv": pd.concat([r.fills for r in self.assets], ignore_index=True),
             "instrument_coverage.csv": self.coverage,
@@ -378,6 +380,10 @@ def run_pilot(
             "inverse_etf": spec.inverse_etf or "",
             "proxy_note": spec.proxy_note,
             "study_basis": "reference" if reference_only else "domestic",
+            "signal_frequency": "daily",
+            "sma_days": SMA_DAYS,
+            "signal_evaluation": "confirmed daily close vs SMA105 inclusive",
+            "fill_assumption": "following trading session Close; fee/slippage from Runtime",
             **(reference_metadata(item.asset_id) if reference_only else {}),
             "reference_start": item.reference_close.index.min().date(),
             "reference_end": item.reference_close.index.max().date(),

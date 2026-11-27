@@ -56,6 +56,16 @@ def _basis_note(coverage: pd.DataFrame) -> str:
     return "이전 연구: 국내 상장 ETF 가격 기반 성과 (2차 검증)."
 
 
+def _signal_label(coverage: pd.DataFrame) -> str:
+    # Legacy archives without daily-resolution metadata remain truthful
+    # when explicitly rendered, rather than being relabeled as a new study.
+    if "sma_days" in coverage.columns and not coverage.empty:
+        valid = coverage["sma_days"].dropna().astype(str)
+        if len(valid) and set(valid) == {"105"}:
+            return "105일 SMA"
+    return "21주 SMA"
+
+
 def _instrument_note(row: pd.Series) -> str:
     if row.empty:
         return ""
@@ -138,6 +148,7 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
     if set(summary["strategy"]) != set(manifest["display_name"]):
         raise ValueError("Summary and manifest asset labels differ")
     coverage = _coverage(run)
+    signal_label = _signal_label(coverage)
     html_table = tabular_html(summary, percent_cols=PERCENT_COLUMNS)
     for row in manifest.itertuples(index=False):
         asset_id = str(row.asset_id)
@@ -157,8 +168,8 @@ def render_summary(run: str | Path, output: str | Path) -> Path:
             raise ValueError(f"Expected one summary row for {label}")
         html_table = html_table.replace(old, new, 1)
     return _write_html(
-        Path(output), "21주 SMA | 자산별 성과",
-        f'<h1>21주 SMA 추세추종 · 자산별 비교</h1>'
+        Path(output), "105일 SMA | 자산별 성과",
+        f'<h1>105일 SMA 추세추종 · 자산별 비교</h1>'
         '<p>각 자산의 장기 성과를 한 표에서 비교해. 자산명을 선택하면 상세 리포트로 이동해.</p>'
         + f'<p class="note">{escape(_basis_note(coverage))}</p>'
         + '<p class="note">성과 컬럼과 FFN 계산은 기존 BTLab 정의를 그대로 사용해. '
@@ -188,6 +199,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
         raise ValueError(f"Unknown asset_id {asset_id}")
     name = str(selected.iloc[0]["display_name"])
     coverage = _coverage(run)
+    signal_label = _signal_label(coverage)
     matches = coverage.loc[coverage["asset_id"] == asset_id] if not coverage.empty else pd.DataFrame()
     instrument_note = _instrument_note(matches.iloc[0]) if len(matches) == 1 else ""
     folder = run / "assets" / asset_id
@@ -209,7 +221,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
     header = Div(text=(
         '<div style="font-family:system-ui;color:#172033">'
         '<p><a href="../index.html">전체 자산 성과표로 돌아가기</a></p>'
-        f'<h1 style="font-size:24px">{title}: 21주 SMA 추세추종</h1>'
+        f'<h1 style="font-size:24px">{title}: 105일 SMA 추세추종</h1>'
         + f'<p>{escape(_basis_note(coverage))}</p>'
         + f'<p>{escape(instrument_note)}</p>'
         + '<p>FFN 원본 성과값과 누적 performance index를 그대로 표시해.</p>'
@@ -243,7 +255,7 @@ def render_detail(run: str | Path, asset_id: str, output: str | Path) -> Path:
         + '</div>'
     ), sizing_mode="stretch_width")
     html = file_html(column(header, fig, footer, sizing_mode="stretch_width"),
-                     INLINE, title=f"{name} | 21주 SMA")
+                     INLINE, title=f"{name} | {signal_label}")
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(html, encoding="utf-8")
