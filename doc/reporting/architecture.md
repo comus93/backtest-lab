@@ -60,3 +60,6 @@ The selectable builder enables Bokeh native windowed Y auto-ranging on
 each figure and explicitly selects data renderers for its range. It uses
 native horizontal and vertical navigation tools; no extra client-side
 range engine or dependency is needed.
+
+
+The independent gold_trend_research_report composes selectable_charts with an additional native signal plot and reorders the raw price first. It reads archived OHLC/indicator traces and uses the shared trade adapter; chart switching is standalone BokehJS. No changes to the parent renderer or Runtime.

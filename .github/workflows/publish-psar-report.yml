@@ -14,6 +14,9 @@ on:
       - 'src/backtest_lab/reporting/multi_asset_weekly_sma_report.py'
       - 'src/backtest_lab/reporting/adapters/multi_asset_weekly_sma.py'
       - 'runs/multi_asset_weekly_sma/**'
+      - 'runs/gold_trend_research/**'
+      - 'src/backtest_lab/strategies/gold_trend_research/**'
+      - 'tests/strategies/gold_trend_research/**'
       - 'tests/test_multi_asset_weekly_sma_reporting.py'
       - 'tests/test_selectable_trade_charts.py'
       - '.github/workflows/publish-psar-report.yml'
@@ -48,6 +51,9 @@ jobs:
       - name: Validate SMA report integration
         run: python -m pytest -q tests/strategies/multi_asset_weekly_sma tests/test_multi_asset_weekly_sma_reporting.py tests/test_selectable_trade_charts.py
 
+      - name: Validate gold-only research
+        run: python -m pytest -q tests/strategies/gold_trend_research
+
       - name: Build standalone static HTML
         run: |
           python -m backtest_lab.reporting.psar_report \
@@ -77,6 +83,17 @@ jobs:
             --run runs/multi_asset_weekly_sma/r01/20261127-0008 \
             --output _site/research/archive/multi_asset_weekly_sma/r01/20261127-0008
           test -s _site/research/archive/multi_asset_weekly_sma/r01/20261127-0008/index.html
+
+      - name: Build independent gold research report
+        shell: bash
+        run: |
+          if test -d runs/gold_trend_research/r01; then
+            latest=$(find runs/gold_trend_research/r01 -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)
+            if test -n "$latest" && test -f "$latest/performance_summary.csv"; then
+              python -m backtest_lab.reporting.gold_trend_research_report --run "$latest" --output _site/research/gold_trend_research/index.html
+              test -s _site/research/gold_trend_research/index.html
+            fi
+          fi
 
       - name: Upload HTML preview artifact
         uses: actions/upload-artifact@v4

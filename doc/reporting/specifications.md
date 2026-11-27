@@ -166,3 +166,8 @@ default span. Horizontal pan, wheel and box zoom retain the shared X
 range; vertical pan/wheel zoom are optional per-panel toolbar tools.
 Native Reset restores auto-ranging and resets the selected time window.
 This is presentation only; PSAR renderer and archived runs are unchanged.
+
+
+## Gold native strategy visualization
+
+Gold report composes the shared selectable renderer with a native signal panel. Raw GLD Close is default, real OHLC optional. SMA price/average, calendar-aligned formed 3LB blocks and archived HA candles switch with the selected strategy. All five panels share calendar X and independent viewport Y ranges. Execution prices remain actual instrument prices; synthetic signal chart marker coordinates are only projections. PSAR and existing multi-asset views are unchanged.

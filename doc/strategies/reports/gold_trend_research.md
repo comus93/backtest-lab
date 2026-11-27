@@ -69,3 +69,8 @@ Proposed independent source/output paths after r01 is agreed:
 
 The next research decision is which additional strategies and position
 rules enter r01. No new run or performance claim is made here.
+
+
+## r01 visualization experiment (2026-11-27)
+
+User prioritized native strategy visualization using genuine OHLC, linked raw-price and strategy panels, visible actual execution/holding intervals, plus existing performance and P/L. Heikin Ashi is the first new indicator. See [r01 specification](../20261127-gold-trend-research-r01.md). Initial HA direction and position variants are implementation choices, not an optimized strategy or a confirmed finding.

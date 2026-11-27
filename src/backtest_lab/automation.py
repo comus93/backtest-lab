@@ -42,6 +42,8 @@ from backtest_lab.strategies.multi_asset_weekly_sma.r01 import (
     START as SMA_START, END as SMA_END, run_pilot as run_multi_asset_weekly_sma,
 )
 
+from backtest_lab.strategies.gold_trend_research.r01 import load_gold_prices, run_gold
+
 REQUEST_ID_RE = re.compile(r"^(?P<date>\d{8})T\d{6}(?:[+-]\d{4}|Z)?$")
 RUN_ID_RE_TEMPLATE = r"^{date}-(\d{{4}})$"
 
@@ -168,7 +170,28 @@ def _sma_reference(prices: pd.DataFrame, active_start: pd.Timestamp, config: Run
                                       reference_only=True)
 
 
+def _gold_reference(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    result = run_gold(prices, start=SMA_START, end=SMA_END, config=config)
+    parent = pd.read_csv("runs/multi_asset_weekly_sma/r01/20261127-0008/assets/gold/performance_summary.csv")
+    current = result.tables["performance_summary.csv"]
+    metrics = ["total_return", "cagr", "sharpe", "max_drawdown"]
+    audit = parent[["strategy", *metrics]].merge(current[["strategy", *metrics]],
+        on="strategy", validate="one_to_one", suffixes=("_parent", "_current"))
+    if len(audit) != len(parent):
+        raise ValueError("Missing inherited gold comparator")
+    for metric in metrics:
+        audit[metric + "_difference"] = audit[metric + "_current"] - audit[metric + "_parent"]
+    result.tables["parent_control_comparison.csv"] = audit
+    return result
+
+
+GOLD_OUTPUT_FILES = ("input_prices.csv", "performance_summary.csv", "ffn_stats.csv",
+    "equity_curves.csv", "daily_signals.csv", "fills.csv", "yearly_performance.csv",
+    "monthly_performance.csv", "line_break_signals.csv", "sma_signals.csv", "heikin_ashi_signals.csv",
+    "parent_control_comparison.csv")
+
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
+    ("gold_trend_research", "r01", "reference"): _gold_reference,
     ("multi_asset_weekly_sma", "r01", "reference"): _sma_reference,
     ("multi_asset_weekly_sma", "r01", "baseline"): _sma_baseline,
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
@@ -181,6 +204,7 @@ ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
 }
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
+    ("gold_trend_research", "r01", "reference"): GOLD_OUTPUT_FILES,
     ("multi_asset_weekly_sma", "r01", "reference"): SMA_OUTPUT_FILES,
     ("multi_asset_weekly_sma", "r01", "baseline"): SMA_OUTPUT_FILES,
     ("tripod_nasdaq_leverage", "r01", "baseline"): TRIPOD_OUTPUT_FILES,
@@ -225,9 +249,9 @@ def load_request(path: str | Path) -> BacktestRequest:
                 "us_market_cap_leaders/r01 fixed price coverage is "
                 f"start={MARKET_CAP_LEADERS_PRICE_START}, end={MARKET_CAP_LEADERS_END_EXCLUSIVE}."
             )
-    if key[:2] == ("multi_asset_weekly_sma", "r01"):
+    if key[:2] in (("multi_asset_weekly_sma", "r01"), ("gold_trend_research", "r01")):
         if request.start != SMA_START or request.end != SMA_END:
-            raise ValueError(f"multi_asset_weekly_sma/r01 fixed dates: {SMA_START} to {SMA_END} (exclusive)")
+            raise ValueError(f"{request.strategy_id}/r01 fixed dates: {SMA_START} to {SMA_END} (exclusive)")
     return request
 
 
@@ -247,6 +271,8 @@ def next_run_id(runs_root: str | Path, request: BacktestRequest) -> str:
 
 
 def _load_prices(request: BacktestRequest) -> pd.DataFrame:
+    if request.strategy_id == "gold_trend_research" and request.revision == "r01":
+        return load_gold_prices(start="2016-01-01", end=SMA_END)
     if request.strategy_id == "multi_asset_weekly_sma" and request.revision == "r01":
         return load_price_snapshot(start="2016-01-01", end=SMA_END, reference_only=request.mode == "reference")
     if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
@@ -287,6 +313,8 @@ def _load_prices(request: BacktestRequest) -> pd.DataFrame:
 
 
 def _active_start(request: BacktestRequest, prices: pd.DataFrame) -> pd.Timestamp:
+    if request.strategy_id == "gold_trend_research" and request.revision == "r01":
+        return pd.Timestamp(SMA_START)
     if request.strategy_id == "multi_asset_weekly_sma" and request.revision == "r01":
         return pd.Timestamp(SMA_START)
     if request.strategy_id == "psar_segment_duration" and request.revision == "r01":
