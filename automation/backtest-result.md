@@ -1,28 +1,53 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20261127T182615+0900
+request_id: 20261128T002202+0900
 strategy_id: gold_trend_research
 revision: r01
-mode: reference
-run_id: 20261127-0001
+mode: expanded
+run_id: 20261128-0001
 
 output_directory:
-`runs/gold_trend_research/r01/20261127-0001/`
+`runs/gold_trend_research/r01/20261128-0001/`
 
 default_outputs:
 - `input_prices.csv`
-- `daily_signals.csv`
-- `equity_curves.csv`
-- `ffn_stats.csv`
-- `fills.csv`
-- `heikin_ashi_signals.csv`
-- `line_break_signals.csv`
-- `monthly_performance.csv`
-- `parent_control_comparison.csv`
-- `performance_summary.csv`
-- `sma_signals.csv`
-- `yearly_performance.csv`
+- `assets/gold/daily_signals.csv`
+- `assets/gold/equity_curves.csv`
+- `assets/gold/ffn_stats.csv`
+- `assets/gold/fills.csv`
+- `assets/gold/heikin_ashi_signals.csv`
+- `assets/gold/input_prices.csv`
+- `assets/gold/line_break_signals.csv`
+- `assets/gold/monthly_performance.csv`
+- `assets/gold/parent_control_comparison.csv`
+- `assets/gold/performance_summary.csv`
+- `assets/gold/sma_signals.csv`
+- `assets/gold/yearly_performance.csv`
+- `assets/nikkei225/daily_signals.csv`
+- `assets/nikkei225/equity_curves.csv`
+- `assets/nikkei225/ffn_stats.csv`
+- `assets/nikkei225/fills.csv`
+- `assets/nikkei225/heikin_ashi_signals.csv`
+- `assets/nikkei225/input_prices.csv`
+- `assets/nikkei225/line_break_signals.csv`
+- `assets/nikkei225/monthly_performance.csv`
+- `assets/nikkei225/parent_control_comparison.csv`
+- `assets/nikkei225/performance_summary.csv`
+- `assets/nikkei225/sma_signals.csv`
+- `assets/nikkei225/yearly_performance.csv`
+- `assets/sp500/daily_signals.csv`
+- `assets/sp500/equity_curves.csv`
+- `assets/sp500/ffn_stats.csv`
+- `assets/sp500/fills.csv`
+- `assets/sp500/heikin_ashi_signals.csv`
+- `assets/sp500/input_prices.csv`
+- `assets/sp500/line_break_signals.csv`
+- `assets/sp500/monthly_performance.csv`
+- `assets/sp500/parent_control_comparison.csv`
+- `assets/sp500/performance_summary.csv`
+- `assets/sp500/sma_signals.csv`
+- `assets/sp500/yearly_performance.csv`
 
 report_url: pending
 
