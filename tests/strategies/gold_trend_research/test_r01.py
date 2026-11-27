@@ -81,6 +81,26 @@ def test_expanded_asset_native_report(tmp_path):
         html=(site/a["page"]).read_text(encoding="utf-8")
         assert "navigation.js" in html and a["long"] in html
         assert "Trend Research r01" in html
+        # BokehJS itself contains the literal string <body>; navigation
+        # must be placed in the real document body, never in a script.
+        from html.parser import HTMLParser
+        class DocumentParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.in_body=False
+                self.nav=[]
+                self.external_scripts=[]
+            def handle_starttag(self,tag,attrs):
+                attrs=dict(attrs)
+                if tag=="body": self.in_body=True
+                if tag=="nav" and attrs.get("id")=="trend-navigation":
+                    self.nav.append((self.in_body,attrs.get("data-asset")))
+                if tag=="script" and attrs.get("src")=="../navigation.js":
+                    self.external_scripts.append(self.in_body)
+        parser=DocumentParser()
+        parser.feed(html)
+        assert parser.nav==[(True,a["id"])]
+        assert parser.external_scripts==[True]
     assert (site/"index.html").is_file()
 
 def test_ohlc_roundoff_tolerated_without_accepting_bad_prices():

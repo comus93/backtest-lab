@@ -137,12 +137,22 @@ def render(run, output, asset=None, *, navigation=False):
         footer.text += "<h2>Parent run 20261127-0008 comparison</h2><p>Fresh adjusted OHLC may differ from archived Close-only inputs.</p>"+tabular_html(audit,percent_cols={c for c in audit.columns if c.startswith(("total_return","cagr","max_drawdown"))})
     target=Path(output)
     target.parent.mkdir(parents=True,exist_ok=True)
-    html=file_html(column(header,build_gold_charts(run,asset),footer,sizing_mode="stretch_width"),INLINE,title=f"Trend Research · {asset['label']}")
+    # Use Bokeh's supported template hook, not string replacement inside
+    # the serialized HTML (the inline JS itself contains "<body>").
+    template_kwargs = {}
     if navigation:
-        nav=f'<nav id="trend-navigation" data-asset="{escape(asset["id"],quote=True)}" aria-label="Asset navigation"><a href="../index.html">Trend Research</a></nav>'
-        html=html.replace("<body>", "<body>"+nav+'<script defer src="../navigation.js"></script>',1)
-        if nav not in html:
-            raise ValueError("Bokeh report body missing")
+        template_kwargs = {
+            "template": """
+{% block contents %}
+<nav id="trend-navigation" data-asset="{{ asset_id | e }}" aria-label="Asset navigation"><a href="../index.html">Trend Research</a></nav>
+<script defer src="../navigation.js"></script>
+{{ super() }}
+{% endblock %}
+""",
+            "template_variables": {"asset_id": asset["id"]},
+        }
+    html=file_html(column(header,build_gold_charts(run,asset),footer,sizing_mode="stretch_width"),
+                   INLINE,title=f"Trend Research · {asset['label']}",**template_kwargs)
     target.write_text(html,encoding="utf-8")
     return target
 
