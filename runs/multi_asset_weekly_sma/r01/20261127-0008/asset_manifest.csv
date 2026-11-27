@@ -1,0 +1,11 @@
+asset_id,display_name
+sp500,미국 S&P500
+nasdaq100,미국 나스닥100
+kospi200,한국 코스피200
+nikkei225,일본 니케이225
+topix,일본 TOPIX
+nifty50,인도 Nifty50
+emerging,신흥국 MSCI
+eurostoxx50,유럽 Euro STOXX 50
+gold,금
+silver,은

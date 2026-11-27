@@ -1,42 +1,18 @@
 # Latest Backtest Result
 
 status: success
-request_id: 20261127T120052+0900
+request_id: 20261127T131310+0900
 strategy_id: multi_asset_weekly_sma
 revision: r01
 mode: reference
-run_id: 20261127-0007
+run_id: 20261127-0008
 
 output_directory:
-`runs/multi_asset_weekly_sma/r01/20261127-0007/`
+`runs/multi_asset_weekly_sma/r01/20261127-0008/`
 
 default_outputs:
 - `input_prices.csv`
 - `asset_manifest.csv`
-- `assets/agriculture/daily_signals.csv`
-- `assets/agriculture/equity_curves.csv`
-- `assets/agriculture/ffn_stats.csv`
-- `assets/agriculture/fills.csv`
-- `assets/agriculture/line_break_signals.csv`
-- `assets/agriculture/monthly_performance.csv`
-- `assets/agriculture/performance_summary.csv`
-- `assets/agriculture/yearly_performance.csv`
-- `assets/copper/daily_signals.csv`
-- `assets/copper/equity_curves.csv`
-- `assets/copper/ffn_stats.csv`
-- `assets/copper/fills.csv`
-- `assets/copper/line_break_signals.csv`
-- `assets/copper/monthly_performance.csv`
-- `assets/copper/performance_summary.csv`
-- `assets/copper/yearly_performance.csv`
-- `assets/csi300/daily_signals.csv`
-- `assets/csi300/equity_curves.csv`
-- `assets/csi300/ffn_stats.csv`
-- `assets/csi300/fills.csv`
-- `assets/csi300/line_break_signals.csv`
-- `assets/csi300/monthly_performance.csv`
-- `assets/csi300/performance_summary.csv`
-- `assets/csi300/yearly_performance.csv`
 - `assets/emerging/daily_signals.csv`
 - `assets/emerging/equity_curves.csv`
 - `assets/emerging/ffn_stats.csv`
@@ -61,14 +37,6 @@ default_outputs:
 - `assets/gold/monthly_performance.csv`
 - `assets/gold/performance_summary.csv`
 - `assets/gold/yearly_performance.csv`
-- `assets/grains/daily_signals.csv`
-- `assets/grains/equity_curves.csv`
-- `assets/grains/ffn_stats.csv`
-- `assets/grains/fills.csv`
-- `assets/grains/line_break_signals.csv`
-- `assets/grains/monthly_performance.csv`
-- `assets/grains/performance_summary.csv`
-- `assets/grains/yearly_performance.csv`
 - `assets/kospi200/daily_signals.csv`
 - `assets/kospi200/equity_curves.csv`
 - `assets/kospi200/ffn_stats.csv`
@@ -77,14 +45,6 @@ default_outputs:
 - `assets/kospi200/monthly_performance.csv`
 - `assets/kospi200/performance_summary.csv`
 - `assets/kospi200/yearly_performance.csv`
-- `assets/msci_korea/daily_signals.csv`
-- `assets/msci_korea/equity_curves.csv`
-- `assets/msci_korea/ffn_stats.csv`
-- `assets/msci_korea/fills.csv`
-- `assets/msci_korea/line_break_signals.csv`
-- `assets/msci_korea/monthly_performance.csv`
-- `assets/msci_korea/performance_summary.csv`
-- `assets/msci_korea/yearly_performance.csv`
 - `assets/nasdaq100/daily_signals.csv`
 - `assets/nasdaq100/equity_curves.csv`
 - `assets/nasdaq100/ffn_stats.csv`
@@ -109,14 +69,6 @@ default_outputs:
 - `assets/nikkei225/monthly_performance.csv`
 - `assets/nikkei225/performance_summary.csv`
 - `assets/nikkei225/yearly_performance.csv`
-- `assets/russell2000/daily_signals.csv`
-- `assets/russell2000/equity_curves.csv`
-- `assets/russell2000/ffn_stats.csv`
-- `assets/russell2000/fills.csv`
-- `assets/russell2000/line_break_signals.csv`
-- `assets/russell2000/monthly_performance.csv`
-- `assets/russell2000/performance_summary.csv`
-- `assets/russell2000/yearly_performance.csv`
 - `assets/silver/daily_signals.csv`
 - `assets/silver/equity_curves.csv`
 - `assets/silver/ffn_stats.csv`
@@ -125,14 +77,6 @@ default_outputs:
 - `assets/silver/monthly_performance.csv`
 - `assets/silver/performance_summary.csv`
 - `assets/silver/yearly_performance.csv`
-- `assets/soybeans/daily_signals.csv`
-- `assets/soybeans/equity_curves.csv`
-- `assets/soybeans/ffn_stats.csv`
-- `assets/soybeans/fills.csv`
-- `assets/soybeans/line_break_signals.csv`
-- `assets/soybeans/monthly_performance.csv`
-- `assets/soybeans/performance_summary.csv`
-- `assets/soybeans/yearly_performance.csv`
 - `assets/sp500/daily_signals.csv`
 - `assets/sp500/equity_curves.csv`
 - `assets/sp500/ffn_stats.csv`
@@ -149,14 +93,6 @@ default_outputs:
 - `assets/topix/monthly_performance.csv`
 - `assets/topix/performance_summary.csv`
 - `assets/topix/yearly_performance.csv`
-- `assets/wti/daily_signals.csv`
-- `assets/wti/equity_curves.csv`
-- `assets/wti/ffn_stats.csv`
-- `assets/wti/fills.csv`
-- `assets/wti/line_break_signals.csv`
-- `assets/wti/monthly_performance.csv`
-- `assets/wti/performance_summary.csv`
-- `assets/wti/yearly_performance.csv`
 - `daily_signals.csv`
 - `equity_curves.csv`
 - `ffn_stats.csv`
