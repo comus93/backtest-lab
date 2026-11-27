@@ -71,6 +71,13 @@ jobs:
             echo "No multi-asset study run yet; publishing PSAR only."
           fi
 
+      - name: Publish pinned multi-asset baseline archive
+        run: |
+          python -m backtest_lab.reporting.multi_asset_weekly_sma_report \
+            --run runs/multi_asset_weekly_sma/r01/20261127-0008 \
+            --output _site/research/archive/multi_asset_weekly_sma/r01/20261127-0008
+          test -s _site/research/archive/multi_asset_weekly_sma/r01/20261127-0008/index.html
+
       - name: Upload HTML preview artifact
         uses: actions/upload-artifact@v4
         with:

@@ -124,3 +124,21 @@ broad agriculture and copper. Retained: S&P500, Nasdaq100, KOSPI200,
 Nikkei225, TOPIX, Nifty50, MSCI Emerging Markets, Euro STOXX 50,
 gold and silver. This is a user-directed scope change, not a claim
 of out-of-sample evidence. Earlier 18-asset results remain available.
+
+
+## Preserved research baseline (2026-11-27)
+
+The user designated reference-mode r01 run 20261127-0008 as a baseline
+for continued multi-asset evolution and reuse. Keep its archived CSVs
+unchanged. The raw run was committed in 59ef7b7a4c3efe0e1b4291bf58ff547e47ae865a;
+the authoritative specification and adaptive Y-axis renderer are available
+at commit 58b52857ef5cba07674dbcf5c81231ea9fe7caec.
+
+- [Raw run](../../../runs/multi_asset_weekly_sma/r01/20261127-0008/)
+- [Fixed-run dashboard](https://comus93.github.io/backtest-lab/research/archive/multi_asset_weekly_sma/r01/20261127-0008/)
+- [Independent gold research](gold_trend_research.md)
+
+The fixed-run dashboard is regenerated from this specific archived run,
+not the latest-run pointer. Future presentation improvements may change its
+HTML, but not the underlying archived prices, signals, fills or FFN results.
+The multi-asset series remains active and independent of gold-only research.
