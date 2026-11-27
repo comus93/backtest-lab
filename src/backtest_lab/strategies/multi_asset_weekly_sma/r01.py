@@ -388,7 +388,7 @@ def run_pilot(
     config: RuntimeConfig | None = None,
     *, reference_only: bool = False,
 ) -> MultiAssetOutputs:
-    """Run ALL 18 independent underlying-asset studies from saved price data.
+    """Run all active independent underlying-asset studies from saved price data.
 
     Strict by design: absent assets are failures, not silently excluded from
     research ranking. Comparisons involving inverse ETF periods show each

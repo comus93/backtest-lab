@@ -114,3 +114,21 @@ Add a pure long/cash strategy to distinguish trend-following avoidance
 of drawdowns from inverse ETF effects, keeping the existing 3-Line Break
 indicator and next-session Close execution assumption. Do not infer
 superiority before inspecting the archived metrics.
+
+
+## Candidate universe refinement
+
+The user narrowed the candidate set from 18 to 10, retaining eight equity
+market exposures and gold/silver. Russell2000, EWY, CSI300, crude oil,
+three-grain proxy, soybeans, broad agriculture and copper are excluded
+from subsequent runs. Historical results remain available.
+
+
+## Candidate pruning (2026-11-27)
+
+The user reduced the active candidate set to ten assets. Excluded:
+Russell 2000, MSCI Korea (EWY), CSI300, WTI, grains, soybeans,
+broad agriculture and copper. Retained: S&P500, Nasdaq100, KOSPI200,
+Nikkei225, TOPIX, Nifty50, MSCI Emerging Markets, Euro STOXX 50,
+gold and silver. This is a user-directed scope change, not a claim
+of out-of-sample evidence. Earlier 18-asset results remain available.

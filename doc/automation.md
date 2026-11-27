@@ -279,3 +279,14 @@ adjusted closes and uses actual inverse product returns where
 available. This contributes LineBreak Long/Inverse as the fourth
 study comparator, keeping Buy & Hold last. Prior archived runs
 are immutable; latest completed archive is published by Pages.
+
+
+New multi_asset_weekly_sma runs use the ten active candidate IDs from the
+strategy data registry. Historical 18-asset runs are not rewritten.
+
+
+The active multi-asset trend research universe is ten candidates from
+2026-11-27 onward (see strategy specification section 16). New
+reference and domestic snapshots exclude the eight removed mappings.
+Archived 18-asset runs are not rewritten; reporting uses the manifest
+of the selected run rather than assuming a fixed asset count.

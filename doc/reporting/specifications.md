@@ -122,3 +122,11 @@ LineBreak Long/Cash, LineBreak Long/Inverse, Buy & Hold.
 The overview selector, individual FFN tables, curves, annual and monthly
 matrices include the new strategy. Monthly sticky headers remain enabled.
 The new long-only strategy is available even without an inverse product.
+
+
+## Active universe refinement
+
+The latest multi-asset run uses the ten user-selected candidates.
+Report links, selector coverage and annual tables follow the archived
+asset manifest, not a hardcoded count. The six-strategy order and sticky
+monthly headers are unchanged. Historical run reports remain renderable.
