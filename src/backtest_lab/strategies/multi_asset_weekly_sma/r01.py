@@ -21,7 +21,7 @@ START = "2016-11-21"
 END = "2026-11-21"  # exclusive; last fully completed trading day is 2026-11-20
 SMA_DAYS = 105
 INITIAL_CASH = 1_000_000.0
-STRATEGY_ORDER = ("Long/Cash", "Long/Inverse", "Buy & Hold")
+STRATEGY_ORDER = ("Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold")
 SUMMARY_COLUMNS = (
     "strategy", "start_date", "end_date", "total_return", "cagr",
     "volatility", "sharpe", "max_drawdown", "avg_monthly_turnover", "avg_exposure",
@@ -68,8 +68,13 @@ class SMARegimeStrategy:
     signals: pd.DataFrame
     long_symbol: str
     inverse_symbol: str | None = None
+    inverse_only: bool = False
     decisions: list[dict[str, object]] = field(default_factory=list)
     _last_signal_date: pd.Timestamp | None = None
+
+    def __post_init__(self) -> None:
+        if self.inverse_only and not self.inverse_symbol:
+            raise ValueError("Inverse/Cash requires an actual inverse ETF symbol")
 
     def on_step(self, context: StrategyContext) -> list[Order]:
         # Prior session's COMPLETED close only: never inspect today's close
@@ -84,8 +89,12 @@ class SMARegimeStrategy:
         self._last_signal_date = signal_date
         state = self.signals.loc[signal_date]
         direction = int(state["direction"])
-        held = self.long_symbol if direction > 0 else (
-            self.inverse_symbol if direction < 0 else None
+        # Inverse/Cash never owns the long ETF: bullish => cash.
+        # All bearish positions use the actually priced inverse instrument.
+        held = (
+            self.long_symbol if direction > 0 and not self.inverse_only
+            else self.inverse_symbol if direction < 0
+            else None
         )
         orders = _positions_to_orders(context, held)
         self.decisions.append({
@@ -186,6 +195,11 @@ def run_asset(
             inverse_mode = SMARegimeStrategy(signals, item.long_symbol, item.inverse_symbol)
             runs["Long/Inverse"] = Runtime(inverse_mode, INITIAL_CASH, config).run(both)
             decisions.append(("Long/Inverse", inverse_mode.decisions))
+            inverse_cash_mode = SMARegimeStrategy(
+                signals, item.long_symbol, item.inverse_symbol, inverse_only=True
+            )
+            runs["Inverse/Cash"] = Runtime(inverse_cash_mode, INITIAL_CASH, config).run(both)
+            decisions.append(("Inverse/Cash", inverse_cash_mode.decisions))
 
     # Keep the benchmark Buy & Hold last in every archived strategy table,
     # equity curve and Bokeh legend, even when an inverse ETF is unavailable.
@@ -209,7 +223,7 @@ def run_asset(
                 "reference_price": fill.reference_price, "fill_price": fill.fill_price,
                 "fee": fill.fee,
             })
-        current_prices = prices if name != "Long/Inverse" else both
+        current_prices = both if name in ("Long/Inverse", "Inverse/Cash") else prices
         for ts, row in current_prices.iterrows():
             for fill in by_date.get(pd.Timestamp(ts), []):
                 position_qty[fill.symbol] = position_qty.get(fill.symbol, 0.0) + (

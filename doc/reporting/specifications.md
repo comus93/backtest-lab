@@ -76,3 +76,13 @@ monitoring and next-session Close execution estimate. Legacy archives
 without the sma_days metadata remain identifiable as historic 21-week
 reports. Existing FFN metric definitions, year/month report matrix and
 PSAR Golden Master remain unchanged.
+
+
+## Inverse/Cash presentation (2026-11-27)
+
+The multi-asset SMA105 reporting adapter displays individual strategy
+statistics, equity curves, yearly tables and monthly return matrices
+in the same order: Long/Cash, Long/Inverse, Inverse/Cash, Buy & Hold.
+Inverse/Cash is missing rather than zero when no eligible inverse
+product exists. The combined asset-level FFN summary remains unchanged.
+Reporting reads stored results, never calculates inverse gains.

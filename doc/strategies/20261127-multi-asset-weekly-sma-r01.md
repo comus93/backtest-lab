@@ -212,3 +212,36 @@ averages are not identical statistics; the studies must be separated.
 - To reproduce in TradingView: 1D chart, SMA length 105, match provider
   adjusted-close versus unadjusted-close settings. The next-session Close
   execution estimate differs from TradingView next-session Open execution.
+
+
+## 13. Independent Inverse/Cash study added (2026-11-27)
+
+The user requested a pure inverse-position result, independent of the
+existing combined Long/Inverse path. Inverse/Cash is the third visible
+strategy and Buy & Hold remains the final benchmark:
+
+1. Long/Cash: positive daily close vs 105-day SMA -> reference long;
+   negative or neutral -> cash.
+2. Long/Inverse: positive -> reference long, negative -> actual
+   inverse ETF; neutral -> cash.
+3. Inverse/Cash: **negative -> actual inverse ETF, positive or
+   neutral -> cash**. No long ETF fills are allowed at any time.
+4. Buy & Hold: benchmark long exposure, irrespective of SMA.
+
+All signals use the same confirmed daily reference closes. Trades use
+the following eligible trading-session Close and the original Runtime
+fee/slippage settings. Inverse/Cash is independently backtested with
+actual inverse ETF historical prices, including products that reset
+daily (-1x or -2x, as archived in instrument coverage). It is NOT
+the synthetic negative of the long ETF daily return. Where no actual
+inverse exists/qualifies, both inverse-based strategies remain absent;
+the two inverse columns in the monthly matrix display missing
+values rather than zero performance.
+
+For comparability, Inverse/Cash and Long/Inverse use the same long and
+inverse price date intersection. The existing ten-column FFN
+performance_summary contract and the independent one-row-per-asset
+top-level summary are unchanged. Individual asset FFN summaries,
+equity curves, yearly tables, monthly matrices, fills and signal
+logs use the fixed four-strategy order above. Prior archived runs
+are immutable.

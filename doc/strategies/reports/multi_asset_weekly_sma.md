@@ -84,3 +84,14 @@ session Close execution approximation. The former 21 completed-week
 signal refreshed only once a week and did not match intended daily
 monitoring. Prior 21-week runs remain immutable and are not comparable
 as if their signal rules were identical.
+
+
+## Third strategy added: Inverse/Cash
+
+The user requested an isolated test of bearish-only exposure:
+buy the actual inverse ETF only while the 105-day SMA daily
+direction is negative, otherwise hold cash. This runs independently
+of Long/Inverse. Detail output order is now Long/Cash,
+Long/Inverse, Inverse/Cash, Buy & Hold (benchmark last).
+No inverse means no investment-test series for the new strategy.
+Existing returns are not rewritten.

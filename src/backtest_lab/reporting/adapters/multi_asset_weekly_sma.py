@@ -110,7 +110,7 @@ def _annual_table(path: Path, summary: bool = False) -> str:
 
 
 def _monthly_matrix(path: Path) -> str:
-    """One month per row, three strategy columns; read archived returns only."""
+    """One month per row, four strategy columns; read archived returns only."""
     if not path.exists():  # historical runs predate the monthly-output contract
         return ""
     monthly = pd.read_csv(path, dtype={"month": str})

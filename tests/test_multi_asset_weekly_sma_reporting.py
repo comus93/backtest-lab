@@ -82,7 +82,8 @@ def test_monthly_matrix_uses_archived_returns_and_exact_order(prepared_run, tmp_
                             & (saved["strategy"] == "Buy & Hold"), "return"].iloc[0]
     matrix = _monthly_matrix(source)
     assert "Year-Month Return" in matrix
-    assert matrix.index(">Long/Cash</th>") < matrix.index(">Long/Inverse</th>") < matrix.index(">Buy &amp; Hold</th>")
+    assert (matrix.index(">Long/Cash</th>") < matrix.index(">Long/Inverse</th>")
+            < matrix.index(">Inverse/Cash</th>") < matrix.index(">Buy &amp; Hold</th>"))
     assert month in matrix
     assert f"{hold_return * 100:+.2f}%" in matrix
     detail = render_detail(prepared_run, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
@@ -97,6 +98,7 @@ def test_matrix_with_no_inverse_uses_missing_not_zero(prepared_run, tmp_path):
     source = prepared_run / "assets" / "silver" / "monthly_performance.csv"
     matrix = _monthly_matrix(source)
     assert "Long/Inverse" in matrix
+    assert "Inverse/Cash" in matrix
     assert "—" in matrix
     detail = render_detail(prepared_run, "silver", tmp_path / "silver.html").read_text(encoding="utf-8")
     assert "Year-Month Return" in detail
@@ -125,3 +127,26 @@ def test_new_105_day_report_is_labeled_correctly(prepared_run, tmp_path):
     assert "105일 SMA" in detail
     assert "21주 SMA" not in summary
     assert "21주 SMA" not in detail
+
+
+def test_inverse_cash_in_annual_detail_and_monthly_report(tmp_path):
+    from backtest_lab.reporting.adapters.multi_asset_weekly_sma import _annual_table, _monthly_matrix
+    dates = pd.bdate_range("2015-01-01", periods=570)
+    reference = pd.Series(100 + np.linspace(0, 25, len(dates)), index=dates)
+    reference.iloc[220:270] *= 0.80
+    price = pd.Series(1000 + np.linspace(0, 150, len(dates)), index=dates)
+    inverse = pd.Series(300 - np.linspace(0, 50, len(dates)), index=dates)
+    result = run_asset(AssetInput("gold", "금", reference, price, "GLD", inverse, "GLL"),
+                       start="2016-01-01", end="2018-01-01")
+    run_dir = tmp_path / "run"
+    write_asset_results([result], run_dir)
+    root = run_dir / "assets" / "gold"
+    summary = pd.read_csv(root / "performance_summary.csv")
+    assert summary["strategy"].tolist() == ["Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold"]
+    detail = render_detail(run_dir, "gold", tmp_path / "gold.html").read_text(encoding="utf-8")
+    assert detail.index("Long/Cash") < detail.index("Long/Inverse") < detail.index("Inverse/Cash") < detail.index("Buy &amp; Hold")
+    annual = _annual_table(root / "yearly_performance.csv")
+    monthly = _monthly_matrix(root / "monthly_performance.csv")
+    assert "Inverse/Cash" in annual
+    assert monthly.index(">Long/Inverse</th>") < monthly.index(">Inverse/Cash</th>") < monthly.index(">Buy &amp; Hold</th>")
+    assert "Inverse/Cash" in pd.read_csv(root / "ffn_stats.csv").columns

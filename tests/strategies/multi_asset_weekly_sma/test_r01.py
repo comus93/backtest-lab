@@ -92,7 +92,7 @@ def test_long_cash_and_inverse_separate_real_prices(tmp_path):
                        config=RuntimeConfig(fee_rate=0.00015))
     assert list(result.performance_summary.columns) == list(SUMMARY_COLUMNS)
     assert set(result.performance_summary["strategy"]) == {
-        "Long/Cash", "Buy & Hold", "Long/Inverse"
+        "Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold"
     }
     assert result.fills["symbol"].isin(["KR_LONG", "KR_INV"]).all()
     assert not result.signals.empty
@@ -125,7 +125,7 @@ def test_monthly_returns_and_benchmark_last():
     result = run_asset(AssetInput("gold", "금", reference, domestic, "GLD",
                                   inverse, "GLL"),
                        start="2016-01-01", end="2018-01-01")
-    expected = ["Long/Cash", "Long/Inverse", "Buy & Hold"]
+    expected = ["Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold"]
     assert result.performance_summary["strategy"].tolist() == expected
     assert result.curves.columns.tolist() == expected
     assert result.ffn_stats.columns.tolist() == expected
@@ -152,3 +152,49 @@ def test_no_inverse_benchmark_still_last():
     assert result.monthly_performance["strategy"].drop_duplicates().tolist() == [
         "Long/Cash", "Buy & Hold"
     ]
+
+
+def test_inverse_cash_only_owns_actual_inverse_on_bearish_days():
+    from backtest_lab.core import Runtime
+    dates = pd.bdate_range("2019-01-01", periods=130)
+    values = np.full(len(dates), 100.0)
+    values[105:111] = [110.0, 90.0, 95.0, 112.0, 108.0, 90.0]
+    reference = pd.Series(values, index=dates)
+    inverse = pd.Series(200.0 - 0.5*np.arange(len(dates)), index=dates)
+    signals = daily_sma_signals(reference)
+    assert signals.direction.iloc[105:111].tolist() == [1, -1, -1, 1, 1, -1]
+    strategy = SMARegimeStrategy(signals, "GLD", "GLL", inverse_only=True)
+    prices = pd.DataFrame({"GLD": reference, "GLL": inverse})
+    result = Runtime(strategy, 10000, RuntimeConfig()).run(prices)
+    assert result.fills
+    assert all(fill.symbol == "GLL" for fill in result.fills)
+    assert [(fill.timestamp, fill.side) for fill in result.fills[:3]] == [
+        (dates[107], "buy"), (dates[109], "sell"), (dates[111], "buy")
+    ]
+    assert all(r["held_etf"] == "CASH" for r in strategy.decisions if r["direction"] >= 0)
+    assert all(r["held_etf"] == "GLL" for r in strategy.decisions if r["direction"] < 0)
+    assert all(r["signal_date"] < r["execution_date"] for r in strategy.decisions)
+
+
+def test_inverse_only_monthly_and_yearly_reconcile():
+    _, ref, long, inverse = sample()
+    ref.iloc[150:190] *= .75  # controlled bearish window for inverse-only trades
+    result = run_asset(AssetInput("gold", "금", ref, long, "GLD", inverse, "GLL"),
+                       start="2016-01-01", end="2018-01-01")
+    assert result.performance_summary.strategy.tolist() == [
+        "Long/Cash", "Long/Inverse", "Inverse/Cash", "Buy & Hold"
+    ]
+    only = result.fills.loc[result.fills.strategy == "Inverse/Cash"]
+    assert not only.empty
+    assert set(only.symbol) == {"GLL"}
+    expected = result.performance_summary.set_index("strategy").loc["Inverse/Cash","total_return"]
+    months = result.monthly_performance.loc[result.monthly_performance.strategy == "Inverse/Cash"]
+    years = result.yearly_performance.loc[result.yearly_performance.strategy == "Inverse/Cash"]
+    assert (1+months["return"]).prod()-1 == pytest.approx(expected)
+    assert (1+years["return"]).prod()-1 == pytest.approx(expected)
+
+
+def test_inverse_cash_requires_real_inverse_symbol():
+    _, ref, _, _ = sample()
+    with pytest.raises(ValueError, match="requires an actual inverse ETF"):
+        SMARegimeStrategy(daily_sma_signals(ref), "GLD", inverse_only=True)

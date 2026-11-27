@@ -93,6 +93,8 @@ def test_reference_mode_does_not_use_domestic_etf_prices(tmp_path):
     assert "sma21" not in gold.signals.columns
     assert set(gold.fills.symbol) <= {"GLD", "GLL"}
     assert "Long/Inverse" in gold.performance_summary.strategy.values
+    assert "Inverse/Cash" in gold.performance_summary.strategy.values
+    assert set(gold.fills.loc[gold.fills.strategy == "Inverse/Cash", "symbol"]) <= {"GLL"}
     p = prices.loc[prices.index >= pd.Timestamp("2016-01-01"), "gold__long"].dropna()
     expected = p.iloc[-1] / p.iloc[0] / 1.00015 - 1.0
     actual = gold.performance_summary.loc[gold.performance_summary.strategy == "Buy & Hold",

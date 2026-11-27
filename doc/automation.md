@@ -262,3 +262,11 @@ Close with 105 daily trading closes, and trades no earlier than next
 session Close. New runs save daily_signals.csv, not weekly_signals.csv.
 instrument_coverage.csv records SMA length, signal frequency and execution
 assumptions. Older archived weekly result files remain unchanged.
+
+
+Daily SMA105 reference-mode runs now additionally calculate Inverse/Cash
+when a verified inverse ETF exists. This strategy uses real inverse
+price data, shares the overlap window with Long/Inverse, and logs
+only inverse ETF fills. The archived result files and FFN metric schema
+are unchanged, but per-asset strategy rows can now contain four
+distinct strategies including benchmark Buy & Hold last.
