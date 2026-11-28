@@ -130,3 +130,7 @@ Yahoo adjusted OHLC may differ by floating-point roundoff at equal candle endpoi
 ### Universe change (2026-11-28)
 
 User approved replacing Nikkei 225 with Silver (SLV/ZSL). The active universe is GLD, SPY and SLV. Strategy rules, revision r01 and evaluation window remain unchanged. The prior expanded run 20261128-0001, including Nikkei 225, remains immutable. The new run uses the existing expanded-mode data-loading policy; Silver and SPY are downloaded as adjusted OHLC and Gold uses the original archived input.
+
+### Line Break reversal sensitivity (approved 2026-11-28)
+
+Compare 3LB, 4LB and 5LB Long/Cash and Buy & Hold on GLD and SPY only, reusing the exact archived adjusted OHLC inputs from expanded run 20261128-0002. The only strategy parameter varied is the number of confirmed lines in the reversal range (not trading days); both entry and exit use the same N. Keep the original active period, warm-up, initial capital, fees, slippage, zero cash yield and prior confirmed signal / next session Close execution. No inverse, no SLV, no optimization or extra filter. The explicit dispatcher mode is line_break_sensitivity, with separate per-asset CSVs under line_break_sensitivity/<asset>/ in a new r01 Run; each line-break signal row identifies reversal_lines. The existing full asset dashboards continue to use the latest complete expanded/reference Run, not this narrower experiment. No strategy revision increment.

@@ -172,6 +172,7 @@ def run_asset(
     end: str = END,
     config: RuntimeConfig | None = None,
     days: int = SMA_DAYS,
+    reversal_lines: int = DEFAULT_REVERSAL_LINES,
 ) -> AssetBacktest:
     if not item.asset_id or not item.long_symbol:
         raise ValueError("asset_id and long_symbol are required")
@@ -179,7 +180,7 @@ def run_asset(
     reference = _clean_prices(item.reference_close, "reference")
     reference = reference.loc[reference.index < pd.Timestamp(end)]
     signals = daily_sma_signals(reference, days)
-    line_break = daily_line_break_signals(reference, DEFAULT_REVERSAL_LINES)
+    line_break = daily_line_break_signals(reference, reversal_lines)
     # Limit to execution instrument trading dates. Missing dates are never ffilled.
     long = _clean_prices(item.long_close, item.long_symbol)
     long = long.loc[(long.index >= pd.Timestamp(start)) & (long.index < pd.Timestamp(end))]

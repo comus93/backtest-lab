@@ -1,8 +1,8 @@
 {
-  "request_id": "20261128T004905+0900",
+  "request_id": "20261128T151715+0900",
   "strategy_id": "gold_trend_research",
   "revision": "r01",
-  "mode": "expanded",
+  "mode": "line_break_sensitivity",
   "start": "2016-11-21",
   "end": "2026-11-21"
 }

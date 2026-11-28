@@ -119,3 +119,27 @@ def test_ohlc_roundoff_tolerated_without_accepting_bad_prices():
         bad.iloc[row,bad.columns.get_loc(col)]=value
         with pytest.raises(ValueError,match="Invalid OHLC geometry"):
             validate_ohlc(bad)
+
+def test_line_break_sensitivity_reproduces_archived_control():
+    from pathlib import Path
+    from backtest_lab.strategies.gold_trend_research.r01 import load_line_break_snapshot, run_line_break_sensitivity
+    root=Path("runs/gold_trend_research/r01/20261128-0002/assets")
+    prices=load_line_break_snapshot()
+    out=run_line_break_sensitivity(prices)
+    for asset in ("gold","sp500"):
+        prefix=f"line_break_sensitivity/{asset}/"
+        summary=out.tables[prefix+"performance_summary.csv"]
+        assert summary.strategy.tolist()==["3LB Long/Cash","4LB Long/Cash","5LB Long/Cash","Buy & Hold"]
+        old=pd.read_csv(root/asset/"performance_summary.csv").set_index("strategy")
+        new=summary.set_index("strategy")
+        for name,baseline in [("3LB Long/Cash","LineBreak Long/Cash"),("Buy & Hold","Buy & Hold")]:
+            for metric in ("total_return","cagr","sharpe","max_drawdown"):
+                assert new.loc[name,metric]==pytest.approx(old.loc[baseline,metric],abs=1e-10)
+        signals=out.tables[prefix+"line_break_signals.csv"]
+        assert set(signals.reversal_lines)=={3,4,5}
+        assert not signals[signals.reversal_lines==3].direction.reset_index(drop=True).equals(
+            signals[signals.reversal_lines==5].direction.reset_index(drop=True))
+        decisions=out.tables[prefix+"daily_signals.csv"]
+        assert (decisions.signal_date<decisions.execution_date).all()
+        assert set(out.tables[prefix+"fills.csv"].symbol)=={("GLD" if asset=="gold" else "SPY")}
+    assert not any("silver" in name for name in out.tables)

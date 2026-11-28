@@ -43,6 +43,9 @@ from backtest_lab.strategies.multi_asset_weekly_sma.r01 import (
 )
 
 from backtest_lab.strategies.gold_trend_research.r01 import load_gold_prices, run_gold, load_expanded_prices, run_expanded, load_assets
+from backtest_lab.strategies.gold_trend_research.r01 import (
+    load_line_break_snapshot, run_line_break_sensitivity, LB_ASSETS, LB_OUTPUT_FILES,
+)
 
 REQUEST_ID_RE = re.compile(r"^(?P<date>\d{8})T\d{6}(?:[+-]\d{4}|Z)?$")
 RUN_ID_RE_TEMPLATE = r"^{date}-(\d{{4}})$"
@@ -203,6 +206,10 @@ def _gold_expanded(prices: pd.DataFrame, active_start: pd.Timestamp, config: Run
     return result
 
 
+def _gold_line_break_sensitivity(prices: pd.DataFrame, active_start: pd.Timestamp, config: RuntimeConfig):
+    return run_line_break_sensitivity(prices, start=SMA_START, end=SMA_END, config=config)
+
+
 GOLD_OUTPUT_FILES = ("input_prices.csv", "performance_summary.csv", "ffn_stats.csv",
     "equity_curves.csv", "daily_signals.csv", "fills.csv", "yearly_performance.csv",
     "monthly_performance.csv", "line_break_signals.csv", "sma_signals.csv", "heikin_ashi_signals.csv",
@@ -211,6 +218,7 @@ GOLD_OUTPUT_FILES = ("input_prices.csv", "performance_summary.csv", "ffn_stats.c
 ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
     ("gold_trend_research", "r01", "reference"): _gold_reference,
     ("gold_trend_research", "r01", "expanded"): _gold_expanded,
+    ("gold_trend_research", "r01", "line_break_sensitivity"): _gold_line_break_sensitivity,
     ("multi_asset_weekly_sma", "r01", "reference"): _sma_reference,
     ("multi_asset_weekly_sma", "r01", "baseline"): _sma_baseline,
     ("tripod_nasdaq_leverage", "r01", "baseline"): _tripod_baseline,
@@ -224,6 +232,8 @@ ALLOWED_RUNNERS: dict[tuple[str, str, str], Runner] = {
 
 REQUIRED_OUTPUTS_BY_KEY: dict[tuple[str, str, str], tuple[str, ...]] = {
     ("gold_trend_research", "r01", "reference"): GOLD_OUTPUT_FILES,
+    ("gold_trend_research", "r01", "line_break_sensitivity"): ("input_prices.csv", *tuple(
+        f"line_break_sensitivity/{key}/{name}" for key, _, _ in LB_ASSETS for name in LB_OUTPUT_FILES)),
     ("gold_trend_research", "r01", "expanded"): ("input_prices.csv", *tuple(
         f"assets/{a['id']}/{name}" for a in load_assets() for name in GOLD_OUTPUT_FILES)),
     ("multi_asset_weekly_sma", "r01", "reference"): SMA_OUTPUT_FILES,
@@ -293,6 +303,8 @@ def next_run_id(runs_root: str | Path, request: BacktestRequest) -> str:
 
 def _load_prices(request: BacktestRequest) -> pd.DataFrame:
     if request.strategy_id == "gold_trend_research" and request.revision == "r01":
+        if request.mode == "line_break_sensitivity":
+            return load_line_break_snapshot()
         if request.mode == "expanded":
             return load_expanded_prices(start="2016-01-01",end=SMA_END)
         return load_gold_prices(start="2016-01-01", end=SMA_END)

@@ -204,3 +204,61 @@ def run_expanded(prices, start=START, end=END, config=None):
         tables.update({root+k:v for k,v in result.tables.items()})
         tables[root+"input_prices.csv"]=frame.reset_index(names="timestamp")
     return GoldOutputs(tables)
+
+
+# Fixed research comparison: do not replace the original expanded report.
+LB_SNAPSHOT = Path("runs/gold_trend_research/r01/20261128-0002/assets")
+LB_ASSETS = (("gold", "Gold", "GLD"), ("sp500", "S&P 500", "SPY"))
+LB_OUTPUT_FILES = ("input_prices.csv", "performance_summary.csv", "ffn_stats.csv",
+                   "equity_curves.csv", "daily_signals.csv", "fills.csv",
+                   "yearly_performance.csv", "monthly_performance.csv", "line_break_signals.csv")
+
+
+def load_line_break_snapshot():
+    frames = []
+    for key, _, _ in LB_ASSETS:
+        raw = pd.read_csv(LB_SNAPSHOT/key/"input_prices.csv",
+                          parse_dates=["timestamp"], float_precision="round_trip").set_index("timestamp")
+        frames.append(raw[OHLC].add_prefix(key+"__"))
+    return pd.concat(frames, axis=1).sort_index().rename_axis("timestamp")
+
+
+def run_line_break_sensitivity(prices, start=START, end=END, config=None):
+    tables = {}
+    original = "LineBreak Long/Cash"
+    benchmark = "Buy & Hold"
+    for key, label, symbol in LB_ASSETS:
+        raw = prices[[key+"__"+col for col in OHLC]].copy()
+        raw.columns = OHLC
+        raw = validate_ohlc(raw.dropna(subset=OHLC))
+        root = f"line_break_sensitivity/{key}/"
+        tables[root+"input_prices.csv"] = raw.reset_index(names="timestamp")
+        buckets = {n: [] for n in LB_OUTPUT_FILES if n not in
+                   ("input_prices.csv", "equity_curves.csv", "ffn_stats.csv")}
+        curves, stats = [], []
+        for n in (3,4,5):
+            result = run_asset(AssetInput(key,label,raw.Close,raw.Close,symbol),
+                               start=start,end=end,config=config,reversal_lines=n)
+            name = f"{n}LB Long/Cash"
+            # Keep only the selected line-break strategy and one benchmark.
+            keep = [original,benchmark] if n==5 else [original]
+            rename = {original:name}
+            for filename, frame in (
+                ("performance_summary.csv",result.performance_summary),
+                ("daily_signals.csv",result.signals),
+                ("fills.csv",result.fills),
+                ("yearly_performance.csv",result.yearly_performance),
+                ("monthly_performance.csv",result.monthly_performance),
+            ):
+                part = frame.loc[frame.strategy.isin(keep)].copy()
+                part["strategy"] = part.strategy.replace(rename)
+                buckets[filename].append(part)
+            curves.append(result.curves[keep].rename(columns=rename))
+            stats.append(result.ffn_stats[keep].rename(columns=rename))
+            buckets["line_break_signals.csv"].append(
+                result.line_break_signals.reset_index().assign(reversal_lines=n))
+        for filename, parts in buckets.items():
+            tables[root+filename] = pd.concat(parts,ignore_index=True)
+        tables[root+"equity_curves.csv"] = pd.concat(curves,axis=1).reset_index(names="timestamp")
+        tables[root+"ffn_stats.csv"] = pd.concat(stats,axis=1).reset_index(names="metric")
+    return GoldOutputs(tables)
