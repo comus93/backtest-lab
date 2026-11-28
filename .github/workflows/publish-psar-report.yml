@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'src/backtest_lab/reporting/**'
-      - 'src/backtest_lab/analysis/trend_diagnostics.py'
       - 'tests/test_psar_reporting.py'
       - 'tests/test_reporting_golden.py'
       - 'tests/test_reporting_common.py'
@@ -102,8 +101,7 @@ jobs:
               fi
             done
             if test -n "$latest"; then
-              python -m backtest_lab.analysis.trend_diagnostics --run "$latest" --output "$RUNNER_TEMP/trend-diagnostics"
-              python -m backtest_lab.reporting.gold_trend_research_report --run "$latest" --output _site/research/gold_trend_research --site --diagnostics "$RUNNER_TEMP/trend-diagnostics"
+              python -m backtest_lab.reporting.gold_trend_research_report --run "$latest" --output _site/research/gold_trend_research --site
               test -s _site/research/gold_trend_research/index.html
             fi
           fi

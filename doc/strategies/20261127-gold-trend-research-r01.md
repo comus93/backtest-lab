@@ -145,18 +145,3 @@ strategy selectors. Do not serialize unused strategies or load/render the
 Heikin Ashi layer. The five native layers are raw close, raw candles,
 SMA105, 3LB extended and execution/holding. Existing archived strategy
 names, results, computation and the separate sensitivity Run remain unchanged.
-
-### Signed ER10 / ER20 observational panel (2026-11-28)
-
-Compute signed Kaufman Efficiency Ratio from the archived adjusted Close,
-using N successive trading-session price changes (N+1 closes), N=10 and 20:
-(C[t]-C[t-N]) / sum(abs(C[i]-C[i-1])). A zero-distance window maps
-to zero; fewer than N changes is missing. Compute on the full archived
-warm-up series before cropping to the active window. Analysis prepares
-temporary per-asset CSVs outside the immutable Run; the renderer reads
-both series as a single independent dimensionless -1..+1 panel below
-the signal chart, with a dashed zero reference and distinct muted colors
-(ER10 purple, ER20 brown) and clickable legend. It shares the existing
-X range and is visible for all selected strategies on GLD, SPY and SLV.
-Positive values indicate net upward movement; negative values net downward.
-No threshold, order rule, revision or archived performance change.
