@@ -37,7 +37,7 @@ def _display_columns(frame, index):
     return frame[[index, *DISPLAY_STRATEGIES]].rename(columns=DISPLAY_STRATEGIES)
 
 
-def build_gold_charts(run, asset=None):
+def build_gold_charts(run, asset=None, *, diagnostics=None):
     asset=asset or next(a for a in load_assets() if a['id']=='gold')
     symbol,inverse,currency=asset['long'],asset['inverse'],asset['currency']
     from bokeh.layouts import column, row
@@ -117,7 +117,22 @@ def build_gold_charts(run, asset=None):
         sig.title.text = "Strategy chart | " + cb_obj.value;
         price.title.text = symbol + " actual price & executions | " + cb_obj.value;
     """))
-    for p in (price,sig,perf,pnl,dd):
+    diagnostic_panels = []
+    if diagnostics is not None:
+        from bokeh.models import Range1d, FixedTicker
+        er_values = pd.read_csv(diagnostics, parse_dates=["timestamp"]).set_index("timestamp").er10
+        er_values = er_values.reindex(active.index)
+        er_composer = ChartComposer("Efficiency Ratio (ER10) | 10 trading sessions",price.x_range,
+            unit="ER10",height=160,name="trend-er10")
+        er_composer.add(line_layer("er10","ER10",er_values,unit="ER10",
+            basis=f"{symbol} adjusted Close; absolute net move / sum of 10 absolute changes",
+            color="#807496",width=1.3))
+        er = er_composer.figure
+        # ER is dimensionless with a natural fixed 0..1 comparison scale.
+        er.y_range = Range1d(0,1,bounds=(0,1))
+        er.yaxis.ticker = FixedTicker(ticks=[0,.25,.5,.75,1])
+        diagnostic_panels.append(er)
+    for p in (price,sig,*diagnostic_panels,perf,pnl,dd):
         p.min_border_left=95
         p.min_border_right=10
         p.xaxis.visible=False
@@ -130,11 +145,11 @@ def build_gold_charts(run, asset=None):
     dd.xaxis.axis_label="Trading date · X linked · independent adaptive Y"
     return column(selector,column(row(note,toggle,sizing_mode="stretch_width"),
         Div(text="Strategy layers: select any combination. SMA105 uses raw Close; execution markers remain projected on the selected strategy native prices. Changing strategy restores its default layers."),
-        layer_control,sizing_mode="stretch_width"),price,sig,perf,pnl,dd,
+        layer_control,sizing_mode="stretch_width"),price,sig,*diagnostic_panels,perf,pnl,dd,
                   sizing_mode="stretch_width",name="gold-research")
 
 
-def render(run, output, asset=None, *, navigation=False):
+def render(run, output, asset=None, *, navigation=False, diagnostics=None):
     asset=asset or next(a for a in load_assets() if a['id']=='gold')
     from bokeh.embed import file_html
     from bokeh.layouts import column
@@ -166,13 +181,13 @@ def render(run, output, asset=None, *, navigation=False):
 """,
             "template_variables": {"asset_id": asset["id"]},
         }
-    html=file_html(column(header,build_gold_charts(run,asset),footer,sizing_mode="stretch_width"),
+    html=file_html(column(header,build_gold_charts(run,asset,diagnostics=diagnostics),footer,sizing_mode="stretch_width"),
                    INLINE,title=f"Trend Research · {asset['label']}",**template_kwargs)
     target.write_text(html,encoding="utf-8")
     return target
 
 
-def publish_assets(run, site):
+def publish_assets(run, site, *, diagnostics_dir=None):
     """Publish manually declared assets only; do not generate the manifest."""
     run,site=Path(run),Path(site)
     site.mkdir(parents=True,exist_ok=True)
@@ -185,7 +200,8 @@ def publish_assets(run, site):
         if asset["id"]=="gold" and not folder.is_dir() and (run/"performance_summary.csv").is_file():
             folder=run
         if folder.is_dir():
-            render(folder,site/asset["page"],asset,navigation=True)
+            render(folder,site/asset["page"],asset,navigation=True,
+                   diagnostics=Path(diagnostics_dir)/f"{asset['id']}.csv" if diagnostics_dir is not None else None)
     # The old series root remains valid; the lightweight landing page has
     # a fallback Gold link even without JavaScript.
     (site/"index.html").write_text("""<!doctype html><html lang="ko"><head><meta charset="utf-8">
@@ -201,11 +217,12 @@ def main():
     parser.add_argument("--run",required=True)
     parser.add_argument("--output",required=True)
     parser.add_argument("--site",action="store_true",help="Publish independent asset pages")
+    parser.add_argument("--diagnostics",help="Precomputed diagnostic directory (site) or CSV (single report)")
     args=parser.parse_args()
     if args.site:
-        publish_assets(args.run,args.output)
+        publish_assets(args.run,args.output,diagnostics_dir=args.diagnostics)
     else:
-        render(args.run,args.output)
+        render(args.run,args.output,diagnostics=args.diagnostics)
 
 
 if __name__=="__main__":

@@ -158,3 +158,39 @@ def test_line_break_sensitivity_reproduces_archived_control():
         assert (decisions.signal_date<decisions.execution_date).all()
         assert set(out.tables[prefix+"fills.csv"].symbol)=={("GLD" if asset=="gold" else "SPY")}
     assert not any("silver" in name for name in out.tables)
+
+
+def test_er10_causal_and_flat():
+    from backtest_lab.analysis.trend_diagnostics import efficiency_ratio_10
+    dates=pd.bdate_range("2024-01-01",periods=14)
+    p=pd.Series([100,101,102,103,104,105,106,107,108,109,110,109,108,107],index=dates)
+    er=efficiency_ratio_10(p)
+    assert er.iloc[:10].isna().all()
+    assert er.iloc[10]==pytest.approx(1)
+    assert er.iloc[11]==pytest.approx(.8)
+    assert er.iloc[13]==pytest.approx(.4)
+    pd.testing.assert_series_equal(er.iloc[:12],efficiency_ratio_10(p.iloc[:12]))
+    assert efficiency_ratio_10(-p).iloc[10]==pytest.approx(1)
+    assert efficiency_ratio_10(pd.Series(100.,index=dates)).iloc[10]==0
+
+
+def test_er10_report_panel_from_diagnostic_artifact(tmp_path):
+    from pathlib import Path
+    from backtest_lab.analysis.trend_diagnostics import write_trend_diagnostics
+    from backtest_lab.reporting.gold_trend_research_report import build_gold_charts
+    run=Path("runs/gold_trend_research/r01/20261128-0002")
+    paths=write_trend_diagnostics(run,tmp_path)
+    assert set(paths)=={"gold","sp500","silver"}
+    folder=run/"assets"/"gold"
+    layout=build_gold_charts(folder,diagnostics=paths["gold"])
+    er=layout.select_one({"name":"trend-er10"})
+    price=layout.children[2]
+    assert er.x_range is price.x_range
+    assert er.y_range.start==0 and er.y_range.end==1
+    assert er.min_border_left==price.min_border_left
+    data=er.select_one({"name":"er10:0"}).data_source.data
+    assert len(data["date"])==2514
+    assert np.isfinite(data["value"]).all()
+    assert all(0<=v<=1 for v in data["value"])
+    assert layout.children[4] is er
+    assert not (folder/"er10.csv").exists()
