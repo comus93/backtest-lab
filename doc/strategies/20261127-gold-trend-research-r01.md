@@ -134,3 +134,14 @@ User approved replacing Nikkei 225 with Silver (SLV/ZSL). The active universe is
 ### Line Break reversal sensitivity (approved 2026-11-28)
 
 Compare 3LB, 4LB and 5LB Long/Cash and Buy & Hold on GLD and SPY only, reusing the exact archived adjusted OHLC inputs from expanded run 20261128-0002. The only strategy parameter varied is the number of confirmed lines in the reversal range (not trading days); both entry and exit use the same N. Keep the original active period, warm-up, initial capital, fees, slippage, zero cash yield and prior confirmed signal / next session Close execution. No inverse, no SLV, no optimization or extra filter. The explicit dispatcher mode is line_break_sensitivity, with separate per-asset CSVs under line_break_sensitivity/<asset>/ in a new r01 Run; each line-break signal row identifies reversal_lines. The existing full asset dashboards continue to use the latest complete expanded/reference Run, not this narrower experiment. No strategy revision increment.
+
+### Active reporting scope (approved 2026-11-28)
+
+The Trend Research asset dashboards display only four strategies, with
+presentation aliases: Long/Cash -> SMA105 LONG; LineBreak Long/Cash ->
+3LB LineBreak Long/Cash; LineBreak Long/Inverse -> 3LB LineBreak Long/Inverse;
+Buy & Hold unchanged. Apply this whitelist to all tables, chart data and
+strategy selectors. Do not serialize unused strategies or load/render the
+Heikin Ashi layer. The five native layers are raw close, raw candles,
+SMA105, 3LB extended and execution/holding. Existing archived strategy
+names, results, computation and the separate sensitivity Run remain unchanged.

@@ -46,15 +46,30 @@ def test_gold_run_and_native_visuals(tmp_path):
     assert all(p.window_axis=="x" for p in (price,signal,perf,pnl,dd))
     assert {"Line","VBar","Segment"} <= {type(r.glyph).__name__ for r in signal.renderers if hasattr(r,"glyph")}
     assert len(selector.js_property_callbacks["change:value"])==2
-    assert "Heikin Ashi Long/Cash" in selector.options
+    assert selector.options == ["SMA105 LONG","3LB LineBreak Long/Cash","3LB LineBreak Long/Inverse","Buy & Hold"]
+    assert selector.value == "SMA105 LONG"
     control=layout.select_one({"name":"gold-chart-layers"})
-    assert control.labels==["Raw close","Raw candles","SMA105","3LB extended","Heikin Ashi","Execution / holding"]
-    assert control.active==[0,2,5]
+    assert control.labels==["Raw close","Raw candles","SMA105","3LB extended","Execution / holding"]
+    assert control.active==[0,2,4]
+    assert not any(str(r.name or "").startswith("ha:") for r in signal.renderers)
     assert signal.select_one({"name":"lb:1"}).glyph.line_dash
     assert signal.select_one({"name":"sma:0"}).data_source.data["value"] == pytest.approx(
         pd.read_csv(tmp_path/"sma_signals.csv").loc[lambda x:x.signal_date.between(s.start_date.min(),s.end_date.max()),"sma105"].tolist())
 
-    assert render(tmp_path, tmp_path/"gold.html").stat().st_size > 10000
+    # Reporting must work without HA data and must not serialize removed strategies.
+    (tmp_path/"heikin_ashi_signals.csv").unlink()
+    result=render(tmp_path, tmp_path/"gold.html")
+    html=result.read_text(encoding="utf-8")
+    assert result.stat().st_size > 10000
+    assert "SMA105 LONG" in html and "3LB LineBreak Long/Inverse" in html
+    assert "Heikin Ashi" not in html
+    # All displayed data (including tables) use only the approved aliases.
+    from bokeh.models import Div
+    from backtest_lab.reporting.gold_trend_research_report import _display_rows, _display_columns
+    assert _display_rows(s).strategy.tolist()==selector.options
+    assert _display_columns(pd.read_csv(tmp_path/"equity_curves.csv"),"timestamp").columns.tolist()==["timestamp",*selector.options]
+    assert pd.read_csv(tmp_path/"performance_summary.csv").strategy.tolist()==s.strategy.tolist()
+
 
 def test_expanded_asset_native_report(tmp_path):
     from backtest_lab.strategies.gold_trend_research.r01 import load_assets, run_trend_asset

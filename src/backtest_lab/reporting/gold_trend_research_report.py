@@ -17,6 +17,26 @@ def _read(run, file, dates=()):
     return pd.read_csv(run/file, parse_dates=list(dates))
 
 
+# Presentation-only whitelist. The archived names and strategy calculations
+# remain unchanged; hidden strategies never enter the serialized chart payload.
+DISPLAY_STRATEGIES = {
+    "Long/Cash": "SMA105 LONG",
+    "LineBreak Long/Cash": "3LB LineBreak Long/Cash",
+    "LineBreak Long/Inverse": "3LB LineBreak Long/Inverse",
+    "Buy & Hold": "Buy & Hold",
+}
+
+
+def _display_rows(frame):
+    selected = frame.loc[frame.strategy.isin(DISPLAY_STRATEGIES)].copy()
+    selected["strategy"] = selected.strategy.map(DISPLAY_STRATEGIES)
+    return selected
+
+
+def _display_columns(frame, index):
+    return frame[[index, *DISPLAY_STRATEGIES]].rename(columns=DISPLAY_STRATEGIES)
+
+
 def build_gold_charts(run, asset=None):
     asset=asset or next(a for a in load_assets() if a['id']=='gold')
     symbol,inverse,currency=asset['long'],asset['inverse'],asset['currency']
@@ -26,10 +46,10 @@ def build_gold_charts(run, asset=None):
 
     run = Path(run)
     raw = _read(run,"input_prices.csv",("timestamp",)).set_index("timestamp")
-    summary = _read(run,"performance_summary.csv")
-    curves = _read(run,"equity_curves.csv",("timestamp",))
-    fills = _read(run,"fills.csv",("timestamp",))
-    decisions = _read(run,"daily_signals.csv",("signal_date","execution_date"))
+    summary = _display_rows(_read(run,"performance_summary.csv"))
+    curves = _display_columns(_read(run,"equity_curves.csv",("timestamp",)), "timestamp")
+    fills = _display_rows(_read(run,"fills.csv",("timestamp",)))
+    decisions = _display_rows(_read(run,"daily_signals.csv",("signal_date","execution_date")))
     prices, benchmark, strategies = prepare_trade_charts(raw.Close,curves,fills,decisions,summary,symbol,inverse)
     old = build_selectable_charts(prices,benchmark,strategies,display_symbol=symbol,currency=currency)
     selector,note,perf,pnl,dd,price = old.children
@@ -52,23 +72,18 @@ def build_gold_charts(run, asset=None):
     sig.yaxis.axis_label=f"Signal price ({currency})"
     sma = _read(run,"sma_signals.csv",("signal_date",)).set_index("signal_date").reindex(active.index)
     lb = _read(run,"line_break_signals.csv",("signal_date",)).set_index("signal_date").reindex(active.index)
-    ha = _read(run,"heikin_ashi_signals.csv",("signal_date",)).set_index("signal_date").reindex(active.index)
     composer.add(line_layer("raw-line","Raw close",active.Close,unit=currency,basis=f"{symbol} adjusted Close"))
     composer.add(candle_layer("raw-candle","Raw candles",active,unit=currency,basis=f"{symbol} adjusted OHLC"),visible=False)
     composer.add(line_layer("sma","SMA105",sma.sma105,unit=currency,
         basis=f"105 trading-day {symbol} adjusted Close",color="#b98a42",width=1.6))
     composer.add(line_break_layer("lb","3LB extended",lb,unit=currency,
         basis=f"Archived confirmed {symbol} Close blocks"),visible=False)
-    composer.add(candle_layer("ha","Heikin Ashi",ha.rename(columns={
-        "ha_open":"Open","ha_high":"High","ha_low":"Low","ha_close":"Close"}),
-        unit=currency,basis="Archived synthetic HA OHLC"),visible=False)
-    keys=["raw-line","raw-candle","sma","lb","ha"]
-    # Actual execution dates projected onto the corresponding indicator
-    # coordinates, never represented as a fill at a synthetic HA price.
+    keys=["raw-line","raw-candle","sma","lb"]
+    # Project execution dates onto the selected indicator coordinates.
     visuals = {}
     for name, data in strategies.items():
-        mode = "lb" if name.startswith("LineBreak") else "ha" if name.startswith("Heikin Ashi") else "hold" if name=="Buy & Hold" else "sma"
-        projection = lb.line_close if mode=="lb" else ha.ha_close if mode=="ha" else active.Close
+        mode = "lb" if name.startswith("3LB LineBreak") else "hold" if name=="Buy & Hold" else "sma"
+        projection = lb.line_close if mode=="lb" else active.Close
         values = {int(t.value//1_000_000): float(v) for t,v in projection.items() if pd.notna(v)}
         entry = data["holds"]["entry_date"]
         exit_ = data["holds"]["exit_date"]
@@ -96,7 +111,7 @@ def build_gold_charts(run, asset=None):
     selector.js_on_change("value",CustomJS(args=dict(payload=visuals,
         control=layer_control,buys=buys,sells=sells,holds=holds,sig=sig,price=price,symbol=symbol),code="""
         const v=payload[cb_obj.value], m=v.mode;
-        control.active = ({sma:[0,2,5],lb:[3,5],ha:[4,5],hold:[0,5]})[m];
+        control.active = ({sma:[0,2,4],lb:[3,4],hold:[0,4]})[m];
         buys.data=v.buys; sells.data=v.sells; holds.data=v.holds;
         buys.change.emit(); sells.change.emit(); holds.change.emit();
         sig.title.text = "Strategy chart | " + cb_obj.value;
@@ -126,14 +141,14 @@ def render(run, output, asset=None, *, navigation=False):
     from bokeh.models import Div
     from bokeh.resources import INLINE
     run=Path(run)
-    summary=_read(run,"performance_summary.csv")
-    annual=_read(run,"yearly_performance.csv").pivot(index="strategy",columns="year",values="return").reindex(summary.strategy).reset_index()
-    monthly=_read(run,"monthly_performance.csv").pivot(index="month",columns="strategy",values="return").reindex(columns=summary.strategy).reset_index()
-    header=Div(text=f"<h1>Trend Research r01 · {escape(asset['label'])}</h1><p>{escape(asset['long'])} adjusted OHLC · {escape(asset['inverse'])} actual inverse prices ({asset['inverse_multiple']}x daily) · {escape(asset['currency'])} · next eligible Close. HA and 3LB values are signal/display prices only.</p><h2>Performance Summary</h2>"+tabular_html(summary,percent_cols={"total_return","cagr","volatility","max_drawdown","avg_monthly_turnover","avg_exposure"}),sizing_mode="stretch_width")
-    footer=Div(text="<h2>Annual returns</h2>"+tabular_html(annual,percent_cols=set(annual.columns[1:]))+"<h2>Monthly returns</h2>"+tabular_html(monthly,percent_cols=set(monthly.columns[1:]))+"<h2>Raw FFN</h2>"+tabular_html(_read(run,"ffn_stats.csv")),sizing_mode="stretch_width")
+    summary=_display_rows(_read(run,"performance_summary.csv"))
+    annual=_display_rows(_read(run,"yearly_performance.csv")).pivot(index="strategy",columns="year",values="return").reindex(summary.strategy).reset_index()
+    monthly=_display_rows(_read(run,"monthly_performance.csv")).pivot(index="month",columns="strategy",values="return").reindex(columns=summary.strategy).reset_index()
+    header=Div(text=f"<h1>Trend Research r01 · {escape(asset['label'])}</h1><p>{escape(asset['long'])} adjusted OHLC · {escape(asset['inverse'])} actual inverse prices ({asset['inverse_multiple']}x daily) · {escape(asset['currency'])} · next eligible Close. 3LB values are signal/display prices only.</p><h2>Performance Summary</h2>"+tabular_html(summary,percent_cols={"total_return","cagr","volatility","max_drawdown","avg_monthly_turnover","avg_exposure"}),sizing_mode="stretch_width")
+    footer=Div(text="<h2>Annual returns</h2>"+tabular_html(annual,percent_cols=set(annual.columns[1:]))+"<h2>Monthly returns</h2>"+tabular_html(monthly,percent_cols=set(monthly.columns[1:]))+"<h2>Raw FFN</h2>"+tabular_html(_display_columns(_read(run,"ffn_stats.csv"),"metric")),sizing_mode="stretch_width")
     audit_path=run/"parent_control_comparison.csv"
     if audit_path.exists():
-        audit=pd.read_csv(audit_path)
+        audit=_display_rows(pd.read_csv(audit_path))
         footer.text += "<h2>Parent run 20261127-0008 comparison</h2><p>Fresh adjusted OHLC may differ from archived Close-only inputs.</p>"+tabular_html(audit,percent_cols={c for c in audit.columns if c.startswith(("total_return","cagr","max_drawdown"))})
     target=Path(output)
     target.parent.mkdir(parents=True,exist_ok=True)
