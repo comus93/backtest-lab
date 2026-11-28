@@ -119,18 +119,24 @@ def build_gold_charts(run, asset=None, *, diagnostics=None):
     """))
     diagnostic_panels = []
     if diagnostics is not None:
-        from bokeh.models import Range1d, FixedTicker
-        er_values = pd.read_csv(diagnostics, parse_dates=["timestamp"]).set_index("timestamp").er10
-        er_values = er_values.reindex(active.index)
-        er_composer = ChartComposer("Efficiency Ratio (ER10) | 10 trading sessions",price.x_range,
-            unit="ER10",height=160,name="trend-er10")
-        er_composer.add(line_layer("er10","ER10",er_values,unit="ER10",
-            basis=f"{symbol} adjusted Close; absolute net move / sum of 10 absolute changes",
-            color="#807496",width=1.3))
+        from bokeh.models import Range1d, FixedTicker, Span, Legend, LegendItem
+        er_values = pd.read_csv(diagnostics, parse_dates=["timestamp"]).set_index("timestamp").reindex(active.index)
+        er_composer = ChartComposer("Signed Efficiency Ratio | ER10 / ER20",price.x_range,
+            unit="Signed ER",height=180,name="trend-er10")
+        legend_items = []
+        for period, color in ((10,"#807496"),(20,"#a58a65")):
+            key = f"er{period}"
+            renderer, = er_composer.add(line_layer(key,f"ER{period}",er_values[key],unit="Signed ER",
+                basis=f"{symbol} adjusted Close; signed net move / sum of {period} absolute changes",
+                color=color,width=1.3))
+            legend_items.append(LegendItem(label=f"ER{period}",renderers=[renderer]))
         er = er_composer.figure
-        # ER is dimensionless with a natural fixed 0..1 comparison scale.
-        er.y_range = Range1d(0,1,bounds=(0,1))
-        er.yaxis.ticker = FixedTicker(ticks=[0,.25,.5,.75,1])
+        er.add_layout(Legend(items=legend_items,location="top_left",orientation="horizontal",
+            click_policy="hide",label_text_font_size="10px",background_fill_alpha=.65))
+        er.add_layout(Span(location=0,dimension="width",line_color="#64748b",line_dash="dashed",line_alpha=.65))
+        # Signed ER has a natural fixed -1..+1 comparison scale.
+        er.y_range = Range1d(-1,1,bounds=(-1,1))
+        er.yaxis.ticker = FixedTicker(ticks=[-1,-.5,0,.5,1])
         diagnostic_panels.append(er)
     for p in (price,sig,*diagnostic_panels,perf,pnl,dd):
         p.min_border_left=95

@@ -7,11 +7,13 @@ from pathlib import Path
 import pandas as pd
 
 
-def efficiency_ratio_10(close: pd.Series) -> pd.Series:
-    """Ten trading-session changes (eleven closes); flat windows yield zero."""
-    distance = close.diff().abs().rolling(10, min_periods=10).sum()
-    net = (close - close.shift(10)).abs()
-    return (net / distance.where(distance != 0)).mask(distance == 0, 0.).rename("er10")
+def signed_efficiency_ratio(close: pd.Series, period: int) -> pd.Series:
+    """Signed net change divided by absolute path over period sessions."""
+    if period < 1:
+        raise ValueError("ER period must be positive")
+    distance = close.diff().abs().rolling(period, min_periods=period).sum()
+    net = close - close.shift(period)
+    return (net / distance.where(distance != 0)).mask(distance == 0, 0.).rename(f"er{period}")
 
 
 def write_trend_diagnostics(run, output):
@@ -30,7 +32,8 @@ def write_trend_diagnostics(run, output):
         if not close.index.is_unique:
             raise ValueError("Duplicate diagnostic price dates")
         target = output / f"{key}.csv"
-        efficiency_ratio_10(close).to_csv(target, index_label="timestamp")
+        pd.concat([signed_efficiency_ratio(close, n) for n in (10,20)], axis=1).to_csv(
+            target, index_label="timestamp")
         paths[key] = target
     if not paths:
         raise ValueError("No archived diagnostic price inputs")

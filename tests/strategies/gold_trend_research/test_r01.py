@@ -160,21 +160,22 @@ def test_line_break_sensitivity_reproduces_archived_control():
     assert not any("silver" in name for name in out.tables)
 
 
-def test_er10_causal_and_flat():
-    from backtest_lab.analysis.trend_diagnostics import efficiency_ratio_10
-    dates=pd.bdate_range("2024-01-01",periods=14)
-    p=pd.Series([100,101,102,103,104,105,106,107,108,109,110,109,108,107],index=dates)
-    er=efficiency_ratio_10(p)
-    assert er.iloc[:10].isna().all()
-    assert er.iloc[10]==pytest.approx(1)
-    assert er.iloc[11]==pytest.approx(.8)
-    assert er.iloc[13]==pytest.approx(.4)
-    pd.testing.assert_series_equal(er.iloc[:12],efficiency_ratio_10(p.iloc[:12]))
-    assert efficiency_ratio_10(-p).iloc[10]==pytest.approx(1)
-    assert efficiency_ratio_10(pd.Series(100.,index=dates)).iloc[10]==0
+@pytest.mark.parametrize("period", [10,20])
+def test_signed_er_causal_direction_and_flat(period):
+    from backtest_lab.analysis.trend_diagnostics import signed_efficiency_ratio
+    dates=pd.bdate_range("2024-01-01",periods=period+4)
+    p=pd.Series(list(range(100,100+period+1))+[99+period,98+period,97+period],index=dates)
+    er=signed_efficiency_ratio(p,period)
+    assert er.iloc[:period].isna().all()
+    assert er.iloc[period]==pytest.approx(1)
+    assert er.iloc[period+1]==pytest.approx((period-2)/period)
+    assert er.iloc[period+3]==pytest.approx((period-6)/period)
+    pd.testing.assert_series_equal(er.iloc[:period+2],signed_efficiency_ratio(p.iloc[:period+2],period))
+    assert signed_efficiency_ratio(300-p,period).iloc[period]==pytest.approx(-1)
+    assert signed_efficiency_ratio(pd.Series(100.,index=dates),period).iloc[period]==0
 
 
-def test_er10_report_panel_from_diagnostic_artifact(tmp_path):
+def test_signed_er_report_panel_from_diagnostic_artifact(tmp_path):
     from pathlib import Path
     from backtest_lab.analysis.trend_diagnostics import write_trend_diagnostics
     from backtest_lab.reporting.gold_trend_research_report import build_gold_charts
@@ -186,11 +187,19 @@ def test_er10_report_panel_from_diagnostic_artifact(tmp_path):
     er=layout.select_one({"name":"trend-er10"})
     price=layout.children[2]
     assert er.x_range is price.x_range
-    assert er.y_range.start==0 and er.y_range.end==1
+    assert er.y_range.start==-1 and er.y_range.end==1
     assert er.min_border_left==price.min_border_left
-    data=er.select_one({"name":"er10:0"}).data_source.data
-    assert len(data["date"])==2514
-    assert np.isfinite(data["value"]).all()
-    assert all(0<=v<=1 for v in data["value"])
+    from bokeh.models import Span
+    assert any(span.location==0 and span.dimension=="width" for span in er.select({"type":Span}))
+    frame=pd.read_csv(paths["gold"])
+    assert frame.columns.tolist()==["timestamp","er10","er20"]
+    for key in ("er10","er20"):
+        data=er.select_one({"name":key+":0"}).data_source.data
+        assert len(data["date"])==2514
+        assert np.isfinite(data["value"]).all()
+        assert all(-1<=v<=1 for v in data["value"])
+        assert min(data["value"])<0<max(data["value"])
+    assert er.select_one({"name":"er10:0"}).glyph.line_color != er.select_one({"name":"er20:0"}).glyph.line_color
+    assert [item.label.value for item in er.legend[0].items]==["ER10","ER20"]
     assert layout.children[4] is er
     assert not (folder/"er10.csv").exists()
